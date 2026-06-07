@@ -4,7 +4,8 @@ import { extractDataFromPDF, ExtractedData } from '@/services/geminiService';
 import { LAND_VALUES } from '@/data/landValues';
 import { CONSTRUCTION_PRICES, COMMERCIALIZATION_FACTORS } from '@/data/factors';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/lib/supabase';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { generateClementePDF } from '@/lib/pdfGenerator';
 import { FileDown, Share2 } from 'lucide-react';
 
@@ -45,13 +46,13 @@ export function ValorVenal({ userId }: { userId?: string }) {
       valorVenalTotal,
     });
 
-    // Save to Supabase if user is logged in
     if (userId) {
-      supabase.from('calculations').insert({
+      addDoc(collection(db, 'calculations'), {
         user_id: userId,
         inscricao: data.inscricao,
         endereco: data.endereco,
         valor_venal: valorVenalTotal,
+        created_at: new Date().toISOString(),
         data: {
           extracted: data,
           manual: manualValues,
@@ -63,9 +64,7 @@ export function ValorVenal({ userId }: { userId?: string }) {
             valorVenalTotal
           }
         }
-      }).then(({ error }) => {
-        if (error) console.error('Error saving calculation:', error);
-      });
+      }).catch(err => console.error('Error saving calculation:', err));
     }
 
     // Save to localStorage

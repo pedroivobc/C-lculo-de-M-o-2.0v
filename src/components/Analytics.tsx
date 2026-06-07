@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { collection, getCountFromServer, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { TrendingUp, Users, DollarSign, Calculator, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   BarChart,
   Bar
@@ -26,31 +27,23 @@ export function Analytics() {
 
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch total calculations
-      const { count: calcCount } = await supabase
-        .from('calculations')
-        .select('*', { count: 'exact', head: true });
+      const [calcSnap, usersSnap, ordersSnap] = await Promise.all([
+        getCountFromServer(collection(db, 'calculations')),
+        getCountFromServer(collection(db, 'users')),
+        getDocs(collection(db, 'orders')),
+      ]);
 
-      // Fetch total users (from profiles)
-      const { count: userCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-
-      // Fetch total revenue
-      const { data: orders } = await supabase
-        .from('orders')
-        .select('amount');
-      
-      const totalRev = orders?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0;
+      const calcCount = calcSnap.data().count;
+      const userCount = usersSnap.data().count;
+      const totalRev = ordersSnap.docs.reduce((acc, d) => acc + Number(d.data().amount || 0), 0);
 
       setStats({
-        totalCalculations: calcCount || 0,
-        totalUsers: userCount || 0,
+        totalCalculations: calcCount,
+        totalUsers: userCount,
         totalRevenue: totalRev,
-        activeUsers: Math.floor((userCount || 0) * 0.4) // Mock active users for demo
+        activeUsers: Math.floor(userCount * 0.4),
       });
 
-      // Mock chart data for demo
       setChartData([
         { name: 'Seg', value: 400, rev: 2400 },
         { name: 'Ter', value: 300, rev: 1398 },
@@ -113,14 +106,14 @@ export function Analytics() {
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#D4AF37" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#D4AF37" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                 <XAxis dataKey="name" stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #ffffff10', borderRadius: '12px' }}
                   itemStyle={{ color: '#D4AF37' }}
                 />
@@ -138,7 +131,7 @@ export function Analytics() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                 <XAxis dataKey="name" stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #ffffff10', borderRadius: '12px' }}
                   itemStyle={{ color: '#D4AF37' }}
                 />

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import { Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -17,15 +18,21 @@ export function Auth() {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        setMessage({ type: 'success', text: 'Verifique seu e-mail para confirmar o cadastro!' });
+        await createUserWithEmailAndPassword(auth, email, password);
+        setMessage({ type: 'success', text: 'Conta criada com sucesso! Você já está conectado.' });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        await signInWithEmailAndPassword(auth, email, password);
       }
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      const msgs: Record<string, string> = {
+        'auth/user-not-found': 'Usuário não encontrado.',
+        'auth/wrong-password': 'Senha incorreta.',
+        'auth/email-already-in-use': 'Este e-mail já está em uso.',
+        'auth/weak-password': 'A senha deve ter no mínimo 6 caracteres.',
+        'auth/invalid-email': 'E-mail inválido.',
+        'auth/invalid-credential': 'Credenciais inválidas.',
+      };
+      setMessage({ type: 'error', text: msgs[error.code] || error.message });
     } finally {
       setLoading(false);
     }
@@ -38,7 +45,7 @@ export function Auth() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#D4AF37]/5 blur-[120px] rounded-full" />
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md space-y-8 bg-white/[0.03] border border-white/10 p-8 rounded-3xl backdrop-blur-xl relative z-10"

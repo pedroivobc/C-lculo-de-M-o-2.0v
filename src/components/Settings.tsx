@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { signOut } from 'firebase/auth';
+import { auth, db, storage } from '@/lib/firebase';
 import { User, Camera, Loader2, Save, Moon, Sun, LogOut, Check } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useTheme } from '@/hooks/useTheme';
@@ -26,17 +29,13 @@ export function Settings({ userId }: { userId: string }) {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (data) setProfile(data);
+      const snap = await getDoc(doc(db, 'users', userId));
+      if (snap.exists()) {
+        setProfile({ id: snap.id, ...snap.data() } as Profile);
+      }
       setLoading(false);
     };
 
-    // Carregar perfil do localStorage
     const savedPerfil = localStorage.getItem('perfilUsuario');
     if (savedPerfil) {
       setPerfilUsuario(JSON.parse(savedPerfil));
@@ -46,7 +45,6 @@ export function Settings({ userId }: { userId: string }) {
   }, [userId]);
 
   const handleSavePerfilUsuario = () => {
-    console.log('Perfil salvo:', perfilUsuario);
     localStorage.setItem('perfilUsuario', JSON.stringify(perfilUsuario));
     setSalvo(true);
     setTimeout(() => setSalvo(false), 3000);
@@ -64,16 +62,16 @@ export function Settings({ userId }: { userId: string }) {
     if (!profile) return;
     setUpdating(true);
 
-    const { error } = await supabase
-      .from('profiles')
-      .upsert({
-        id: userId,
+    try {
+      await setDoc(doc(db, 'users', userId), {
         full_name: profile.full_name,
         avatar_url: profile.avatar_url,
         updated_at: new Date().toISOString(),
-      });
+      }, { merge: true });
+    } catch (error: any) {
+      alert(error.message);
+    }
 
-    if (error) alert(error.message);
     setUpdating(false);
   };
 
@@ -84,28 +82,18 @@ export function Settings({ userId }: { userId: string }) {
     setUpdating(true);
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}-${Math.random()}.${fileExt}`;
-    const filePath = `avatars/${fileName}`;
+    const storageRef = ref(storage, `avatars/${fileName}`);
 
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file);
+    try {
+      await uploadBytes(storageRef, file);
+      const publicUrl = await getDownloadURL(storageRef);
 
-    if (uploadError) {
-      alert(uploadError.message);
-      setUpdating(false);
-      return;
+      setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : null);
+
+      await setDoc(doc(db, 'users', userId), { avatar_url: publicUrl }, { merge: true });
+    } catch (error: any) {
+      alert(error.message);
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
-
-    setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : null);
-    
-    await supabase
-      .from('profiles')
-      .update({ avatar_url: publicUrl })
-      .eq('id', userId);
 
     setUpdating(false);
   };
@@ -224,7 +212,7 @@ export function Settings({ userId }: { userId: string }) {
         <div className="space-y-6">
           <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-8 space-y-6">
             <h3 className="text-xl font-serif text-white">Preferências</h3>
-            
+
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
                 <div className="flex items-center gap-3">
@@ -242,7 +230,7 @@ export function Settings({ userId }: { userId: string }) {
 
             <div className="pt-4 border-t border-white/5">
               <button
-                onClick={() => supabase.auth.signOut()}
+                onClick={() => signOut(auth)}
                 className="w-full flex items-center justify-center gap-2 text-red-400 hover:text-red-300 transition-colors py-2"
               >
                 <LogOut className="w-4 h-4" />

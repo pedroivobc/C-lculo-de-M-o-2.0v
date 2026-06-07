@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  doc,
+} from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Key, Plus, Trash2, Copy, Check, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -21,41 +31,41 @@ export function ApiKeys({ userId }: { userId: string }) {
   }, [userId]);
 
   const fetchKeys = async () => {
-    const { data, error } = await supabase
-      .from('api_keys')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (data) setKeys(data);
+    const q = query(
+      collection(db, 'api_keys'),
+      where('user_id', '==', userId),
+      orderBy('created_at', 'desc')
+    );
+    const snap = await getDocs(q);
+    setKeys(snap.docs.map(d => ({ id: d.id, ...d.data() } as ApiKey)));
     setLoading(false);
   };
 
   const generateKey = async () => {
     setCreating(true);
     const newKey = `sk_${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`;
-    
-    const { error } = await supabase
-      .from('api_keys')
-      .insert({
+
+    try {
+      await addDoc(collection(db, 'api_keys'), {
         user_id: userId,
         key: newKey,
-        status: 'active'
+        status: 'active',
+        created_at: new Date().toISOString(),
       });
-
-    if (error) alert(error.message);
-    else fetchKeys();
+      fetchKeys();
+    } catch (error: any) {
+      alert(error.message);
+    }
     setCreating(false);
   };
 
   const revokeKey = async (id: string) => {
-    const { error } = await supabase
-      .from('api_keys')
-      .delete()
-      .eq('id', id);
-
-    if (error) alert(error.message);
-    else fetchKeys();
+    try {
+      await deleteDoc(doc(db, 'api_keys', id));
+      fetchKeys();
+    } catch (error: any) {
+      alert(error.message);
+    }
   };
 
   const copyToClipboard = (text: string, id: string) => {

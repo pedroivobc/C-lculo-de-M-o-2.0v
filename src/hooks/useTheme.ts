@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export function useTheme(userId?: string) {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -8,14 +9,9 @@ export function useTheme(userId?: string) {
     if (!userId) return;
 
     const fetchTheme = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('theme')
-        .eq('id', userId)
-        .single();
-
-      if (data?.theme) {
-        setTheme(data.theme as 'light' | 'dark');
+      const snap = await getDoc(doc(db, 'users', userId));
+      if (snap.exists() && snap.data()?.theme) {
+        setTheme(snap.data().theme as 'light' | 'dark');
       }
     };
 
@@ -36,10 +32,7 @@ export function useTheme(userId?: string) {
     setTheme(newTheme);
 
     if (userId) {
-      await supabase
-        .from('profiles')
-        .update({ theme: newTheme })
-        .eq('id', userId);
+      await updateDoc(doc(db, 'users', userId), { theme: newTheme });
     }
   };
 

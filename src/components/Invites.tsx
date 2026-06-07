@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import {
+  collection,
+  query,
+  orderBy,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  doc,
+} from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Mail, Send, Loader2, UserPlus, Clock, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -21,12 +30,9 @@ export function Invites({ userId }: { userId: string }) {
   }, [userId]);
 
   const fetchInvites = async () => {
-    const { data, error } = await supabase
-      .from('invites')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (data) setInvites(data);
+    const q = query(collection(db, 'invites'), orderBy('created_at', 'desc'));
+    const snap = await getDocs(q);
+    setInvites(snap.docs.map(d => ({ id: d.id, ...d.data() } as Invite)));
     setLoading(false);
   };
 
@@ -38,33 +44,29 @@ export function Invites({ userId }: { userId: string }) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    const { error } = await supabase
-      .from('invites')
-      .insert({
+    try {
+      await addDoc(collection(db, 'invites'), {
         email,
         token,
         expires_at: expiresAt.toISOString(),
+        created_at: new Date().toISOString(),
       });
-
-    if (error) {
-      alert(error.message);
-    } else {
-      // Here you would typically call an Edge Function or API to send the actual email via Resend
       console.log(`Invite link: ${window.location.origin}/accept-invite?token=${token}`);
       setEmail('');
       fetchInvites();
+    } catch (error: any) {
+      alert(error.message);
     }
     setSending(false);
   };
 
   const deleteInvite = async (id: string) => {
-    const { error } = await supabase
-      .from('invites')
-      .delete()
-      .eq('id', id);
-
-    if (error) alert(error.message);
-    else fetchInvites();
+    try {
+      await deleteDoc(doc(db, 'invites', id));
+      fetchInvites();
+    } catch (error: any) {
+      alert(error.message);
+    }
   };
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" /></div>;
@@ -83,7 +85,7 @@ export function Invites({ userId }: { userId: string }) {
             <div className="w-12 h-12 bg-[#D4AF37]/10 rounded-2xl flex items-center justify-center text-[#D4AF37]">
               <UserPlus className="w-6 h-6" />
             </div>
-            
+
             <div className="space-y-2">
               <h3 className="text-xl font-serif text-white">Novo Convite</h3>
               <p className="text-white/40 text-sm">O link expira em 7 dias.</p>
@@ -121,7 +123,7 @@ export function Invites({ userId }: { userId: string }) {
         {/* Pending Invites List */}
         <div className="lg:col-span-2 space-y-4">
           <h4 className="text-white/40 text-xs uppercase tracking-widest font-bold">Convites Pendentes</h4>
-          
+
           {invites.length === 0 ? (
             <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-12 text-center">
               <p className="text-white/20">Nenhum convite pendente.</p>
