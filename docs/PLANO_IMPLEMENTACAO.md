@@ -1,5 +1,8 @@
 # Cálculo na Mão — plano de implementação do SaaS + agente WhatsApp
 
+> **Status (out/2026)** — feito: fórmulas extraídas para `src/lib/calc/` com testes de referência; esquema novo do Supabase (`supabase/migrations/`); API com o agente do WhatsApp (Gemini com ferramentas), verificação do número, histórico, PDF e exportação CSV; Docker Compose com Evolution API + n8n; workflow do n8n; chave do Gemini fora do navegador; perfis não são mais públicos. Passo a passo para subir: [SETUP.md](SETUP.md).
+> Falta: pagamento (Asaas) e webhook de assinatura; telas novas do canvas no front; trocar as telas atuais para chamar a API (hoje ainda calculam no navegador); decidir o nome (rebranding).
+
 Design de referência (web e mobile, todas as telas): canvas **Cálculo na Mão SaaS** no claude.ai.
 
 ## 1. O que vamos colocar no ar

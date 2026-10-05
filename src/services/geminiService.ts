@@ -1,6 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+import { supabase } from "@/lib/supabase";
 
 export interface ExtractedData {
   inscricao: string | null;
@@ -18,62 +16,22 @@ export interface ExtractedData {
   };
 }
 
-export async function extractDataFromPDF(base64Data: string): Promise<ExtractedData> {
-  const prompt = `Você é um especialista em leitura de documentos fiscais imobiliários brasileiros.
-Analise este Espelho de IPTU da Prefeitura de Juiz de Fora (MG) e extraia os campos abaixo.
-Retorne SOMENTE um JSON válido, sem texto adicional, sem markdown, sem explicações.
-
-{
-  "inscricao": "número de inscrição cadastral completo",
-  "endereco": "logradouro completo com número e bairro",
-  "terreno": {
-    "valorM2": número puro sem R$ ou pontos de milhar,
-    "valorVenal": número puro sem R$ ou pontos de milhar,
-    "areaIsotima": "código sem espaços ex: RE227"
-  },
-  "edificacao": {
-    "tipo": "um de: APTO, CASA, SALA, LOJA, TELHEIRO, GALPAO",
-    "padrao": "um de: OTIMO, BOM, REGULAR, BAIXO, POPULAR",
-    "valorM2": número puro sem R$ ou pontos de milhar,
-    "valorVenal": número puro sem R$ ou pontos de milhar
-  }
-}
-
-Regras de normalização:
-- tipo: Apartamento→APTO, Casa→CASA, Sala→SALA, Loja→LOJA, Galpão→GALPAO
-- padrao: Ótimo→OTIMO, Bom→BOM, Regular→REGULAR, Baixo→BAIXO, Popular→POPULAR
-- Números: remova R$, pontos de milhar, converta vírgula decimal em ponto
-- areaIsotima: remova espaços (RE 227 → RE227)
-- Se não encontrar um campo, retorne null
-Retorne APENAS o JSON. Nada antes ou depois.`;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: [
-        {
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType: "application/pdf",
-                data: base64Data,
-              },
-            },
-          ],
-        },
-      ],
-      config: {
-        responseMimeType: "application/json",
-      },
-    });
-
-    const text = response.text;
-    if (!text) throw new Error("No response from Gemini");
-    
-    return JSON.parse(text) as ExtractedData;
-  } catch (error) {
-    console.error("Error extracting data:", error);
-    throw error;
-  }
+/**
+ * Lê o espelho do IPTU pelo servidor (POST /api/iptu/extrair).
+ * A chave do Gemini fica só no servidor; antes ela ia embutida no bundle do navegador.
+ */
+export async function extractDataFromPDF(base64Data: string, mimeType = "application/pdf"): Promise<ExtractedData> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  const resp = await fetch("/api/iptu/extrair", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ base64: base64Data, mimeType }),
+  });
+  const corpo = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(corpo.erro ?? `Falha ao ler o espelho (${resp.status})`);
+  return corpo as ExtractedData;
 }

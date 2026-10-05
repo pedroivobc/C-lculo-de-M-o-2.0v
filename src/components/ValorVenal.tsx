@@ -47,22 +47,23 @@ export function ValorVenal({ userId }: { userId?: string }) {
 
     // Save to Supabase if user is logged in
     if (userId) {
+      // Formato da migração supabase/migrations/20261005000000_schema_inicial.sql
       supabase.from('calculations').insert({
         user_id: userId,
-        inscricao: data.inscricao,
-        endereco: data.endereco,
-        valor_venal: valorVenalTotal,
-        data: {
-          extracted: data,
-          manual: manualValues,
-          results: {
-            areaTerrenoM2,
-            areaEdificacaoM2,
-            valorTerrenoCorrigido,
-            valorEdificacaoCorrigida,
-            valorVenalTotal
-          }
-        }
+        tipo: 'valor_venal',
+        subtipo: data.edificacao.tipo,
+        municipio: 'mg-juiz-de-fora',
+        origem: 'site',
+        descricao: [data.endereco, data.inscricao].filter(Boolean).join(' · ') || null,
+        entrada: { extracted: data, manual: manualValues },
+        resultado: {
+          areaTerrenoM2,
+          areaEdificacaoM2,
+          valorTerrenoCorrigido,
+          valorEdificacaoCorrigida,
+          valorVenalTotal
+        },
+        total: Math.round(valorVenalTotal * 100) / 100,
       }).then(({ error }) => {
         if (error) console.error('Error saving calculation:', error);
       });

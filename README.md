@@ -1,20 +1,26 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Cálculo na Mão
 
-# Run and deploy your AI Studio app
+Orçamento de escritura, ITBI, financiamento e doação para imóveis em Juiz de Fora (MG), pelo site ou por um agente no WhatsApp.
 
-This contains everything you need to run your app locally.
+- **Colocar no ar:** [docs/SETUP.md](docs/SETUP.md) — Supabase, VPS com Evolution API + n8n, primeiro teste.
+- **Plano do produto:** [docs/PLANO_IMPLEMENTACAO.md](docs/PLANO_IMPLEMENTACAO.md)
 
-View your app in AI Studio: https://ai.studio/apps/4eb951c7-8e78-4646-b608-1b0402b885eb
+## Estrutura
 
-## Run Locally
+| Pasta | O que tem |
+|---|---|
+| `src/lib/calc/` | Fórmulas (escritura, doação, Caixa, banco privado, correção, valor venal), usadas pelo site, pela API e pelo agente |
+| `src/` | Front (Vite + React) |
+| `server/` | API Express, agente do WhatsApp (Gemini com ferramentas), PDF, exportação |
+| `supabase/migrations/` | Esquema do banco |
+| `infra/` | Docker Compose: app, Evolution API, n8n, Postgres, Redis, Caddy |
+| `n8n/` | Workflow do agente para importar no n8n |
 
-**Prerequisites:**  Node.js
+## Rodar local
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```bash
+cp .env.example .env
+npm install
+npm run dev     # http://localhost:3000
+npm test
+```

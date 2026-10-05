@@ -1,22 +1,19 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
-import { fileURLToPath } from "url";
-import dotenv from "dotenv";
-
-dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { config } from "./server/config";
+import { rotas } from "./server/rotas";
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  app.set("trust proxy", 1); // atrás do Caddy/Traefik: IP real para o rate limit
 
-  app.use(express.json());
+  // 15 MB: fotos e PDFs do espelho do IPTU chegam em base64.
+  app.use(express.json({ limit: "15mb" }));
+  app.use(rotas);
 
-  // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
+    // Import dinâmico: o Vite só existe em desenvolvimento.
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -30,8 +27,8 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  app.listen(config.port, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${config.port}`);
   });
 }
 
