@@ -186,9 +186,54 @@ Cada função devolve `linhas: { rotulo, nota?, valor }[]` — é o que o site m
 
 **Workflows auxiliares**: boas-vindas ao ativar assinatura (chamado pela API), lembrete de renovação (7 dias antes, anual) e de Pix mensal, alerta para você quando a Evolution desconectar (evento `CONNECTION_UPDATE`).
 
+## 6.1 Expansão por município (MG primeiro, começando por Juiz de Fora)
+
+O cálculo tem três camadas com donos diferentes, e é isso que define o que precisa ser feito para abrir uma cidade nova:
+
+| Camada | Dono | Exemplos | Para abrir outra cidade de MG |
+|---|---|---|---|
+| Estadual (UF) | TJMG / SEF-MG | lavratura, registro, arquivamento, prenotação, ITCD | Nada — já vale para MG inteiro |
+| Municipal | Prefeitura | ITBI (alíquota, regra do SFH, base), valor venal, layout do espelho do IPTU | Cadastrar regras + ensinar a leitura do espelho daquela prefeitura |
+| Banco / usuário | Banco, assinante | taxa Caixa, tarifas, certidões, honorários | Nada |
+
+Modelo de dados:
+
+```sql
+create table municipios (
+  id text primary key,                 -- 'mg-juiz-de-fora'
+  uf char(2) not null,                 -- 'MG'
+  nome text not null,
+  status text not null check (status in ('ativo','em_breve')),
+  itbi jsonb not null,                 -- { aliquota: 0.02, sfh: { limiar: 107603.17, fixo: 538.02, aliquota_financiado: 0.005 } }
+  valor_venal jsonb,                   -- tabelas/fatores da prefeitura (hoje em src/data/landValues.ts e factors.ts)
+  iptu_prompt text,                    -- instruções de leitura do espelho daquela prefeitura
+  vigencia date not null
+);
+
+create table pedidos_cidade (           -- "Quero na minha cidade" da landing
+  id bigserial primary key,
+  cidade text not null,
+  uf char(2) not null default 'MG',
+  whatsapp_e164 text,
+  user_id uuid references auth.users on delete set null,
+  created_at timestamptz default now()
+);
+
+alter table profiles add column municipio_padrao text references municipios default 'mg-juiz-de-fora';
+alter table calculations add column municipio text references municipios;
+```
+
+Regras de código:
+- A lib `calc/` recebe o município como parâmetro (`calcularEscritura(entrada, { municipio })`) e devolve em cada linha a **origem** (`'municipio' | 'uf' | 'banco' | 'usuario'`). O front mostra isso como etiqueta (JUIZ DE FORA / MG / BANCO / VOCÊ) e o PDF também.
+- Tabela de emolumentos fica por UF (`tabelas/mg-2026.ts`), com vigência — permite trocar o ano sem mexer em código de cálculo.
+- O agente usa o `municipio_padrao` do assinante; se a mensagem citar outra cidade ainda `em_breve`, responde que ainda não atende e registra em `pedidos_cidade`.
+- Ordem de abertura: ranking de `pedidos_cidade` (o formulário da landing alimenta isso).
+
 ## 7. Front-end (seguindo o canvas)
 
-- Aplicar o design system **Clemente One** (verde `#1f5c45`, dourado só em rótulos, Plus Jakarta Sans) no lugar do tema preto/dourado atual.
+- Direção visual comercial (substitui o tema preto/dourado atual): azul-tinta `#101828`, azul de ação `#2342d6`, vermelho de Minas `#c8202a` só em rótulos e no carimbo, amarelo marca-texto `#ffd24a` nos preços; títulos e números em **Archivo** (largura 112%), texto em **Instrument Sans**.
+- Peça-assinatura: o resultado de cada cálculo é um **orçamento picotado** com etiqueta de origem por linha, total marcado em amarelo e carimbo "Juiz de Fora · MG". Na landing ele é uma calculadora ao vivo (o visitante testa antes de assinar).
+- Seletor de município no menu (web) e no início (mobile), com Juiz de Fora ativo e as demais cidades de MG "em breve".
 - Rotas: `/` landing · `/entrar` · `/cadastro` (nome, e-mail, WhatsApp) → `/verificar` (código) → `/assinar` · `/app` início · `/app/<calculadora>` · `/app/historico` · `/app/agente` · `/app/conta`.
 - Guarda de rota: sem assinatura ativa → `/assinar`.
 - Layout: menu lateral no desktop; barra inferior com 4 abas (Início, Histórico, Agente, Conta) no celular; calculadoras abrem como tela cheia com botões fixos embaixo.
