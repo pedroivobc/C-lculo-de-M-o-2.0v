@@ -144,6 +144,18 @@ describe('cálculos de referência', () => {
     expect(valor('Arquivamento do contrato')).toBeCloseTo(107.36, 0);
   });
 
+  it('MCMV tem 50% no registro sempre; SBPE só no 1º imóvel', () => {
+    const reg = (modalidade: string, primeiroImovel: boolean) =>
+      calcular('financiamento_caixa', { modalidade, valorDeclarado: 251700, valorFinanciado: 100000, primeiroImovel })
+        .linhas.find((l) => l.rotulo === 'Registro')!;
+    const mcmv = reg('MCMV', false);
+    expect(mcmv.detalhes![0].nota).toContain('MCMV: 50%');
+    expect(mcmv.valor).toBe(reg('MCMV', true).valor);
+    expect(mcmv.valor).toBe(reg('SBPE', true).valor);
+    expect(reg('SBPE', false).valor).toBeGreaterThan(mcmv.valor * 1.9);
+    expect(reg('SBPE', false).detalhes![0].nota).not.toContain('50%');
+  });
+
   it('financiamento traz o arquivamento do contrato no registro (folhas ajustáveis)', () => {
     const r = calcular('financiamento_caixa', { modalidade: 'SBPE', valorDeclarado: 350000, valorFinanciado: 280000, folhasContrato: 14 });
     const arq = r.linhas.find((l) => l.rotulo === 'Registro')!.detalhes!.find((d) => d.rotulo === 'Arquivamento do contrato')!;

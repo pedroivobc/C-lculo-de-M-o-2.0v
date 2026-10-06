@@ -56,7 +56,7 @@ export const FLUXOS: Record<string, Fluxo> = {
   doacao_usufruto: { titulo: 'Doação com usufruto', calculo: 'doacao', fixos: { subtipo: 'doacao_usufruto' }, perguntas: DOACAO },
   renuncia: { titulo: 'Renúncia de usufruto', calculo: 'doacao', fixos: { subtipo: 'renuncia_usufruto' }, perguntas: DOACAO },
   caixa_sbpe: { titulo: 'Caixa · SBPE', calculo: 'financiamento_caixa', fixos: { modalidade: 'SBPE' }, perguntas: [IMOVEL, FINANCIADO, PRIMEIRO] },
-  caixa_mcmv: { titulo: 'Caixa · Minha Casa Minha Vida', calculo: 'financiamento_caixa', fixos: { modalidade: 'MCMV' }, perguntas: [IMOVEL, FINANCIADO, PRIMEIRO] },
+  caixa_mcmv: { titulo: 'Caixa · Minha Casa Minha Vida', calculo: 'financiamento_caixa', fixos: { modalidade: 'MCMV' }, perguntas: [IMOVEL, FINANCIADO] },
   caixa_sfi: { titulo: 'Caixa · SFI', calculo: 'financiamento_caixa', fixos: { modalidade: 'SFI' }, perguntas: [IMOVEL, FINANCIADO] },
   caixa_fgts: { titulo: 'Caixa · FGTS', calculo: 'financiamento_caixa', fixos: { modalidade: 'FGTS', valorFinanciado: 0 }, perguntas: [IMOVEL] },
   caixa_egi: {

@@ -93,7 +93,6 @@ export function FinanciamentoCaixa() {
   const [modalidade, setModalidade] = useState<Modalidade>('SBPE');
   const [taxa, setTaxa] = useState(1.5);
   const c = useCustos('financiamento', { fgts: modalidade === 'FGTS' });
-  const sfh = modalidade === 'SBPE' || modalidade === 'MCMV';
 
   return (
     <PaginaCalculadora
@@ -113,7 +112,8 @@ export function FinanciamentoCaixa() {
         <CampoMoeda rotulo="Honorários" centavos={c.honorarios} onChange={c.setHonorarios} />
       </Grade>
       <BotaoCustos c={c} />
-      {sfh && <Alternar rotulo="Primeiro imóvel do comprador" dica="50% de redução nos atos do Registro de Imóveis (SFH)" ligado={s.primeiro} onChange={s.setPrimeiro} />}
+      {modalidade === 'MCMV' && <p className="text-sm font-medium text-suave">No MCMV, os atos do Registro de Imóveis (registro, prenotação e arquivamento) têm 50% de redução.</p>}
+      {modalidade === 'SBPE' && <Alternar rotulo="Primeiro imóvel do comprador" dica="50% de redução nos atos do Registro de Imóveis (SFH)" ligado={s.primeiro} onChange={s.setPrimeiro} />}
     </PaginaCalculadora>
   );
 }

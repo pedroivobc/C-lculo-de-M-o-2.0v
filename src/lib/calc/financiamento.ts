@@ -35,13 +35,20 @@ function linhaItbi(m: Municipio, base: number, fin: number, pedeSfh: boolean): L
 /**
  * Registro do contrato de financiamento: registro da compra (pelo valor do imóvel) e da alienação fiduciária
  * (pelo valor financiado), prenotação, arquivamento das folhas do contrato, certidão e averbações.
- * No SFH, o 1º imóvel tem 50% de redução nos atos do título (conferido com recibos do 1º RGI de Juiz de Fora).
+ * Redução de 50% nos atos do título: sempre no MCMV; no SBPE, só no 1º imóvel (conferido com recibos do 1º RGI de Juiz de Fora).
  */
-function registroFinanciamento(m: Municipio, atos: { compra?: number; alienacao?: number }, folhas: number, primeiroImovel: boolean) {
+function registroFinanciamento(m: Municipio, atos: { compra?: number; alienacao?: number }, folhas: number, reducao?: string) {
   const lista: { rotulo: string; base: number }[] = [];
   if (atos.compra !== undefined) lista.push({ rotulo: 'Ato de registro · compra e venda', base: atos.compra });
   if (atos.alienacao !== undefined) lista.push({ rotulo: 'Ato de registro · alienação fiduciária', base: atos.alienacao });
-  return linhaRegistro(lista, { iss: m.issCartorio, folhas, reducao: primeiroImovel ? 0.5 : 0, notaReducao: '1º imóvel no SFH: 50%' });
+  return linhaRegistro(lista, { iss: m.issCartorio, folhas, reducao: reducao ? 0.5 : 0, notaReducao: reducao });
+}
+
+/** Nota da redução de 50% no registro, ou undefined quando não há: MCMV sempre; SBPE só no 1º imóvel; fora do SFH, nunca. */
+function reducaoSfh(modalidade: string, sfh: boolean, primeiroImovel: boolean) {
+  if (!sfh) return undefined;
+  if (modalidade === 'MCMV') return 'MCMV: 50%';
+  return primeiroImovel ? '1º imóvel no SFH: 50%' : undefined;
 }
 
 export const entradaCaixa = z.object({
@@ -69,9 +76,9 @@ export function calcularCaixa(dados: EntradaCaixa): Resultado {
   const pedeSfh = e.modalidade === 'SBPE' || e.modalidade === 'MCMV';
   const sfh = pedeSfh && base <= TETO_SFH;
   const registro =
-    e.modalidade === 'EGI' ? registroFinanciamento(m, { alienacao: fin }, e.folhasContrato, false)
-    : e.modalidade === 'FGTS' ? registroFinanciamento(m, { compra: base }, e.folhasContrato, false)
-    : registroFinanciamento(m, { compra: base, alienacao: fin }, e.folhasContrato, sfh && e.primeiroImovel);
+    e.modalidade === 'EGI' ? registroFinanciamento(m, { alienacao: fin }, e.folhasContrato)
+    : e.modalidade === 'FGTS' ? registroFinanciamento(m, { compra: base }, e.folhasContrato)
+    : registroFinanciamento(m, { compra: base, alienacao: fin }, e.folhasContrato, reducaoSfh(e.modalidade, sfh, e.primeiroImovel));
 
   const linhas: Linha[] = [
     { rotulo: 'Taxa Caixa', valor: taxa, origem: 'banco', nota: e.modalidade },
@@ -105,7 +112,7 @@ export function calcularBancoPrivado(dados: EntradaBancoPrivado): Resultado {
   const linhas: Linha[] = [
     { rotulo: 'Tarifa de contrato', valor: TARIFA_BANCO[e.banco], origem: 'banco', nota: e.banco },
     linhaItbi(m, base, fin, sbpe),
-    registroFinanciamento(m, { compra: base, alienacao: fin }, e.folhasContrato, sbpe && base <= TETO_SFH && e.primeiroImovel),
+    registroFinanciamento(m, { compra: base, alienacao: fin }, e.folhasContrato, reducaoSfh(e.modalidade, sbpe && base <= TETO_SFH, e.primeiroImovel)),
     { rotulo: 'Certidões', valor: e.certidoes, origem: 'usuario' },
     { rotulo: 'Honorários', valor: e.honorarios, origem: 'usuario' },
   ];
