@@ -118,7 +118,7 @@ Enquanto o pagamento (Asaas) não está integrado, ative à mão:
    ```
 4. Do WhatsApp cadastrado, mande ao número do agente: *"escritura de 350 mil"*.
 
-> Esperado: resposta com **Total: R$ 18.743,68**, o número do cálculo e o orçamento anexado (PDF ou imagem, conforme a conta). O cálculo aparece em `calculations` com `origem = 'whatsapp'`.
+> Esperado: resposta com **Total: R$ 18.743,56**, o número do cálculo e o orçamento anexado (PDF ou imagem, conforme a conta). O cálculo aparece em `calculations` com `origem = 'whatsapp'`.
 
 Outros testes: *"detalha o registro"*; *"exportar 2026-10"*; mensagem de um número não cadastrado (deve receber o link de cadastro).
 

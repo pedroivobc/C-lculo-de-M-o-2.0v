@@ -6,7 +6,7 @@ describe('cálculos de referência', () => {
   it('escritura compra e venda simples', () => {
     const r = calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 350000 });
     expect(r.bases).toEqual([350000]); // a base é o valor declarado
-    expect(r.total).toBe(18743.68);
+    expect(r.total).toBe(18743.56);
     expect(r.linhas.find((l) => l.rotulo === 'ITBI')).toMatchObject({ valor: 7000, origem: 'municipio' });
   });
 
@@ -27,7 +27,7 @@ describe('cálculos de referência', () => {
 
   it('doação simples (tela de Doação)', () => {
     const r = calcular('doacao', { subtipo: 'doacao_simples', valorAtribuido: 280000, avaliacaoFazenda: 300000 });
-    expect(r.total).toBe(19243.68);
+    expect(r.total).toBe(19243.56);
   });
 
   it('ITCD sobe para 5% acima de R$ 440 mil', () => {
@@ -43,7 +43,7 @@ describe('cálculos de referência', () => {
 
   it('aceita números vindos como texto (agente/API)', () => {
     const r = calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: '350000' });
-    expect(r.total).toBe(18743.68);
+    expect(r.total).toBe(18743.56);
   });
 
   it('recusa município ainda não atendido', () => {
@@ -76,7 +76,7 @@ describe('cálculos de referência', () => {
 
   it('alíquota igual à da prefeitura não muda a origem', () => {
     const r = calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 350000, itbiPercentual: 2 });
-    expect(r.total).toBe(18743.68);
+    expect(r.total).toBe(18743.56);
     expect(r.linhas.find((l) => l.rotulo === 'ITBI')!.origem).toBe('municipio');
   });
 
@@ -112,11 +112,18 @@ describe('cálculos de referência', () => {
     expect(reg.valor).toBe(5110.00);
   });
 
+  it('escritura igual ao orçamento do cartório de notas (base R$ 472.489,30, 25 folhas)', () => {
+    const r = calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 472489.30, folhas: 25 });
+    const escritura = r.linhas.find((l) => l.rotulo === 'Escritura')!;
+    expect(escritura.detalhes!.map((d) => d.valor)).toEqual([5677.79, 347.63]);
+    expect(escritura.valor).toBe(6025.42);
+  });
+
   it('escritura = lavratura + arquivamento, com o detalhamento', () => {
     const r = calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 350000});
     const esc = r.linhas.find((l) => l.rotulo === 'Escritura')!;
     expect(esc.detalhes!.map((d) => d.rotulo)).toEqual(['Lavratura', 'Arquivamento']);
-    expect(esc.valor).toBe(5050.25 + 347.75);
+    expect(esc.valor).toBe(5397.88); // 5.050,25 + 347,63
     expect(r.linhas.some((l) => l.rotulo === 'Lavratura' || l.rotulo === 'Arquivamento')).toBe(false);
   });
 

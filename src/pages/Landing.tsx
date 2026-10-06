@@ -159,8 +159,8 @@ export default function Landing() {
               <div className="max-w-[82%] self-end rounded-2xl rounded-br-[4px] bg-acao px-3.5 py-2.5">Escritura de um apê de 350 mil</div>
               <div className="flex max-w-[88%] flex-col gap-1.5 self-start rounded-2xl rounded-bl-[4px] bg-white px-3.5 py-3 text-tinta">
                 <span>Compra e venda · base <strong>R$ 350.000,00</strong></span>
-                <span className="numero whitespace-pre-line text-texto">{'ITBI: R$ 7.000,00\nEscritura: R$ 5.398,00\nRegistro: R$ 5.245,68\nCertidões e honorários: R$ 1.100,00'}</span>
-                <span className="display text-xl font-black">Total: <span className="marca-texto">R$ 18.743,68</span></span>
+                <span className="numero whitespace-pre-line text-texto">{'ITBI: R$ 7.000,00\nEscritura: R$ 5.397,88\nRegistro: R$ 5.245,68\nCertidões e honorários: R$ 1.100,00'}</span>
+                <span className="display text-xl font-black">Total: <span className="marca-texto">R$ 18.743,56</span></span>
               </div>
               <div className="flex items-center gap-2.5 self-start rounded-xl bg-white px-3.5 py-2.5 text-tinta">
                 <span className="rounded-md bg-minas-claro p-1.5 text-[11px] font-extrabold text-minas-texto">PDF</span><span className="font-semibold">orcamento-0142.pdf</span>

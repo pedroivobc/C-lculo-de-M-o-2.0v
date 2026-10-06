@@ -74,6 +74,18 @@ export function atoDeRegistro(base: number, iss = ISS_PADRAO): { codigo: string;
   return { codigo: `${codigo} + ${excedentes}× 4552`, valor: centavos(valorDoAto(ultima, iss) + excedentes * valorDoAto(FAIXA_EXCEDENTE, iss)) };
 }
 
+/**
+ * Emolumentos brutos e TFJ de um ato com conteúdo financeiro pela base, somando as faixas excedentes acima de R$ 3,7 mi.
+ * As faixas da Tabela 1 (escritura, 4-b) têm os mesmos valores das da Tabela 4 (registro, 5-e).
+ */
+export function faixaComValor(base: number): { bruto: number; tfj: number } {
+  const faixa = REGISTRO_COM_VALOR.find(([teto]) => base <= teto);
+  if (faixa) return faixa[2];
+  const ultima = REGISTRO_COM_VALOR[REGISTRO_COM_VALOR.length - 1][2];
+  const excedentes = Math.min(100, Math.ceil((base - 3700000) / 500000));
+  return { bruto: centavos(ultima.bruto + excedentes * FAIXA_EXCEDENTE.bruto), tfj: ultima.tfj };
+}
+
 const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 /**

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { obterMunicipio, camposLocalidade, percentual } from './municipios';
 import { MG, aliquotaItcd } from './uf';
+import { arquivamento, lavratura, precoFolha } from './notas';
 import { linhaRegistro } from './registro';
 import { Detalhe, Linha, Resultado, somar } from './tipos';
 
@@ -39,9 +40,9 @@ export const ROTULO_SUBTIPO_ESCRITURA: Record<EntradaEscritura['subtipo'], strin
 const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 /** Linha "Escritura" do tabelionato: lavratura(s) + arquivamento, com o detalhamento. */
-export function linhaEscritura(lavraturas: { rotulo: string; base: number }[], folhas: number): Linha {
-  const detalhes: Detalhe[] = lavraturas.map((l) => ({ rotulo: l.rotulo, valor: MG.lavratura(l.base), nota: `Tabelionato de notas · base ${brl(l.base)}` }));
-  detalhes.push({ rotulo: 'Arquivamento', valor: Math.round(folhas * MG.precoFolha * 100) / 100, nota: `${folhas} folhas × R$ 13,91` });
+export function linhaEscritura(lavraturas: { rotulo: string; base: number }[], folhas: number, iss: number): Linha {
+  const detalhes: Detalhe[] = lavraturas.map((l) => ({ rotulo: l.rotulo, valor: lavratura(l.base, iss), nota: `Tabelionato de notas · base ${brl(l.base)}` }));
+  detalhes.push({ rotulo: 'Arquivamento', valor: arquivamento(folhas, iss), nota: `${folhas} folhas × ${brl(precoFolha(iss))}` });
   return {
     rotulo: 'Escritura',
     valor: Math.round(detalhes.reduce((s, d) => s + d.valor, 0) * 100) / 100,
@@ -67,7 +68,7 @@ export function calcularEscritura(dados: EntradaEscritura): Resultado {
       const base = e.valorDeclarado;
       bases = [base];
       itbi(base);
-      linhas.push(linhaEscritura([{ rotulo: 'Lavratura', base }], e.folhas));
+      linhas.push(linhaEscritura([{ rotulo: 'Lavratura', base }], e.folhas, iss));
       linhas.push(linhaRegistro([{ rotulo: 'Ato de registro · compra e venda', base }], { iss }));
       break;
     }
@@ -76,7 +77,7 @@ export function calcularEscritura(dados: EntradaEscritura): Resultado {
       const b2 = e.valorDeclarado2;
       bases = [b1, b2];
       itbi(b1, '1º ato'); itbi(b2, '2º ato');
-      linhas.push(linhaEscritura([{ rotulo: 'Lavratura · 1º ato', base: b1 }, { rotulo: 'Lavratura · 2º ato', base: b2 }], e.folhas));
+      linhas.push(linhaEscritura([{ rotulo: 'Lavratura · 1º ato', base: b1 }, { rotulo: 'Lavratura · 2º ato', base: b2 }], e.folhas, iss));
       linhas.push(linhaRegistro([{ rotulo: 'Ato de registro · 1º ato', base: b1 }, { rotulo: 'Ato de registro · 2º ato', base: b2 }], { iss }));
       break;
     }
@@ -85,7 +86,7 @@ export function calcularEscritura(dados: EntradaEscritura): Resultado {
       const bv = e.valorVinculo;
       bases = [bc, bv];
       itbi(bc, 'compra');
-      linhas.push(linhaEscritura([{ rotulo: 'Lavratura · compra', base: bc }, { rotulo: 'Lavratura · vínculo', base: bv }], e.folhas));
+      linhas.push(linhaEscritura([{ rotulo: 'Lavratura · compra', base: bc }, { rotulo: 'Lavratura · vínculo', base: bv }], e.folhas, iss));
       linhas.push(linhaRegistro([{ rotulo: 'Ato de registro · compra', base: bc }, { rotulo: 'Ato de registro · vínculo', base: bv }], { iss }));
       break;
     }
@@ -116,7 +117,7 @@ export function atosDeDoacao(
     definirBases([base]);
     return [
       { rotulo: 'ITCD', valor: base * aliq, origem: 'uf', nota: `${(aliq * 100).toFixed(1).replace('.', ',')}% · MG` },
-      linhaEscritura([{ rotulo: 'Lavratura', base }], folhas),
+      linhaEscritura([{ rotulo: 'Lavratura', base }], folhas, iss),
       linhaRegistro([{ rotulo: 'Ato de registro · doação', base }], { iss }),
     ];
   }
@@ -126,7 +127,7 @@ export function atosDeDoacao(
     definirBases([base, bu]);
     return [
       { rotulo: 'ITCD', valor: base * MG.itcd.aliquotaCheia, origem: 'uf', nota: '5% · MG' },
-      linhaEscritura([{ rotulo: 'Lavratura · doação', base }, { rotulo: 'Lavratura · usufruto (1/3)', base: bu }], folhas),
+      linhaEscritura([{ rotulo: 'Lavratura · doação', base }, { rotulo: 'Lavratura · usufruto (1/3)', base: bu }], folhas, iss),
       linhaRegistro([{ rotulo: 'Ato de registro · doação', base }, { rotulo: 'Ato de registro · usufruto (1/3)', base: bu }], { iss }),
     ];
   }
@@ -134,7 +135,7 @@ export function atosDeDoacao(
   definirBases([base]);
   return [
     { rotulo: 'ITCD', valor: 0, origem: 'uf', nota: 'Isento' },
-    linhaEscritura([{ rotulo: 'Lavratura', base }], folhas),
+    linhaEscritura([{ rotulo: 'Lavratura', base }], folhas, iss),
     linhaRegistro([{ rotulo: 'Cancelamento do usufruto (1/3)', base: bu, cancelamento: true }], { iss, rotulo: 'Registro (averbação)' }),
   ];
 }
