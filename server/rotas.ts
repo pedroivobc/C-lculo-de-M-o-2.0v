@@ -56,7 +56,7 @@ rotas.get('/api/agente/identificar', exigirAgente, h(async (req, res) => {
   const telefone = normalizarTelefone(String(req.query.whatsapp ?? ''));
   if (!telefone) return res.status(400).json({ erro: 'Telefone inválido' });
   const a = await identificar(telefone);
-  res.json(a ? { status: a.ativo ? 'ativo' : 'inativo', nome: a.nome, userId: a.userId } : { status: 'sem_cadastro' });
+  res.json(a ? { status: a.ativo ? 'ativo' : 'inativo', motivo: a.motivo, papel: a.papel, nome: a.nome, userId: a.userId } : { status: 'sem_cadastro' });
 }));
 
 // ---------------- Verificação do WhatsApp ----------------

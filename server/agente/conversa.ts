@@ -15,12 +15,17 @@ export interface MensagemRecebida {
   midia?: { base64: string; mimetype: string };
 }
 
+export type MotivoAcesso = 'ok' | 'trial' | 'sem_cartao' | 'trial_expirado' | 'assinatura_inativa' | 'sem_perfil';
+
 export interface Assinante {
   userId: string;
   nome: string | null;
   municipio: string;
   cabecalhoPdf: string | null;
+  papel: 'admin' | 'pro' | 'usuario' | 'trial';
+  /** Regra única do banco (situacao_acesso): cartão validado + trial no prazo ou assinatura ativa; admin sempre. */
   ativo: boolean;
+  motivo: MotivoAcesso;
 }
 
 export async function identificar(telefone: string): Promise<Assinante | null> {
@@ -31,13 +36,22 @@ export async function identificar(telefone: string): Promise<Assinante | null> {
     .not('whatsapp_verified_at', 'is', null)
     .limit(1).maybeSingle();
   if (!perfil) return null;
-  const { data: assinatura } = await db.from('subscriptions')
-    .select('status, current_period_end')
-    .eq('user_id', perfil.id).eq('status', 'ativa')
-    .order('current_period_end', { ascending: false }).limit(1).maybeSingle();
-  const ativo = !!assinatura && (!assinatura.current_period_end || new Date(assinatura.current_period_end) > new Date());
-  return { userId: perfil.id, nome: perfil.full_name, municipio: perfil.municipio_padrao, cabecalhoPdf: perfil.pdf_header, ativo };
+  const { data: situacao, error } = await db.rpc('situacao_acesso', { uid: perfil.id }).maybeSingle<{ papel: Assinante['papel']; liberado: boolean; motivo: MotivoAcesso }>();
+  if (error) throw new Error(`Falha ao consultar o acesso: ${error.message}`);
+  return {
+    userId: perfil.id, nome: perfil.full_name, municipio: perfil.municipio_padrao, cabecalhoPdf: perfil.pdf_header,
+    papel: situacao?.papel ?? 'trial', ativo: !!situacao?.liberado, motivo: situacao?.motivo ?? 'sem_perfil',
+  };
 }
+
+const MENSAGEM_BLOQUEIO: Record<MotivoAcesso, (url: string) => string> = {
+  ok: () => '',
+  trial: () => '',
+  sem_cartao: (u) => `Para usar o ${config.marca}, cadastre um cartão de crédito na sua conta (mesmo que vá pagar no Pix): ${u}/app/conta`,
+  trial_expirado: (u) => `Seus 3 dias de teste do ${config.marca} terminaram. Assine em ${u}/assinar e eu volto a calcular na hora.`,
+  assinatura_inativa: (u) => `Sua assinatura do ${config.marca} não está ativa. Renove em ${u}/assinar e eu volto a calcular na hora.`,
+  sem_perfil: (u) => `Não encontrei sua conta. Entre em ${u}/entrar.`,
+};
 
 function instrucoes(a: Assinante) {
   const cidade = MUNICIPIOS[a.municipio]?.nome ?? a.municipio;
@@ -98,8 +112,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   }
   if (!assinante.ativo) {
     await registrar(msg.telefone, assinante.userId, 'entrada', 'texto', msg.texto ?? '', msg.messageId);
-    return { status: 'inativo', respostas: [{ tipo: 'texto', texto:
-      `Sua assinatura do ${config.marca} não está ativa. Renove em ${config.appUrl}/assinar e eu volto a calcular na hora.` }] };
+    return { status: assinante.motivo, respostas: [{ tipo: 'texto', texto: MENSAGEM_BLOQUEIO[assinante.motivo](config.appUrl) }] };
   }
 
   let textoUsuario = msg.texto?.trim() ?? '';

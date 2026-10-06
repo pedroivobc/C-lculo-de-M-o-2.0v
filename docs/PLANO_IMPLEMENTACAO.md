@@ -2,7 +2,8 @@
 
 > **Status (out/2026)** — feito: fórmulas extraídas para `src/lib/calc/` com testes de referência; esquema novo do Supabase (`supabase/migrations/`); API com o agente do WhatsApp (Gemini com ferramentas), verificação do número, histórico, PDF e exportação CSV; Docker Compose com Evolution API + n8n; workflow do n8n; chave do Gemini fora do navegador; perfis não são mais públicos. Passo a passo para subir: [SETUP.md](SETUP.md).
 > Feito também: front novo com a identidade Orçaí (landing com calculadora ao vivo, cadastro com confirmação do WhatsApp, 7 calculadoras com o orçamento picotado, histórico com exportação, agente e conta), web e celular, usando a mesma lib de cálculo do servidor.
-> Falta: pagamento (Asaas ou Mercado Pago) e webhook de assinatura — por enquanto a ativação é manual e o app não bloqueia sem assinatura (`VITE_EXIGIR_ASSINATURA`); verificar INPI, domínio (orcai.com.br) e @ antes de lançar.
+> Feito também: perfis admin/pro/usuario/trial e cartão obrigatório no banco (`supabase/migrations/20261006000000_perfis_e_acesso.sql`); o agente já respeita a regra.
+> Falta: pagamento (Asaas ou Mercado Pago) com tokenização do cartão e webhook de assinatura; telas de cartão, upload de logo/cores do Pro e painel admin; PDF do Pro com logo e paleta — por enquanto a ativação é manual e o app não bloqueia sem assinatura (`VITE_EXIGIR_ASSINATURA`); verificar INPI, domínio (orcai.com.br) e @ antes de lançar.
 
 Design de referência (web e mobile, todas as telas): canvas **Orçaí Imob** no claude.ai (páginas Marca, Web e Mobile).
 

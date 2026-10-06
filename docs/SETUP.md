@@ -8,18 +8,34 @@ O projeto antigo foi pausado por inatividade. Dois caminhos:
 
 **A. Restaurar o projeto pausado** (se ainda aparecer no painel)
 1. Entre em supabase.com/dashboard, abra o projeto e clique em **Restore project**. Projetos gratuitos pausados podem ser restaurados por um período limitado; depois disso o painel oferece só o download do backup.
-2. Depois de restaurado, abra **SQL Editor** e rode `supabase/migrations/20261005000000_schema_inicial.sql`.
+2. Depois de restaurado, abra **SQL Editor** e rode, nesta ordem, `supabase/migrations/20261005000000_schema_inicial.sql` e `supabase/migrations/20261006000000_perfis_e_acesso.sql`.
    - Se as tabelas antigas (`profiles`, `calculations`…) ainda existirem com o formato antigo, a migração vai falhar nelas. Como o projeto era de testes, o mais simples é apagar as tabelas antigas antes (`drop table if exists public.calculations, public.api_keys, public.invites, public.orders, public.profiles cascade;`). Se houver dados que você quer manter, exporte antes.
 
 **B. Criar um projeto novo** (recomendado se o antigo não volta ou só tinha testes)
 1. New project → região **South America (São Paulo)**.
-2. **SQL Editor** → cole e rode `supabase/migrations/20261005000000_schema_inicial.sql`.
+2. **SQL Editor** → cole e rode, nesta ordem, `supabase/migrations/20261005000000_schema_inicial.sql` e `supabase/migrations/20261006000000_perfis_e_acesso.sql`.
 
 Nos dois casos:
 3. **Authentication → Providers → Email**: habilite. Em **URL Configuration**, coloque o domínio do app em *Site URL*.
 4. **Project Settings → API**: copie `Project URL`, `anon key` e `service_role key`.
 
-> Teste: em **Table Editor** aparecem `municipios` (com Juiz de Fora), `profiles`, `subscriptions`, `calculations`, `phone_verifications`, `whatsapp_messages`, `pedidos_cidade`. Em **Storage**, os buckets `orcamentos` (privado) e `avatars`.
+> Teste: em **Table Editor** aparecem `municipios` (com Juiz de Fora), `profiles`, `subscriptions`, `cartoes`, `calculations`, `phone_verifications`, `whatsapp_messages`, `pedidos_cidade`. Em **Storage**, os buckets `orcamentos` e `logos` (privados) e `avatars`.
+
+### Perfis de acesso
+
+| Perfil | Como vira | O que pode |
+|---|---|---|
+| `admin` | à mão, no SQL Editor | tudo; não precisa de cartão nem assinatura |
+| `pro` | assinatura ativa com `nivel = 'pro'` | usar o sistema; orçamento com a própria logo e cores |
+| `usuario` | assinatura ativa com `nivel = 'usuario'` | usar o sistema; orçamento com a marca Orçaí |
+| `trial` | todo cadastro novo | 3 dias a partir da validação do cartão |
+
+Todos menos o admin precisam de um cartão validado no gateway (tabela `cartoes`, só com o token do gateway — nunca o número), mesmo pagando no Pix. A regra fica numa função só, `situacao_acesso(uid)`, usada pelo banco (RLS), pela API e pelo agente. O papel acompanha a assinatura sozinho (trigger).
+
+Primeiro admin, depois de criar a sua conta pelo site:
+```sql
+update profiles set papel = 'admin' where email = 'seu-email@exemplo.com';
+```
 
 Para evitar nova pausa por inatividade no plano gratuito: o próprio uso diário do agente já mantém o projeto ativo; com clientes pagando, vale o plano Pro.
 
@@ -82,10 +98,15 @@ Enquanto o pagamento (Asaas) não está integrado, ative à mão:
    ```sql
    update profiles set whatsapp_e164 = '+5532999990000', whatsapp_verified_at = now() where email = 'voce@exemplo.com';
    ```
-3. Ative a assinatura:
+3. Enquanto o gateway não está integrado, simule um cartão validado (sem isso o acesso fica bloqueado):
    ```sql
-   insert into subscriptions (user_id, plan, status, current_period_end)
-   select id, 'anual', 'ativa', now() + interval '1 year' from profiles where email = 'voce@exemplo.com';
+   insert into cartoes (user_id, gateway, gateway_customer_id, gateway_cartao_token, bandeira, ultimos4, validade_mes, validade_ano, verificado_em)
+   select id, 'asaas', 'teste', 'teste-' || id, 'visa', '4242', 12, 2030, now() from profiles where email = 'voce@exemplo.com';
+   ```
+   Só com isso a conta já entra no teste de 3 dias. Para testar como assinante:
+   ```sql
+   insert into subscriptions (user_id, plan, nivel, status, forma_pagamento, current_period_end)
+   select id, 'anual', 'usuario', 'ativa', 'pix', now() + interval '1 year' from profiles where email = 'voce@exemplo.com';
    ```
 4. Do WhatsApp cadastrado, mande ao número do agente: *"escritura de 320 mil, venal 350 mil"*.
 
