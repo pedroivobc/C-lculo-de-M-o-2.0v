@@ -34,12 +34,27 @@ export function tituloDoDocumento(r: Resultado) {
   return base;
 }
 
-export function linhaDeContexto(r: Resultado, brl: (n: number) => string) {
+export function linhaDeContexto(r: Resultado, brl: (n: number) => string, semCidade = false) {
   const partes: string[] = [];
-  if (r.municipioNome && r.municipio !== 'n/a') partes.push(`Imóvel em ${r.municipioNome} (MG)`);
+  if (!semCidade && r.municipioNome && r.municipio !== 'n/a') partes.push(`Imóvel em ${r.municipioNome} (MG)`);
   if (r.bases.length) partes.push(`Base de cálculo ${r.bases.map(brl).join(' + ')}`);
   return partes.join(' · ');
 }
+
+/** Nome · WhatsApp · e-mail do assinante (plano Pró). Vazio quando não há contato. */
+export function linhaDeContato(estilo: Pick<Estilo, 'contato'>): string {
+  const c = estilo.contato;
+  return c ? [c.nome, c.whatsapp, c.email].filter(Boolean).join('  ·  ') : '';
+}
+
+/** "Imóvel: Rua Halfeld, 100 · Juiz de Fora (MG)", quando o assinante colocou o endereço. */
+export function linhaDoEndereco(r: Resultado, endereco: string) {
+  const cidade = r.municipioNome && r.municipio !== 'n/a' ? ` · ${r.municipioNome} (MG)` : '';
+  return `Imóvel: ${endereco}${cidade}`;
+}
+
+/** Dados do orçamento além do cálculo: número, data e, se o assinante quis, o endereço do imóvel. */
+export interface MetaOrcamento { numero: string; data: Date; endereco?: string }
 
 /** Faixa do total: tinta na marca Orçaí; a cor do assinante quando personalizado. Texto branco ou tinta, pelo contraste. */
 export function coresDoTotal(estilo: Estilo): { fundo: string; texto: string } {

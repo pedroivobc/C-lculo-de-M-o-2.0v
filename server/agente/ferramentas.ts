@@ -24,7 +24,7 @@ const num = { type: 'number' };
 const custos = {
   certidoes: { ...num, description: 'Certidões em reais. Omitir para usar o padrão do assinante.' },
   honorarios: { ...num, description: 'Honorários em reais. Omitir para usar o padrão do assinante.' },
-  descricao: { type: 'string', description: 'Referência curta do imóvel (ex.: bairro ou "apto Centro"), se o usuário informar. Nunca nome, CPF, telefone ou e-mail de pessoas.' },
+  descricao: { type: 'string', description: 'Endereço do imóvel para aparecer no orçamento, só se o usuário pedir. Nunca nome, CPF, telefone ou e-mail de pessoas.' },
   municipio: { type: 'string', enum: ['mg-juiz-de-fora', 'mg-belo-horizonte', 'mg-outra'], description: 'Omitir para usar a cidade do assinante. "mg-outra" = cidade de MG sem regra cadastrada (exige cidade e itbiPercentual).' },
   cidade: { type: 'string', description: 'Nome da cidade quando municipio = "mg-outra".' },
   itbiPercentual: { type: 'number', description: 'Alíquota do ITBI em % (ex.: 2.5). Só quando o usuário informar.' },

@@ -2,7 +2,7 @@
 
 > Gerado por `npx tsx scripts/modelo-whatsapp.ts <pasta>` a partir do motor real (`server/agente/menu.ts`).
 
-## Escritura de compra e venda simples, recebendo em mensagem escrita
+## Escritura de compra e venda simples, com endereço, recebendo em mensagem escrita
 
 **🧑 Corretor:** Oi
 
@@ -75,6 +75,36 @@ _Pode digitar só os números: 350000 vira R$ 350.000,00_
 ```
 ✅ Valor do imóvel: *R$ 350.000,00*
 
+*Endereço do imóvel*
+Quer colocar o endereço do imóvel no orçamento?
+
+1️⃣ Sim
+2️⃣ Não
+
+0️⃣ Voltar ao menu anterior
+
+_Responda com o número da opção._
+```
+
+**🧑 Corretor:** 1
+
+**🤖 Orçaí:**
+
+```
+*Endereço do imóvel*
+Digite o endereço como quer que apareça no orçamento.
+_Ex.: Rua Halfeld, 100, apto 201 · Centro_
+
+0️⃣ Voltar ao menu anterior
+```
+
+**🧑 Corretor:** Rua Halfeld, 100, apto 201 · Centro
+
+**🤖 Orçaí:**
+
+```
+✅ Endereço: *Rua Halfeld, 100, apto 201 · Centro*
+
 Certidões: *R$ 400,00*
 Honorários: *R$ 700,00*
 _Para mudar só neste orçamento, escreva_ *honorarios 900* _ou_ *certidoes 350*
@@ -126,7 +156,7 @@ Quer fazer mais alguma coisa?
 _Responda com o número da opção._
 ```
 
-## Financiamento Caixa SBPE com cota de 80%, recebendo em imagem
+## Financiamento Caixa SBPE com cota de 80%, sem endereço, trocando os honorários e recebendo em imagem
 
 **🧑 Corretor:** Bom dia
 
@@ -235,8 +265,46 @@ _Responda com o número da opção._
 ```
 ✅ Primeiro imóvel: *Sim*
 
+*Endereço do imóvel*
+Quer colocar o endereço do imóvel no orçamento?
+
+1️⃣ Sim
+2️⃣ Não
+
+0️⃣ Voltar ao menu anterior
+
+_Responda com o número da opção._
+```
+
+**🧑 Corretor:** 2
+
+**🤖 Orçaí:**
+
+```
 Certidões: *R$ 260,07*
 Honorários: *R$ 700,00*
+_Para mudar só neste orçamento, escreva_ *honorarios 900* _ou_ *certidoes 350*
+
+*Como você quer receber o orçamento?*
+
+1️⃣ Imagem (foto) · seu padrão
+2️⃣ PDF
+3️⃣ Mensagem escrita
+
+0️⃣ Voltar ao menu anterior
+
+_Responda com o número da opção._
+```
+
+**🧑 Corretor:** honorarios 900
+
+**🤖 Orçaí:**
+
+```
+✅ Honorários deste orçamento: *R$ 900,00*
+
+Certidões: *R$ 260,07*
+Honorários: *R$ 900,00*
 _Para mudar só neste orçamento, escreva_ *honorarios 900* _ou_ *certidoes 350*
 
 *Como você quer receber o orçamento?*
@@ -255,7 +323,7 @@ _Responda com o número da opção._
 **🤖 Orçaí:**
 
 ```
-📎 orcamento-0143.jpg · Orçamento #0143 · Total R$ 19.259,87
+📎 orcamento-0143.jpg · Orçamento #0143 · Total R$ 19.459,87
 ```
 
 **🤖 Orçaí:**

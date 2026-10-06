@@ -48,7 +48,8 @@ describe('menu do WhatsApp', () => {
     for (const [id, f] of Object.entries(FLUXOS)) {
       const respostas = f.perguntas.map((q) => RESPOSTA[q.tipo]);
       if (f.perguntas.some((q) => q.campo === 'valorFinanciado')) respostas[1] = '280 mil';
-      const p = conversa('oi', ...caminhoAte(id), ...respostas, '2');
+      const endereco = f.calculo === 'correcao' ? [] : ['2']; // "Não" para o endereço
+      const p = conversa('oi', ...caminhoAte(id), ...respostas, ...endereco, '2');
       expect(p.acao, id).toMatchObject({ tipo: 'calcular', calculo: f.calculo, formato: 'pdf' });
       const acao = p.acao;
       if (acao?.tipo !== 'calcular') continue;
@@ -58,14 +59,15 @@ describe('menu do WhatsApp', () => {
   });
 
   it('escritura simples de R$ 350 mil sai com o total de referência', () => {
-    const p = conversa('oi', '1', '1', '1', '350.000,00', '3');
+    const p = conversa('oi', '1', '1', '1', '350.000,00', '2', '3');
     expect(p.acao).toMatchObject({ tipo: 'calcular', formato: 'texto', dados: { subtipo: 'compra_venda_simples', valorDeclarado: 350000 } });
     if (p.acao?.tipo === 'calcular') expect(calcular('escritura', p.acao.dados).total).toBe(18743.56);
   });
 
   it('mostra cada valor entendido em reais', () => {
     expect(conversa('oi', '2', '1', '1', '400000').mensagens[0].texto).toMatch(/^✅ Valor do imóvel: \*R\$\s400\.000,00\*/);
-    expect(conversa('oi', '1', '1', '1', '350000').mensagens[0].texto).toMatch(/^✅ Valor do imóvel: \*R\$\s350\.000,00\*\n\nCertidões: \*R\$\s400,00\*\nHonorários: \*R\$\s700,00\*/);
+    expect(conversa('oi', '1', '1', '1', '350000').mensagens[0].texto).toMatch(/^✅ Valor do imóvel: \*R\$\s350\.000,00\*\n\n\*Endereço do imóvel\*/);
+    expect(conversa('oi', '1', '1', '1', '350000', '2').mensagens[0].texto).toMatch(/^Certidões: \*R\$\s400,00\*\nHonorários: \*R\$\s700,00\*/);
     expect(conversa('oi', '1', '2', '1', '350000', 'não sei').mensagens[0].texto).toContain('✅ Avaliação da Fazenda: *ainda não tem*');
   });
 
@@ -102,8 +104,20 @@ describe('menu do WhatsApp', () => {
     expect(conversa('escritura de 350 mil em JF').acao).toEqual({ tipo: 'livre' });
   });
 
+  it('pergunta antes se quer o endereço do imóvel e leva o texto para o orçamento', () => {
+    const base = ['oi', '1', '1', '1', '350000'];
+    expect(conversa(...base, '1').mensagens[0].texto).toContain('Digite o endereço');
+    expect(conversa(...base, '1', '1').mensagens[0].texto).toContain('Escreva o endereço com rua e número');
+    expect(conversa(...base, '1', '0').estado).toMatchObject({ tela: 'endereco', etapa: 'pergunta' });
+    const p = conversa(...base, '1', 'Rua Halfeld, 100, apto 201 · Centro');
+    expect(p.mensagens[0].texto).toMatch(/^✅ Endereço: \*Rua Halfeld, 100, apto 201 · Centro\*/);
+    expect(passo(p.estado, '3', ctx).acao).toMatchObject({ tipo: 'calcular', endereco: 'Rua Halfeld, 100, apto 201 · Centro' });
+    expect(conversa(...base, '2', '3').acao).toMatchObject({ tipo: 'calcular', endereco: undefined });
+    expect(conversa(...base, '2', '0').estado).toMatchObject({ tela: 'endereco', etapa: 'pergunta' });
+  });
+
   it('depois do orçamento, permite receber em outro formato', () => {
-    let p = conversa('oi', '1', '1', '1', '350000', '1');
+    let p = conversa('oi', '1', '1', '1', '350000', '2', '1');
     const estado = { ...p.estado, ultimo: 143 } as Estado;
     p = passo(estado, '2', ctx);
     expect(p.estado).toMatchObject({ tela: 'formato', reenvio: true });
@@ -121,13 +135,13 @@ describe('certidões e honorários no WhatsApp', () => {
   };
 
   it('mostra os valores padrão do assinante antes de escolher o formato', () => {
-    const p = rodar(comPadrao, 'oi', '1', '1', '1', '350000');
+    const p = rodar(comPadrao, 'oi', '1', '1', '1', '350000', '2');
     expect(p.mensagens[0].texto).toMatch(/Certidões: \*R\$\s350,00\*\nHonorários: \*R\$\s900,00\*/);
     expect(p.mensagens[0].texto).toContain('*honorarios 900*');
   });
 
   it('"honorarios 1200" troca só neste orçamento e entra no cálculo', () => {
-    const p = rodar(comPadrao, 'oi', '1', '1', '1', '350000', 'honorarios 1.200');
+    const p = rodar(comPadrao, 'oi', '1', '1', '1', '350000', '2', 'honorarios 1.200');
     expect(p.mensagens[0].texto).toMatch(/^✅ Honorários deste orçamento: \*R\$\s1\.200,00\*/);
     expect(p.mensagens[0].texto).toMatch(/Honorários: \*R\$\s1\.200,00\*/);
     const fim = passo(p.estado, '3', comPadrao);
@@ -136,12 +150,12 @@ describe('certidões e honorários no WhatsApp', () => {
   });
 
   it('o comando funciona no meio das perguntas e antes de escolher o tipo', () => {
-    const p = rodar(comPadrao, 'oi', 'certidoes 500', '2', '1', '1', '400000', '80%', '1');
+    const p = rodar(comPadrao, 'oi', 'certidoes 500', '2', '1', '1', '400000', '80%', '1', '2');
     expect(p.mensagens[0].texto).toMatch(/Certidões: \*R\$\s500,00\*\nHonorários: \*R\$\s800,00\*/);
   });
 
   it('"honorarios padrao" volta ao valor do assinante e sem valor explica o uso', () => {
-    const p = rodar(comPadrao, 'oi', '1', '1', '1', '350000', 'honorarios 1200', 'honorarios padrao');
+    const p = rodar(comPadrao, 'oi', '1', '1', '1', '350000', '2', 'honorarios 1200', 'honorarios padrao');
     expect(p.mensagens[0].texto).toMatch(/Honorários: \*R\$\s900,00\*/);
     expect(rodar(comPadrao, 'oi', 'honorarios').mensagens[0].texto).toContain('Ex.: *honorarios 900*');
   });

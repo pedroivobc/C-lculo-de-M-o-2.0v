@@ -168,7 +168,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
       const dados = p.acao.calculo === 'correcao' ? p.acao.dados
         : comCustos(p.acao.calculo, comLocalidade(p.acao.dados, assinante.configuracao.localidade), assinante.configuracao.custos);
       const resultado = calcular(p.acao.calculo, dados);
-      const salvo = await salvarCalculo({ userId: assinante.userId, resultado, entrada: dados, origem: 'whatsapp' });
+      const salvo = await salvarCalculo({ userId: assinante.userId, resultado, entrada: dados, origem: 'whatsapp', descricao: p.acao.endereco });
       respostas.push(...await entregar(salvo, p.acao.formato, estilo));
       estado = { ...estado, ultimo: salvo.seq };
     } else if (p.acao?.tipo === 'reenviar' || p.acao?.tipo === 'detalhar') {
@@ -197,7 +197,7 @@ async function responder(telefone: string, userId: string, status: string, respo
 
 /** O orçamento no formato pedido: imagem ou PDF (arquivo) ou mensagem escrita. */
 async function entregar(salvo: CalculoSalvo, formato: FormatoEntrega, estilo: Configuracao['estilo'], comDetalhes = false): Promise<Resposta[]> {
-  const meta = { numero: numeroCalculo(salvo.seq), data: new Date(salvo.created_at) };
+  const meta = { numero: numeroCalculo(salvo.seq), data: new Date(salvo.created_at), endereco: salvo.descricao ?? undefined };
   if (formato === 'texto') return [{ tipo: 'texto', texto: orcamentoEmTexto(salvo.resultado, meta, estilo, comDetalhes) }];
   const arquivo = await arquivoDoOrcamento(salvo, estilo, formato);
   return [{ tipo: 'documento', ...arquivo, legenda: `Orçamento ${meta.numero} · Total ${brl(salvo.resultado.total)}` }];

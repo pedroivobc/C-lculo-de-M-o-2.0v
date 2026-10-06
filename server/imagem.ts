@@ -3,7 +3,7 @@ import { brl, type Resultado } from '../src/lib/calc';
 import { config } from './config';
 import type { Estilo } from './estilo';
 import { ESTILO_PADRAO } from './pdf';
-import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContexto, lockupOrcaiSvg, SUAVE, TEXTO, TINTA, tituloDoDocumento } from './documento';
+import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContato, linhaDeContexto, linhaDoEndereco, lockupOrcaiSvg, SUAVE, TEXTO, TINTA, tituloDoDocumento, type MetaOrcamento } from './documento';
 
 const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const FONTE = `font-family="'DejaVu Sans', Arial, sans-serif"`;
@@ -12,7 +12,7 @@ const FONTE = `font-family="'DejaVu Sans', Arial, sans-serif"`;
  * Orçamento em imagem (JPEG, 1080 px de largura): o formato que circula melhor no WhatsApp.
  * Logo no topo, linhas sóbrias com as partes de Escritura e Registro, total numa faixa.
  */
-export async function gerarJpegOrcamento(r: Resultado, meta: { numero: string; data: Date }, estilo: Estilo = ESTILO_PADRAO): Promise<Buffer> {
+export async function gerarJpegOrcamento(r: Resultado, meta: MetaOrcamento, estilo: Estilo = ESTILO_PADRAO): Promise<Buffer> {
   const W = 1080, P = 72, D = W - P;
   const t: string[] = [];
   let y = P;
@@ -34,6 +34,11 @@ export async function gerarJpegOrcamento(r: Resultado, meta: { numero: string; d
   if (estilo.personalizado || estilo.logoPng) {
     y += 34;
     t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="24" font-weight="700" fill="${TINTA}">${esc(estilo.cabecalho)}</text>`);
+    const contato = linhaDeContato(estilo);
+    if (contato) {
+      y += 30;
+      t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="19" fill="${TEXTO}">${esc(contato)}</text>`);
+    }
   }
   y += 30;
   t.push(`<rect x="${P}" y="${y}" width="${D - P}" height="3" fill="${estilo.personalizado ? estilo.cor : TINTA}"/>`);
@@ -41,7 +46,12 @@ export async function gerarJpegOrcamento(r: Resultado, meta: { numero: string; d
   // Título e contexto.
   y += 70;
   t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="38" font-weight="700" fill="${TINTA}">${esc(tituloDoDocumento(r))}</text>`);
-  const contexto = linhaDeContexto(r, brl);
+  if (meta.endereco) {
+    y += 42;
+    const linha = linhaDoEndereco(r, meta.endereco);
+    t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="23" font-weight="700" fill="${TEXTO}">${esc(linha.length > 72 ? `${linha.slice(0, 71)}…` : linha)}</text>`);
+  }
+  const contexto = linhaDeContexto(r, brl, !!meta.endereco);
   if (contexto) {
     y += 40;
     t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="22" fill="${SUAVE}">${esc(contexto)}</text>`);

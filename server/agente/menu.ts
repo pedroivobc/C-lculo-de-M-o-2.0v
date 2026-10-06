@@ -155,7 +155,9 @@ const FORMATOS: { id: FormatoEntrega; rotulo: string }[] = [
 export type Tela =
   | { tela: 'menu'; id: string }
   | { tela: 'pergunta'; fluxo: string; i: number; dados: Record<string, unknown>; origem: string }
-  | { tela: 'formato'; fluxo?: string; dados?: Record<string, unknown>; origem?: string; reenvio?: boolean };
+  /** Pergunta se o corretor quer o endereço do imóvel no orçamento e, se sim, pede o texto. */
+  | { tela: 'endereco'; etapa: 'pergunta' | 'digitar'; fluxo: string; dados: Record<string, unknown>; origem: string }
+  | { tela: 'formato'; fluxo?: string; dados?: Record<string, unknown>; origem?: string; reenvio?: boolean; endereco?: string };
 
 export type Estado = Tela & {
   /** Número (seq) do último orçamento feito nesta conversa. */
@@ -167,7 +169,7 @@ export type Estado = Tela & {
 export interface MensagemMenu { texto: string; opcoes?: { id: string; titulo: string }[] }
 
 export type Acao =
-  | { tipo: 'calcular'; calculo: TipoCalculo; dados: Record<string, unknown>; formato: FormatoEntrega; titulo: string }
+  | { tipo: 'calcular'; calculo: TipoCalculo; dados: Record<string, unknown>; formato: FormatoEntrega; titulo: string; endereco?: string }
   | { tipo: 'reenviar'; seq: number; formato: FormatoEntrega }
   | { tipo: 'detalhar'; seq: number }
   /** Texto livre no menu inicial (ex.: "escritura de 350 mil"): vai para o agente com IA, se houver. */
@@ -281,7 +283,7 @@ function comoTexto(p: Pergunta, valor: unknown): string {
 
 /** Certidões e honorários que vão entrar no orçamento em andamento. */
 function custosEmUso(e: Estado, ctx: ContextoMenu): Custos | null {
-  if (e.tela !== 'formato' && e.tela !== 'pergunta') return null;
+  if (e.tela === 'menu') return null;
   if (e.tela === 'formato' && (e.reenvio || !e.fluxo)) return null;
   const f = FLUXOS[e.fluxo!];
   const base = custosDoCalculo(f.calculo, ctx.custosPadrao ?? null, e.dados ?? {});
@@ -298,10 +300,18 @@ const saudacao = (nome?: string | null) => `Olá${nome ? `, ${nome.split(' ')[0]
 
 // ---------------- Transições ----------------
 
+const EXEMPLO_ENDERECO = 'Rua Halfeld, 100, apto 201 · Centro';
+
+function telaEndereco(etapa: 'pergunta' | 'digitar', prefixo = ''): MensagemMenu {
+  if (etapa === 'pergunta') return mensagemMenu('*Endereço do imóvel*\nQuer colocar o endereço do imóvel no orçamento?', ['Sim', 'Não'], true, prefixo);
+  return { texto: `${prefixo}*Endereço do imóvel*\nDigite o endereço como quer que apareça no orçamento.\n_Ex.: ${EXEMPLO_ENDERECO}_\n\n${VOLTAR}`, opcoes: [{ id: '0', titulo: 'Voltar' }] };
+}
+
 /** Re-mostra a tela atual (usado quando a resposta não foi entendida). */
 export function telaAtual(e: Estado, ctx: ContextoMenu, prefixo = ''): MensagemMenu {
   if (e.tela === 'menu') return telaMenu(e.id, prefixo);
   if (e.tela === 'pergunta') return telaPergunta(FLUXOS[e.fluxo], e.i, prefixo, e.dados);
+  if (e.tela === 'endereco') return telaEndereco(e.etapa, prefixo);
   return telaFormato(ctx, e, prefixo);
 }
 
@@ -387,14 +397,41 @@ function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): P
     if (estado.i + 1 < f.perguntas.length) {
       return { estado: { ...estado, i: estado.i + 1, dados }, mensagens: [telaPergunta(f, estado.i + 1, entendido, dados)] };
     }
+    if (f.calculo !== 'correcao') {
+      return { estado: { tela: 'endereco', etapa: 'pergunta', fluxo: estado.fluxo, dados, origem: estado.origem, ultimo, custos: estado.custos }, mensagens: [telaEndereco('pergunta', entendido)] };
+    }
     const noFormato: Estado = { tela: 'formato', fluxo: estado.fluxo, dados, origem: estado.origem, ultimo, custos: estado.custos };
     return { estado: noFormato, mensagens: [telaFormato(ctx, noFormato, entendido)] };
+  }
+
+  if (estado.tela === 'endereco') {
+    const f = FLUXOS[estado.fluxo];
+    if (estado.etapa === 'pergunta') {
+      if (voltar) {
+        const i = f.perguntas.length - 1;
+        return { estado: { tela: 'pergunta', fluxo: estado.fluxo, i, dados: estado.dados, origem: estado.origem, ultimo }, mensagens: [telaPergunta(f, i, '', estado.dados)] };
+      }
+      const quer = lerSimNao(texto);
+      if (quer === null) return naoEntendi();
+      if (quer) return { estado: { ...estado, etapa: 'digitar' }, mensagens: [telaEndereco('digitar')] };
+      const noFormato: Estado = { tela: 'formato', fluxo: estado.fluxo, dados: estado.dados, origem: estado.origem, ultimo };
+      return { estado: noFormato, mensagens: [telaFormato(ctx, { ...noFormato, custos: estado.custos })] };
+    }
+    if (voltar) return { estado: { ...estado, etapa: 'pergunta' }, mensagens: [telaEndereco('pergunta')] };
+    const endereco = (texto ?? '').replace(/\s+/g, ' ').trim();
+    if (endereco.length < 5 || !/[a-zA-ZÀ-ú]/.test(endereco)) return { estado, mensagens: [telaEndereco('digitar', 'Escreva o endereço com rua e número 🙂\n\n')] };
+    const curto = endereco.slice(0, 120);
+    const noFormato: Estado = { tela: 'formato', fluxo: estado.fluxo, dados: estado.dados, origem: estado.origem, ultimo, endereco: curto };
+    return { estado: noFormato, mensagens: [telaFormato(ctx, { ...noFormato, custos: estado.custos }, `✅ Endereço: *${curto}*\n\n`)] };
   }
 
   // Escolha do formato.
   if (voltar) {
     if (estado.reenvio || !estado.fluxo) return irPara('depois', 'inicio', ultimo);
     const f = FLUXOS[estado.fluxo];
+    if (f.calculo !== 'correcao') {
+      return { estado: { tela: 'endereco', etapa: 'pergunta', fluxo: estado.fluxo, dados: estado.dados ?? {}, origem: estado.origem ?? 'inicio', ultimo }, mensagens: [telaEndereco('pergunta')] };
+    }
     const i = f.perguntas.length - 1;
     return { estado: { tela: 'pergunta', fluxo: estado.fluxo, i, dados: estado.dados ?? {}, origem: estado.origem ?? 'inicio', ultimo }, mensagens: [telaPergunta(f, i, '', estado.dados ?? {})] };
   }
@@ -407,7 +444,7 @@ function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): P
     return { estado: depois, mensagens: [telaMenu('depois')], acao: { tipo: 'reenviar', seq: ultimo, formato } };
   }
   const f = FLUXOS[estado.fluxo!];
-  return { estado: depois, mensagens: [telaMenu('depois')], acao: { tipo: 'calcular', calculo: f.calculo, dados: { ...estado.dados, ...estado.custos }, formato, titulo: f.titulo } };
+  return { estado: depois, mensagens: [telaMenu('depois')], acao: { tipo: 'calcular', calculo: f.calculo, dados: { ...estado.dados, ...estado.custos }, formato, titulo: f.titulo, endereco: estado.endereco } };
 }
 
 const COMANDO_CUSTOS = /^(honorarios?|certidoes|certidao)\b\s*:?\s*(.*)$/;

@@ -2,7 +2,7 @@ import { jsPDF } from 'jspdf';
 import { brl, type Resultado } from '../src/lib/calc';
 import { config } from './config';
 import { COR_MARCA, hexParaRgb, type Estilo } from './estilo';
-import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContexto, logoOrcaiPng, SUAVE, TEXTO, TINTA, tituloDoDocumento } from './documento';
+import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContato, linhaDeContexto, linhaDoEndereco, logoOrcaiPng, SUAVE, TEXTO, TINTA, tituloDoDocumento, type MetaOrcamento } from './documento';
 import sharp from 'sharp';
 
 export { TITULO } from './documento';
@@ -15,7 +15,7 @@ const rgb = (hex: string) => hexParaRgb(hex);
  * PDF do orçamento (A4), mesmo desenho da imagem: logo no topo (Orçaí, ou a do assinante no Pró e no teste),
  * linhas em tinta e cinza com as partes de Escritura e Registro, total numa faixa. Sem etiquetas coloridas.
  */
-export async function gerarPdfOrcamento(r: Resultado, meta: { numero: string; data: Date }, estilo: Estilo = ESTILO_PADRAO): Promise<Buffer> {
+export async function gerarPdfOrcamento(r: Resultado, meta: MetaOrcamento, estilo: Estilo = ESTILO_PADRAO): Promise<Buffer> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const L = 20, R = 190;
   let y = 18;
@@ -40,6 +40,12 @@ export async function gerarPdfOrcamento(r: Resultado, meta: { numero: string; da
     y += 7;
     doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...rgb(TINTA));
     doc.text(estilo.cabecalho, L, y);
+    const contato = linhaDeContato(estilo);
+    if (contato) {
+      y += 5;
+      doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(...rgb(TEXTO));
+      doc.text(contato, L, y);
+    }
   }
   y += 5;
   doc.setDrawColor(...rgb(estilo.personalizado ? estilo.cor : TINTA)).setLineWidth(0.6).line(L, y, R, y);
@@ -48,7 +54,12 @@ export async function gerarPdfOrcamento(r: Resultado, meta: { numero: string; da
   y += 12;
   doc.setFont('helvetica', 'bold').setFontSize(15).setTextColor(...rgb(TINTA));
   doc.text(tituloDoDocumento(r), L, y);
-  const contexto = linhaDeContexto(r, brl);
+  if (meta.endereco) {
+    y += 6.5;
+    doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(...rgb(TEXTO));
+    doc.text(doc.splitTextToSize(linhaDoEndereco(r, meta.endereco), R - L)[0], L, y);
+  }
+  const contexto = linhaDeContexto(r, brl, !!meta.endereco);
   if (contexto) {
     y += 6;
     doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(...rgb(SUAVE));

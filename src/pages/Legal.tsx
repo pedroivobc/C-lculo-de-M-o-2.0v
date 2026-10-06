@@ -62,8 +62,8 @@ const Lista = ({ itens }: { itens: ReactNode[] }) => (
 /** Tabela dos dados tratados: o que é, para quê e por quanto tempo. */
 const DADOS: [string, string, string, string][] = [
   ['Cadastro', 'Nome, e-mail, WhatsApp e senha. A senha fica cifrada pelo provedor de autenticação; nós não temos acesso a ela.', 'Criar e proteger a sua conta e reconhecer o seu número no agente do WhatsApp.', 'Enquanto a conta existir.'],
-  ['Configuração do orçamento', 'Cidade, alíquota do ITBI, formato (PDF ou imagem) e, no plano Pró, logo, cor e cabeçalho.', 'Montar os orçamentos do seu jeito.', 'Enquanto a conta existir.'],
-  ['Orçamentos', 'Os valores que você informa (valor do imóvel, valor financiado, cidade, folhas), o resultado e o arquivo gerado. Uma referência curta é opcional.', 'Mostrar o orçamento, guardar o seu histórico e permitir baixar de novo.', 'Até você apagar o orçamento ou encerrar a conta.'],
+  ['Configuração do orçamento', 'Cidade, alíquota do ITBI, certidões e honorários padrão, formato (PDF ou imagem) e, no plano Pró, logo, cor e cabeçalho. No Pró, o seu nome, WhatsApp e e-mail aparecem no orçamento para o cliente falar com você.', 'Montar os orçamentos do seu jeito.', 'Enquanto a conta existir.'],
+  ['Orçamentos', 'Os valores que você informa (valor do imóvel, valor financiado, cidade, folhas), o resultado e o arquivo gerado. O endereço do imóvel só entra se você escolher colocá-lo no orçamento.', 'Mostrar o orçamento, guardar o seu histórico e permitir baixar de novo.', 'Até você apagar o orçamento ou encerrar a conta.'],
   ['Conversas com o agente', 'O texto das mensagens trocadas com o agente. Fotos e arquivos não são abertos, lidos nem guardados: registramos só que a mensagem tinha um anexo.', 'Responder com o contexto da conversa e investigar erros.', '30 dias.'],
   ['Verificação do WhatsApp', 'Um código de uso único, guardado só como resumo criptográfico (hash).', 'Confirmar que o número é seu.', 'Até a verificação ou a expiração do código.'],
   ['Pagamento', 'Quando a cobrança online estiver ativa: o número do cartão vai direto para o gateway de pagamento. Guardamos só o código (token) que o gateway devolve, a bandeira, os 4 últimos dígitos e a validade.', 'Cobrar a assinatura.', 'Enquanto a assinatura existir e pelo prazo exigido pela lei fiscal.'],
@@ -87,7 +87,7 @@ export function Privacidade() {
 
       <Secao n={2} titulo="Dados dos seus clientes">
         <p>O serviço foi feito para funcionar <strong>sem dados pessoais de terceiros</strong>. Não pedimos nome, CPF, RG, estado civil, matrícula, contrato nem qualquer documento do comprador, do vendedor ou do donatário.</p>
-        <p>Os orçamentos usam só valores. O campo de referência é opcional e serve para você se achar no histórico (por exemplo, “apto Centro”). Pedimos que você não escreva ali, nem nas mensagens ao agente, o nome, o CPF ou o contato dos seus clientes. Se escrever, esse texto fica guardado como descrito na seção 3.</p>
+        <p>Os orçamentos usam só valores. O endereço do imóvel é opcional: o sistema pergunta antes se você quer colocá-lo no orçamento. Pedimos que você não escreva ali, nem nas mensagens ao agente, o nome, o CPF ou o contato dos seus clientes. Se escrever, esse texto fica guardado como descrito na seção 3.</p>
       </Secao>
 
       <Secao n={3} titulo="Que dados tratamos, para quê e por quanto tempo">

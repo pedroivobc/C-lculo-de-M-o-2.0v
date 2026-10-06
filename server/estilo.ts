@@ -1,3 +1,4 @@
+import { telefoneBonito } from '../src/lib/formato';
 import { lerCustosPadrao, type CustosPadrao } from '../src/lib/calc';
 import sharp from 'sharp';
 import { config } from './config';
@@ -15,6 +16,8 @@ export interface Estilo {
   formato: Formato;
   /** true quando logo e cor do assinante aparecem (pro, trial e admin). */
   personalizado: boolean;
+  /** Nome, WhatsApp e e-mail do assinante no orçamento (só quando personalizado). */
+  contato?: { nome?: string; whatsapp?: string; email?: string };
 }
 
 export const COR_MARCA = '#2342D6';
@@ -52,7 +55,7 @@ export async function configuracaoDoUsuario(userId: string): Promise<Configuraca
   const db = supabaseAdmin();
   const [{ data: p }, { data: s }] = await Promise.all([
     db.from('profiles')
-      .select('pdf_header, pdf_logo_path, cor_primaria, formato_orcamento, municipio_padrao, cidade_nome, itbi_percentual, custos_padrao')
+      .select('pdf_header, pdf_logo_path, cor_primaria, formato_orcamento, municipio_padrao, cidade_nome, itbi_percentual, custos_padrao, full_name, email, whatsapp_e164, whatsapp_verified_at')
       .eq('id', userId).maybeSingle(),
     db.rpc('situacao_acesso', { uid: userId }).maybeSingle<{ personaliza_orcamento: boolean }>(),
   ]);
@@ -65,6 +68,11 @@ export async function configuracaoDoUsuario(userId: string): Promise<Configuraca
       logoPng,
       formato: p?.formato_orcamento === 'jpeg' ? 'jpeg' : 'pdf',
       personalizado,
+      contato: personalizado ? {
+        nome: p?.full_name || undefined,
+        whatsapp: p?.whatsapp_verified_at && p?.whatsapp_e164 ? telefoneBonito(p.whatsapp_e164) : undefined,
+        email: p?.email || undefined,
+      } : undefined,
     },
     localidade: {
       municipio: p?.municipio_padrao ?? 'mg-juiz-de-fora',

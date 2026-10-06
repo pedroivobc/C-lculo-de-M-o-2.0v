@@ -5,7 +5,7 @@ import { calcular, type Resultado, type TipoCalculo } from '@/lib/calc';
 import { api } from '@/lib/api';
 import { brl, numeroCalculo } from '@/lib/formato';
 import { Orcamento } from '@/components/ui/Orcamento';
-import { Aviso, Botao, Cartao } from '@/components/ui/Campos';
+import { Alternar, Aviso, Botao, Campo, Cartao } from '@/components/ui/Campos';
 import { useConta } from '@/hooks/useConta';
 
 type Formato = 'pdf' | 'jpeg';
@@ -38,16 +38,17 @@ export function useResultado(tipo: TipoCalculo, entrada: unknown): Resultado | n
 }
 
 /** Salvar no histórico e baixar o orçamento em PDF ou imagem (pelo servidor, que guarda o arquivo). */
-function useAcoes(tipo: TipoCalculo, entrada: unknown) {
+function useAcoes(tipo: TipoCalculo, entrada: unknown, endereco?: string) {
   const [salvo, setSalvo] = useState<{ numero: number; chave: string } | null>(null);
   const [ocupado, setOcupado] = useState<'salvar' | 'arquivo' | null>(null);
   const [mensagem, setMensagem] = useState<{ tom: 'verde' | 'vermelho'; texto: string } | null>(null);
-  const chave = JSON.stringify(entrada);
+  const chave = JSON.stringify([entrada, endereco ?? '']);
   const atual = salvo?.chave === chave ? salvo.numero : null;
 
   async function salvar() {
     if (atual) return atual;
-    const r = await api<{ numero: number }>(`/api/calculos/${tipo}`, { corpo: entrada });
+    // O endereço do imóvel vai em `descricao` e aparece no orçamento.
+    const r = await api<{ numero: number }>(`/api/calculos/${tipo}`, { corpo: { ...(entrada as object), ...(endereco ? { descricao: endereco } : {}) } });
     setSalvo({ numero: r.numero, chave });
     return r.numero;
   }
@@ -97,7 +98,10 @@ export function PaginaCalculadora({ tipo, entrada, rotulo, titulo, descricao, ti
 }) {
   const comLocalidade = useEntradaComLocalidade(tipo, entrada);
   const resultado = useResultado(tipo, comLocalidade);
-  const acoes = useAcoes(tipo, comLocalidade);
+  const [comEndereco, setComEndereco] = useState(false);
+  const [endereco, setEndereco] = useState('');
+  const enderecoFinal = comEndereco ? endereco.replace(/\s+/g, ' ').trim().slice(0, 120) || undefined : undefined;
+  const acoes = useAcoes(tipo, comLocalidade, enderecoFinal);
   const { perfil } = useConta();
   const formato: Formato = perfil?.formato_orcamento ?? 'pdf';
   const outro: Formato = formato === 'pdf' ? 'jpeg' : 'pdf';
@@ -120,6 +124,15 @@ export function PaginaCalculadora({ tipo, entrada, rotulo, titulo, descricao, ti
         <Cartao titulo="Dados">
           <div className="flex flex-col gap-4">
             {children}
+            {tipo !== 'correcao' && (
+              <div className="flex flex-col gap-3">
+                <Alternar rotulo="Colocar o endereço do imóvel no orçamento" ligado={comEndereco} onChange={setComEndereco} />
+                {comEndereco && (
+                  <Campo rotulo="Endereço do imóvel" value={endereco} maxLength={120} autoComplete="off"
+                    placeholder="Ex.: Rua Halfeld, 100, apto 201 · Centro" onChange={(e) => setEndereco(e.target.value)} />
+                )}
+              </div>
+            )}
             {avisoFormulario}
           </div>
         </Cartao>

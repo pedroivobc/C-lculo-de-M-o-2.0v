@@ -64,7 +64,7 @@ export async function listarCalculos(userId: string, filtro: { de?: string; ate?
  */
 export async function arquivoDoOrcamento(calculo: CalculoSalvo, estilo: Estilo, formato: Formato = estilo.formato) {
   const base = `orcamento-${String(calculo.seq).padStart(4, '0')}`;
-  const meta = { numero: numeroCalculo(calculo.seq), data: new Date(calculo.created_at) };
+  const meta = { numero: numeroCalculo(calculo.seq), data: new Date(calculo.created_at), endereco: calculo.descricao ?? undefined };
   const [conteudo, nomeArquivo, mimetype] = formato === 'jpeg'
     ? [await gerarJpegOrcamento(calculo.resultado, meta, estilo), `${base}.jpg`, 'image/jpeg']
     : [await gerarPdfOrcamento(calculo.resultado, meta, estilo), `${base}.pdf`, 'application/pdf'];

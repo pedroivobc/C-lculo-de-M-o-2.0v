@@ -37,10 +37,17 @@ const escritura = calcular('escritura', { subtipo: 'compra_venda_simples', valor
 writeFileSync(join(saida, 'orcamento-modelo.jpg'), await gerarJpegOrcamento(escritura, meta));
 writeFileSync(join(saida, 'orcamento-modelo.pdf'), await gerarPdfOrcamento(escritura, meta));
 writeFileSync(join(saida, 'orcamento-modelo.txt'), orcamentoEmTexto(escritura, meta, ESTILO_PADRAO));
+// Plano Pró: marca, contato do assinante e endereço do imóvel.
+const pro = { ...ESTILO_PADRAO, cabecalho: 'Silva Moura Assessoria', cor: '#0F766E', personalizado: true,
+  contato: { nome: 'Pedro Ivo Clemente', whatsapp: '(32) 99999-0000', email: 'contato@silvamoura.com.br' } };
+const metaPro = { ...meta, endereco: 'Rua Halfeld, 100, apto 201 · Centro' };
+writeFileSync(join(saida, 'orcamento-modelo-pro.jpg'), await gerarJpegOrcamento(escritura, metaPro, pro));
+writeFileSync(join(saida, 'orcamento-modelo-pro.pdf'), await gerarPdfOrcamento(escritura, metaPro, pro));
+writeFileSync(join(saida, 'orcamento-modelo-pro.txt'), orcamentoEmTexto(escritura, metaPro, pro));
 writeFileSync(join(saida, 'conversa-modelo.md'), [
   '# Conversa no WhatsApp · simulação com o motor real', '',
-  simular('Escritura de compra e venda simples, recebendo em mensagem escrita', ['Oi', '1', '1', '1', '350 mil', '3']),
-  simular('Financiamento Caixa SBPE com cota de 80%, recebendo em imagem', ['Bom dia', '2', '1', '1', '400000', '80%', '1', '1']),
+  simular('Escritura de compra e venda simples, com endereço, recebendo em mensagem escrita', ['Oi', '1', '1', '1', '350 mil', '1', 'Rua Halfeld, 100, apto 201 · Centro', '3']),
+  simular('Financiamento Caixa SBPE com cota de 80%, sem endereço, trocando os honorários e recebendo em imagem', ['Bom dia', '2', '1', '1', '400000', '80%', '1', '2', 'honorarios 900', '1']),
   simular('Quando a pessoa digita algo fora das opções', ['oi', 'quero orçar', '0', '1', '2', '1', '350']),
 ].join('\n'));
 console.log('ok', saida);
