@@ -66,6 +66,12 @@ Qualquer VPS com 2 GB de RAM e Docker (Hetzner, Contabo, DigitalOcean, Hostinger
 
 Use um chip **só para o agente** (não o seu WhatsApp pessoal).
 
+**Número novo, antes de conectar:**
+- Ative o chip no app **WhatsApp Business** do celular, com nome *Orçaí Imob*, foto (o símbolo da marca) e descrição curta.
+- Use o número normalmente por 1 ou 2 dias (algumas conversas de ida e volta) antes de ligar o agente. Números recém-criados que já começam respondendo em volume são os mais bloqueados.
+- O número só **responde**: o agente nunca puxa conversa (até a confirmação do cadastro é o corretor quem envia o código). Não use listas de transmissão nem disparos por ele.
+- Deixe o celular carregado e com internet: a Evolution funciona como um "aparelho conectado" dele.
+
 1. Criar a instância (troque `SUA_CHAVE` pela `EVOLUTION_API_KEY`):
    ```bash
    curl -X POST https://evo.seudominio/instance/create \
@@ -93,7 +99,11 @@ Os nomes exatos dos campos variam um pouco entre versões da Evolution v2; se al
 
 O workflow não guarda segredos: lê `APP_INTERNAL_URL`, `AGENT_API_KEY`, `EVOLUTION_*` das variáveis de ambiente do container (já definidas no `docker-compose.yml`).
 
-Fluxo: *Evolution: mensagem recebida* → *Filtrar e extrair* (ignora grupos, mensagens enviadas pelo próprio número, áudios e figurinhas) → *Perguntar ao agente* (`POST /api/agente/mensagem`) → *Uma resposta por vez* → texto pelo `sendText`, PDF/planilha pelo `sendMedia`.
+Fluxo: *Evolution: mensagem recebida* → *Filtrar e extrair* (ignora grupos, mensagens enviadas pelo próprio número, áudios e figurinhas; aceita texto e respostas de botão ou lista) → *Perguntar ao agente* (`POST /api/agente/mensagem`) → *Uma resposta por vez* → *Enviar pelo WhatsApp (em ordem)*: texto pelo `sendText`, imagem/PDF/planilha pelo `sendMedia`, uma por vez, na ordem em que o servidor mandou (o orçamento chega antes do menu seguinte).
+
+Se você já tinha importado uma versão anterior, apague o workflow antigo e importe o arquivo de novo.
+
+**A conversa** é por menus numerados (`server/agente/menu.ts`): o corretor responde 1, 2, 3… e uma pergunta por vez, com "0 Voltar ao menu anterior" em toda tela. No fim escolhe receber em imagem, PDF ou mensagem escrita. Quem escreve o pedido por extenso no menu inicial (*"escritura de 350 mil"*) é atendido pelo agente com IA, se `GEMINI_API_KEY` estiver preenchida. Depois de 30 minutos parada, a conversa recomeça do menu. O roteiro completo sai de `npx tsx scripts/modelo-whatsapp.ts pasta-de-saida`.
 
 ## 5. Primeiro assinante (teste de ponta a ponta)
 
@@ -116,11 +126,11 @@ Enquanto o pagamento (Asaas) não está integrado, ative à mão:
    insert into subscriptions (user_id, plan, nivel, status, forma_pagamento, current_period_end)
    select id, 'anual', 'usuario', 'ativa', 'pix', now() + interval '1 year' from profiles where email = 'voce@exemplo.com';
    ```
-4. Do WhatsApp cadastrado, mande ao número do agente: *"escritura de 350 mil"*.
+4. Do WhatsApp cadastrado, mande ao número do agente: *"Oi"* e responda **1** (Escritura), **1** (Compra e venda), **1** (Simples), **350 mil** e **3** (Mensagem escrita).
 
-> Esperado: resposta com **Total: R$ 18.743,56**, o número do cálculo e o orçamento anexado (PDF ou imagem, conforme a conta). O cálculo aparece em `calculations` com `origem = 'whatsapp'`.
+> Esperado: o orçamento escrito com **TOTAL ESTIMADO: R$ 18.743,56** e, logo depois, o menu "Quer fazer mais alguma coisa?". O cálculo aparece em `calculations` com `origem = 'whatsapp'`.
 
-Outros testes: *"detalha o registro"*; *"exportar 2026-10"*; mensagem de um número não cadastrado (deve receber o link de cadastro).
+Outros testes: no menu final, **2** (outro formato) e **1** (imagem); **3** (valores detalhados); **0** em qualquer tela volta uma etapa; *"escritura de 350 mil"* no menu inicial (agente com IA); mensagem de um número não cadastrado (deve receber o link de cadastro).
 
 ## Rotas da API
 

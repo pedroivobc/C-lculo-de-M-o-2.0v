@@ -1,11 +1,15 @@
 import { GoogleGenAI, type Content } from '@google/genai';
 import { confirmarPorMensagem, type ResultadoConfirmacao } from '../verificacao';
-import { MUNICIPIOS, MUNICIPIO_OUTRA } from '../../src/lib/calc';
+import { ZodError } from 'zod';
+import { brl, calcular, MUNICIPIOS, MUNICIPIO_OUTRA } from '../../src/lib/calc';
 import { config } from '../config';
 import { supabaseAdmin } from '../supabase';
 import { variantesTelefone } from '../telefone';
 import { DECLARACOES, executar, type Contexto, type Resposta } from './ferramentas';
-import { configuracaoDoUsuario, type Configuracao } from '../estilo';
+import { passo, telaAtual, type ContextoMenu, type Estado, type FormatoEntrega } from './menu';
+import { orcamentoEmTexto } from './orcamentoTexto';
+import { arquivoDoOrcamento, buscarPorSeq, numeroCalculo, salvarCalculo, type CalculoSalvo } from '../historico';
+import { comLocalidade, configuracaoDoUsuario, type Configuracao } from '../estilo';
 
 export interface MensagemRecebida {
   telefone: string;              // E.164
@@ -143,19 +147,90 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
     return { status: assinante.motivo, respostas: [{ tipo: 'texto', texto: MENSAGEM_BLOQUEIO[assinante.motivo](config.appUrl) }] };
   }
 
-  let textoUsuario = msg.texto?.trim() ?? '';
-  const anexos: Resposta[] = [];
-
-  // Arquivos não são lidos: o agente trabalha com os valores escritos na mensagem.
-  if (msg.temAnexo) textoUsuario += '\n[Enviei um arquivo. Peça os valores por escrito: o agente não lê anexos.]';
-
+  const textoUsuario = msg.texto?.trim() ?? '';
   await registrar(msg.telefone, assinante.userId, 'entrada', msg.temAnexo ? 'midia' : 'texto', textoUsuario, msg.messageId);
-  if (!config.geminiKey) return { status: 'erro', respostas: [{ tipo: 'texto', texto: 'O agente está em manutenção. Use o site enquanto isso.' }] };
 
-  const ctx: Contexto = { userId: assinante.userId, telefone: msg.telefone, configuracao: assinante.configuracao, anexos };
+  // Conversa por menus numerados (./menu.ts). Texto livre no menu inicial vai para o agente com IA.
+  const ctxMenu: ContextoMenu = { nome: assinante.nome, formatoPadrao: assinante.configuracao.estilo.formato, temAnexo: msg.temAnexo };
+  const p = passo(await lerSessao(msg.telefone), textoUsuario, ctxMenu);
+  if (p.acao?.tipo === 'livre') {
+    await salvarSessao(msg.telefone, assinante.userId, p.estado);
+    if (config.geminiKey) return responderComIa(msg.telefone, assinante, textoUsuario);
+    return responder(msg.telefone, assinante.userId, 'ok', [{ tipo: 'texto', texto: telaAtual(p.estado, ctxMenu, 'Para orçar, escolha uma opção 👇\n\n').texto }]);
+  }
+
+  const respostas: Resposta[] = [];
+  let estado = p.estado;
+  let mensagens = p.mensagens;
+  try {
+    const estilo = assinante.configuracao.estilo;
+    if (p.acao?.tipo === 'calcular') {
+      const dados = p.acao.calculo === 'correcao' ? p.acao.dados : comLocalidade(p.acao.dados, assinante.configuracao.localidade);
+      const resultado = calcular(p.acao.calculo, dados);
+      const salvo = await salvarCalculo({ userId: assinante.userId, resultado, entrada: dados, origem: 'whatsapp' });
+      respostas.push(...await entregar(salvo, p.acao.formato, estilo));
+      estado = { ...estado, ultimo: salvo.seq };
+    } else if (p.acao?.tipo === 'reenviar' || p.acao?.tipo === 'detalhar') {
+      const salvo = await buscarPorSeq(assinante.userId, p.acao.seq);
+      if (!salvo) throw new Error('Não encontrei esse orçamento. Vamos fazer um novo?');
+      respostas.push(...await entregar(salvo, p.acao.tipo === 'reenviar' ? p.acao.formato : 'texto', estilo, p.acao.tipo === 'detalhar'));
+    }
+  } catch (e) {
+    console.error('Falha no orçamento pelo menu', e);
+    const motivo = e instanceof ZodError || !(e instanceof Error) ? 'Confira os valores e tente de novo.' : e.message;
+    respostas.push({ tipo: 'texto', texto: `Não consegui fazer esse orçamento 😕 ${motivo}` });
+    estado = { tela: 'menu', id: 'inicio', ultimo: estado.ultimo };
+    mensagens = [telaAtual(estado, ctxMenu)];
+  }
+  respostas.push(...mensagens.map((m): Resposta => ({ tipo: 'texto', texto: m.texto, opcoes: m.opcoes })));
+  await salvarSessao(msg.telefone, assinante.userId, estado);
+  return responder(msg.telefone, assinante.userId, 'ok', respostas);
+}
+
+/** Registra as mensagens de saída (texto) e devolve a resposta para o n8n. */
+async function responder(telefone: string, userId: string, status: string, respostas: Resposta[]) {
+  const texto = respostas.map((r) => (r.tipo === 'texto' ? r.texto : `[${r.nomeArquivo}]`)).join('\n\n');
+  await registrar(telefone, userId, 'saida', 'texto', texto);
+  return { status, respostas };
+}
+
+/** O orçamento no formato pedido: imagem ou PDF (arquivo) ou mensagem escrita. */
+async function entregar(salvo: CalculoSalvo, formato: FormatoEntrega, estilo: Configuracao['estilo'], comDetalhes = false): Promise<Resposta[]> {
+  const meta = { numero: numeroCalculo(salvo.seq), data: new Date(salvo.created_at) };
+  if (formato === 'texto') return [{ tipo: 'texto', texto: orcamentoEmTexto(salvo.resultado, meta, estilo, comDetalhes) }];
+  const arquivo = await arquivoDoOrcamento(salvo, estilo, formato);
+  return [{ tipo: 'documento', ...arquivo, legenda: `Orçamento ${meta.numero} · Total ${brl(salvo.resultado.total)}` }];
+}
+
+// ---------------- Sessão do menu ----------------
+
+/** Depois de 30 minutos parada, a conversa recomeça do menu inicial. */
+const SESSAO_MINUTOS = 30;
+
+async function lerSessao(telefone: string): Promise<Estado | null> {
+  const db = supabaseAdmin();
+  const { data } = await db.from('whatsapp_sessoes').select('estado, updated_at').eq('whatsapp_e164', telefone).maybeSingle();
+  if (!data) return null;
+  if (Date.now() - new Date(data.updated_at).getTime() > SESSAO_MINUTOS * 60_000) {
+    await db.from('whatsapp_sessoes').delete().eq('whatsapp_e164', telefone); // não guarda valores de conversa parada
+    return null;
+  }
+  return data.estado as Estado;
+}
+
+async function salvarSessao(telefone: string, userId: string, estado: Estado) {
+  await supabaseAdmin().from('whatsapp_sessoes').upsert({ whatsapp_e164: telefone, user_id: userId, estado, updated_at: new Date().toISOString() });
+}
+
+// ---------------- Texto livre com IA ----------------
+
+/** Pedido escrito por extenso ("escritura de 350 mil em JF"): o modelo chama as mesmas calculadoras. */
+async function responderComIa(telefone: string, assinante: Assinante, textoUsuario: string) {
+  const anexos: Resposta[] = [];
+  const ctx: Contexto = { userId: assinante.userId, telefone, configuracao: assinante.configuracao, anexos };
   const ai = new GoogleGenAI({ apiKey: config.geminiKey });
   // O histórico já inclui a mensagem que acabamos de registrar.
-  const contents: Content[] = await historicoRecente(msg.telefone);
+  const contents: Content[] = await historicoRecente(telefone);
   if (!contents.length || contents[contents.length - 1].role !== 'user') contents.push({ role: 'user', parts: [{ text: textoUsuario }] });
 
   let resposta = '';
@@ -178,7 +253,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
     contents.push({ role: 'user', parts: partes });
   }
 
-  if (!resposta) resposta = 'Não consegui concluir esse cálculo. Pode me mandar os valores de novo, um por linha?';
-  await registrar(msg.telefone, assinante.userId, 'saida', 'texto', resposta);
-  return { status: 'ok', respostas: [{ tipo: 'texto', texto: resposta }, ...anexos] };
+  if (!resposta) resposta = 'Não consegui entender esse pedido.';
+  resposta += '\n\nDigite *menu* para ver as opções.';
+  return responder(telefone, assinante.userId, 'ok', [{ tipo: 'texto', texto: resposta }, ...anexos]);
 }
