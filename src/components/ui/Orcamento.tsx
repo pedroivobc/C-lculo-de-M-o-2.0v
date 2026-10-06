@@ -8,11 +8,10 @@ import { cn } from '@/lib/utils';
 /**
  * O orçamento picotado: peça-assinatura da identidade.
  */
-export function Orcamento({ titulo, resultado, rotuloTotal = 'Total estimado', carimbo = true, compacto = false, children }: {
+export function Orcamento({ titulo, resultado, rotuloTotal = 'Total estimado', compacto = false, children }: {
   titulo: string;
   resultado: Resultado | null;
   rotuloTotal?: string;
-  carimbo?: boolean;
   compacto?: boolean;
   children?: ReactNode;
 }) {
@@ -22,10 +21,10 @@ export function Orcamento({ titulo, resultado, rotuloTotal = 'Total estimado', c
   return (
     <div className="relative">
       <div className={cn('rounded-t-md border border-b-0 border-linha bg-white shadow-[0_12px_32px_rgba(16,24,40,.10)]', compacto ? 'px-4 pt-4 pb-3' : 'px-6 pt-6 pb-4')}>
-        <div className={cn('mb-1 flex flex-col gap-0.5 border-b-[1.5px] border-dashed border-borda pb-3', carimbo && (compacto ? 'pr-24' : 'pr-32'))}>
+        <div className={cn('mb-1 flex flex-col gap-0.5 border-b-[1.5px] border-dashed border-borda pb-3')}>
           <h2 className={cn('font-extrabold', compacto ? 'text-base' : 'text-lg')}>Orçamento · {titulo}</h2>
           <span className="numero text-[13px] text-suave">
-            {resultado?.bases.length ? `Base de cálculo ${resultado.bases.map(brl).join(' + ')}` : 'Preencha os valores ao lado'}
+            {resultado?.bases.length ? `Base de cálculo ${resultado.bases.map(brl).join(' + ')}${nomeCidade ? ` · ${nomeCidade} (MG)` : ''}` : 'Preencha os valores ao lado'}
           </span>
         </div>
         {temDetalhes && (
@@ -75,18 +74,6 @@ export function Orcamento({ titulo, resultado, rotuloTotal = 'Total estimado', c
         </div>
       </div>
       <div aria-hidden="true" className="picote" />
-      {carimbo && (
-        <div
-          aria-hidden="true"
-          className={cn(
-            'display absolute rotate-[-9deg] rounded-lg border-[2.5px] border-minas text-center font-black tracking-[0.08em] text-minas opacity-90',
-            compacto ? 'top-3 right-3 px-2 py-1 text-[9px] leading-[11px]' : 'top-4 right-4 px-2.5 py-1.5 text-[11px] leading-[13px]',
-          )}
-          style={{ fontStretch: '125%' }}
-        >
-          {(nomeCidade ?? 'Minas Gerais').toUpperCase()}<br />MG · {new Date().getFullYear()}
-        </div>
-      )}
       {children && <div className="mt-4 flex flex-wrap gap-2">{children}</div>}
     </div>
   );

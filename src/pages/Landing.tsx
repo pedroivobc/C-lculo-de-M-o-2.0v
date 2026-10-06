@@ -28,13 +28,6 @@ const NOTA: Record<Ato, string> = {
   doacao: 'Doação simples, 25 folhas.',
 };
 
-const ETIQUETAS = [
-  ['JUIZ DE FORA', 'bg-minas-claro text-minas-texto', 'ITBI pela regra da prefeitura, que muda de cidade para cidade.'],
-  ['MG', 'bg-acao-claro text-acao-escuro', 'Lavratura, registro e arquivamento pela tabela de emolumentos de Minas, e o ITCD estadual na doação.'],
-  ['BANCO', 'bg-cinza text-texto', 'Taxa da Caixa ou tarifa de contrato do Itaú, Bradesco e Santander.'],
-  ['VOCÊ', 'bg-amarelo-claro text-amarelo-texto', 'Certidões e honorários: você define o valor e ele entra no orçamento.'],
-];
-
 const DUVIDAS = [
   ['Os valores são oficiais?', 'São estimativas feitas com a tabela de emolumentos de MG e as regras de ITBI de Juiz de Fora do ano corrente. Os valores finais são os do cartório e da prefeitura no dia do ato.'],
   ['Meu imóvel é em outra cidade de MG. Serve?', 'Sim. Juiz de Fora já tem a regra de ITBI cadastrada; nas outras cidades de MG você informa a alíquota no cadastro. Peça a sua cidade no formulário acima para ela ganhar a regra completa.'],
@@ -147,22 +140,6 @@ export default function Landing() {
             <Orcamento titulo={ato === 'caixa' ? 'financiamento Caixa' : ato === 'doacao' ? 'doação' : 'escritura'} resultado={resultado} />
             <span className="text-[13px] text-[#d5ddff]">{NOTA[ato]} Certidões e honorários você ajusta no app.</span>
           </div>
-        </section>
-
-        {/* Etiquetas */}
-        <section className="mx-auto flex max-w-[1200px] flex-wrap gap-x-16 gap-y-8 px-4 pt-24 sm:px-6">
-          <div className="flex flex-1 basis-80 flex-col gap-3">
-            <h2 className="text-[30px] font-[850] leading-9 sm:text-[38px] sm:leading-[44px]">Cada linha diz de onde vem.</h2>
-            <p className="text-[17px] leading-[27px] text-texto">Na hora de explicar o orçamento, o cliente quer saber o que é imposto da prefeitura, o que é cartório e o que é o seu serviço. A etiqueta mostra.</p>
-          </div>
-          <dl className="grid flex-[2] basis-[520px] gap-3 sm:grid-cols-2">
-            {ETIQUETAS.map(([t, c, d]) => (
-              <div key={t} className="flex flex-col gap-2 rounded-2xl border border-linha bg-white p-5">
-                <dt><span className={cn('rounded-md px-2 py-0.5 text-xs font-extrabold', c)}>{t}</span></dt>
-                <dd className="text-texto">{d}</dd>
-              </div>
-            ))}
-          </dl>
         </section>
 
         {/* WhatsApp */}
