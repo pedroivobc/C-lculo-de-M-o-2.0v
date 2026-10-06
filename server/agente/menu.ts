@@ -1,4 +1,4 @@
-import type { TipoCalculo } from '../../src/lib/calc';
+import { brl, type TipoCalculo } from '../../src/lib/calc';
 import { ANO_BASE_INCC } from '../../src/lib/calc/correcao';
 
 /**
@@ -232,8 +232,16 @@ function telaPergunta(f: Fluxo, i: number, prefixo = ''): MensagemMenu {
   const p = f.perguntas[i];
   const passo = f.perguntas.length > 1 ? ` (${i + 1} de ${f.perguntas.length})` : '';
   if (p.tipo === 'simnao') return mensagemMenu(`*${p.titulo}*${passo}\n${p.texto}`, ['Sim', 'Não'], true, prefixo);
-  const exemplo = p.tipo === 'ano' ? '' : '\n_Ex.: 350000 ou 350 mil_';
+  const exemplo = p.tipo === 'ano' ? '' : '\n_Pode digitar só os números: 350000 vira R$ 350.000,00_';
   return { texto: `${prefixo}*${p.titulo}*${passo}\n${p.texto}${exemplo}\n\n${VOLTAR}`, opcoes: [{ id: '0', titulo: 'Voltar' }] };
+}
+
+/** Resposta já entendida, como o corretor vai vê-la: R$ 350.000,00, Sim, 2015. */
+function comoTexto(p: Pergunta, valor: unknown): string {
+  if (p.tipo === 'simnao') return valor ? 'Sim' : 'Não';
+  if (p.tipo === 'ano') return String(valor);
+  if (p.tipo === 'valorOuZero' && valor === 0) return 'ainda não tem';
+  return brl(Number(valor));
 }
 
 function telaFormato(padrao: FormatoEntrega, prefixo = ''): MensagemMenu {
@@ -321,15 +329,17 @@ export function passo(estado: Estado | null, texto: string, ctx: ContextoMenu): 
       const naoSabe = p.tipo === 'valorOuZero' && /^(nao sei|nao tenho|nao tem|sem|ainda nao)/.test(t);
       const v = naoSabe ? 0 : lerValor(texto);
       if (v === null || (p.tipo === 'valor' && v <= 0)) return { estado, mensagens: [telaPergunta(f, estado.i, 'Não entendi o valor 🙂 Digite só os números.\n\n')] };
-      if (v > 0 && v < 1000) return { estado, mensagens: [telaPergunta(f, estado.i, `R$ ${v.toLocaleString('pt-BR')} parece baixo. Digite o valor completo.\n\n`)] };
+      if (v > 0 && v < 1000) return { estado, mensagens: [telaPergunta(f, estado.i, `${brl(v)} parece baixo. Digite o valor completo, ex.: 350000 para ${brl(350000)}.\n\n`)] };
       if (p.maximo && v > Number(estado.dados[p.maximo.campo])) return { estado, mensagens: [telaPergunta(f, estado.i, `${p.maximo.erro}\n\n`)] };
       valor = v;
     }
     const dados = { ...estado.dados, [p.campo]: valor };
+    // Mostra o que foi entendido, no formato em reais, antes da próxima tela.
+    const entendido = `✅ ${p.titulo}: *${comoTexto(p, valor)}*\n\n`;
     if (estado.i + 1 < f.perguntas.length) {
-      return { estado: { ...estado, i: estado.i + 1, dados }, mensagens: [telaPergunta(f, estado.i + 1)] };
+      return { estado: { ...estado, i: estado.i + 1, dados }, mensagens: [telaPergunta(f, estado.i + 1, entendido)] };
     }
-    return { estado: { tela: 'formato', fluxo: estado.fluxo, dados, origem: estado.origem, ultimo }, mensagens: [telaFormato(ctx.formatoPadrao)] };
+    return { estado: { tela: 'formato', fluxo: estado.fluxo, dados, origem: estado.origem, ultimo }, mensagens: [telaFormato(ctx.formatoPadrao, entendido)] };
   }
 
   // Escolha do formato.

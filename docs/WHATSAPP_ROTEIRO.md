@@ -63,7 +63,7 @@ _Responda com o número da opção._
 
 *Valor do imóvel*
 Qual é o valor do imóvel?
-_Ex.: 350000 ou 350 mil_
+_Pode digitar só os números: 350000 vira R$ 350.000,00_
 
 0️⃣ Voltar ao menu anterior
 ```
@@ -73,6 +73,8 @@ _Ex.: 350000 ou 350 mil_
 **🤖 Orçaí:**
 
 ```
+✅ Valor do imóvel: *R$ 350.000,00*
+
 *Como você quer receber o orçamento?*
 
 1️⃣ Imagem (foto) · seu padrão
@@ -184,7 +186,7 @@ _Responda com o número da opção._
 
 *Valor do imóvel* (1 de 3)
 Qual é o valor do imóvel?
-_Ex.: 350000 ou 350 mil_
+_Pode digitar só os números: 350000 vira R$ 350.000,00_
 
 0️⃣ Voltar ao menu anterior
 ```
@@ -194,9 +196,11 @@ _Ex.: 350000 ou 350 mil_
 **🤖 Orçaí:**
 
 ```
+✅ Valor do imóvel: *R$ 400.000,00*
+
 *Valor financiado* (2 de 3)
 Quanto vai ser financiado?
-_Ex.: 350000 ou 350 mil_
+_Pode digitar só os números: 350000 vira R$ 350.000,00_
 
 0️⃣ Voltar ao menu anterior
 ```
@@ -206,6 +210,8 @@ _Ex.: 350000 ou 350 mil_
 **🤖 Orçaí:**
 
 ```
+✅ Valor financiado: *R$ 320.000,00*
+
 *Primeiro imóvel* (3 de 3)
 É o primeiro imóvel do comprador?
 
@@ -222,6 +228,8 @@ _Responda com o número da opção._
 **🤖 Orçaí:**
 
 ```
+✅ Primeiro imóvel: *Sim*
+
 *Como você quer receber o orçamento?*
 
 1️⃣ Imagem (foto) · seu padrão
@@ -347,7 +355,7 @@ _Responda com o número da opção._
 
 *Valor do imóvel* (1 de 2)
 Qual é o valor do imóvel na doação?
-_Ex.: 350000 ou 350 mil_
+_Pode digitar só os números: 350000 vira R$ 350.000,00_
 
 0️⃣ Voltar ao menu anterior
 ```
@@ -357,11 +365,11 @@ _Ex.: 350000 ou 350 mil_
 **🤖 Orçaí:**
 
 ```
-R$ 350 parece baixo. Digite o valor completo.
+R$ 350,00 parece baixo. Digite o valor completo, ex.: 350000 para R$ 350.000,00.
 
 *Valor do imóvel* (1 de 2)
 Qual é o valor do imóvel na doação?
-_Ex.: 350000 ou 350 mil_
+_Pode digitar só os números: 350000 vira R$ 350.000,00_
 
 0️⃣ Voltar ao menu anterior
 ```

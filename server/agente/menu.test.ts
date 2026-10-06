@@ -63,6 +63,12 @@ describe('menu do WhatsApp', () => {
     if (p.acao?.tipo === 'calcular') expect(calcular('escritura', p.acao.dados).total).toBe(18743.56);
   });
 
+  it('mostra cada valor entendido em reais', () => {
+    expect(conversa('oi', '2', '1', '1', '400000').mensagens[0].texto).toMatch(/^✅ Valor do imóvel: \*R\$\s400\.000,00\*/);
+    expect(conversa('oi', '1', '1', '1', '350000').mensagens[0].texto).toMatch(/^✅ Valor do imóvel: \*R\$\s350\.000,00\*\n\n\*Como você quer receber/);
+    expect(conversa('oi', '1', '2', '1', '350000', 'não sei').mensagens[0].texto).toContain('✅ Avaliação da Fazenda: *ainda não tem*');
+  });
+
   it('não aceita financiado maior que o imóvel nem valor baixo demais', () => {
     expect(conversa('oi', '2', '1', '1', '300000', '400000').mensagens[0].texto).toContain('não pode ser maior');
     expect(conversa('oi', '1', '1', '1', '350').mensagens[0].texto).toContain('parece baixo');

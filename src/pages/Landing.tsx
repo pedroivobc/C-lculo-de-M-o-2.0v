@@ -2,12 +2,11 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Plus } from 'lucide-react';
 import { calcular, type Resultado } from '@/lib/calc';
-import { centavosParaTexto, textoParaCentavos } from '@/lib/formato';
 import { api } from '@/lib/api';
 import { PLANOS, PRECO } from '@/lib/config';
 import { Lockup } from '@/components/marca/Logo';
 import { Orcamento } from '@/components/ui/Orcamento';
-import { Aviso, BotaoLink } from '@/components/ui/Campos';
+import { Aviso, BotaoLink, EntradaMoeda } from '@/components/ui/Campos';
 import { cn } from '@/lib/utils';
 
 type Ato = 'escritura' | 'caixa' | 'doacao';
@@ -121,11 +120,10 @@ export default function Landing() {
             <label className="flex flex-col gap-2 font-bold text-white">Valor do imóvel
               <span className="flex h-16 items-center gap-2.5 rounded-2xl bg-white px-4">
                 <span className="display text-[22px] font-bold text-suave">R$</span>
-                <input
-                  inputMode="numeric"
+                <EntradaMoeda
                   aria-describedby="dica-valor"
-                  value={centavos ? centavosParaTexto(centavos) : ''}
-                  onChange={(e) => setCentavos(textoParaCentavos(e.target.value))}
+                  centavos={centavos}
+                  onChange={setCentavos}
                   className="numero w-full min-w-0 bg-transparent text-[26px] font-extrabold text-tinta outline-none sm:text-[28px]"
                 />
               </span>

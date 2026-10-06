@@ -1,6 +1,6 @@
-import { useId, type ReactNode, type InputHTMLAttributes, type ButtonHTMLAttributes } from 'react';
+import { useEffect, useId, useState, type ReactNode, type InputHTMLAttributes, type ButtonHTMLAttributes } from 'react';
 import { Link, type LinkProps } from 'react-router-dom';
-import { centavosParaTexto, textoParaCentavos } from '@/lib/formato';
+import { centavosParaTexto, mascararDigitando, textoParaCentavos } from '@/lib/formato';
 import { cn } from '@/lib/utils';
 
 const baseCampo = 'h-12 w-full min-w-0 rounded-[10px] border border-borda bg-white px-3 font-semibold text-tinta outline-none focus:border-acao focus:ring-2 focus:ring-acao/20';
@@ -16,7 +16,36 @@ export function Campo({ rotulo, dica, className, ...props }: { rotulo: string; d
   );
 }
 
-/** Campo de dinheiro com máscara: o valor de estado é em centavos. */
+/**
+ * Entrada de dinheiro (R$ 000.000,00): a pessoa digita reais ("350000" vira 350.000) e, ao sair do campo,
+ * o valor fica completo com os centavos ("350.000,00"). O estado de quem usa é em centavos.
+ */
+export function EntradaMoeda({ centavos, onChange, className, ...resto }: {
+  centavos: number; onChange: (c: number) => void; className?: string; id?: string; 'aria-describedby'?: string; 'aria-label'?: string;
+}) {
+  const [texto, setTexto] = useState(centavos ? centavosParaTexto(centavos) : '');
+  // Valor mudado por fora (ex.: limpar o formulário): mostra o novo valor.
+  useEffect(() => {
+    if (textoParaCentavos(texto) !== centavos) setTexto(centavos ? centavosParaTexto(centavos) : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centavos]);
+  return (
+    <input
+      {...resto}
+      inputMode="decimal"
+      autoComplete="off"
+      className={className}
+      value={texto}
+      placeholder="0,00"
+      onChange={(e) => { const t = mascararDigitando(e.target.value); setTexto(t); onChange(textoParaCentavos(t)); }}
+      // Ao voltar ao campo, some o ",00" para dar para continuar digitando os reais.
+      onFocus={() => { if (centavos && centavos % 100 === 0) setTexto(mascararDigitando(String(centavos / 100))); }}
+      onBlur={() => setTexto(centavos ? centavosParaTexto(centavos) : '')}
+    />
+  );
+}
+
+/** Campo de dinheiro com rótulo e máscara: o valor de estado é em centavos. */
 export function CampoMoeda({ rotulo, centavos, onChange, dica, className }: {
   rotulo: string; centavos: number; onChange: (c: number) => void; dica?: ReactNode; className?: string;
 }) {
@@ -26,14 +55,7 @@ export function CampoMoeda({ rotulo, centavos, onChange, dica, className }: {
       {rotulo}
       <span className="flex h-12 items-center gap-2 rounded-[10px] border border-borda bg-white px-3 focus-within:border-acao focus-within:ring-2 focus-within:ring-acao/20">
         <span className="font-medium text-suave">R$</span>
-        <input
-          id={id}
-          inputMode="numeric"
-          className="numero w-full min-w-0 bg-transparent font-bold outline-none"
-          value={centavos ? centavosParaTexto(centavos) : ''}
-          placeholder="0,00"
-          onChange={(e) => onChange(textoParaCentavos(e.target.value))}
-        />
+        <EntradaMoeda id={id} centavos={centavos} onChange={onChange} className="numero w-full min-w-0 bg-transparent font-bold outline-none" />
       </span>
       {dica && <span className="text-xs font-medium text-suave">{dica}</span>}
     </label>
