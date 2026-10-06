@@ -3,10 +3,10 @@ import { FileImage, FileText, ImagePlus, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { api } from '@/lib/api';
 import { useConta } from '@/hooks/useConta';
-import { MUNICIPIOS, MUNICIPIO_OUTRA, MUNICIPIO_PADRAO } from '@/lib/calc';
+import { CUSTOS_SISTEMA, lerCustosPadrao, MUNICIPIOS, MUNICIPIO_OUTRA, MUNICIPIO_PADRAO, ROTULO_GRUPO, type CustosPadrao, type GrupoCustos } from '@/lib/calc';
 import { MARCA } from '@/lib/config';
 import { brl } from '@/lib/formato';
-import { Aviso, Botao, Campo } from '@/components/ui/Campos';
+import { Aviso, Botao, Campo, CampoMoeda } from '@/components/ui/Campos';
 import { cn } from '@/lib/utils';
 
 const UFS = ['AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO'];
@@ -19,7 +19,7 @@ const LOGO_TIPOS = ['image/png', 'image/jpeg', 'image/webp'];
 type Formato = 'pdf' | 'jpeg';
 
 /**
- * Configuração do orçamento: estado, cidade e alíquota do ITBI, nome, logo, cor e formato.
+ * Configuração do orçamento: estado, cidade e alíquota do ITBI, certidões e honorários padrão, nome, logo, cor e formato.
  * Usada no cadastro (etapa "Seu orçamento") e na Conta.
  */
 export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { textoSalvar?: string; aoSalvar?: () => void }) {
@@ -34,6 +34,8 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
   const [logoArquivo, setLogoArquivo] = useState<File | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [removerLogo, setRemoverLogo] = useState(false);
+  /** Em centavos, por grupo (escritura/doação e financiamento). */
+  const [custos, setCustos] = useState<Record<GrupoCustos, { certidoes: number; honorarios: number }>>(() => paraCentavos(CUSTOS_SISTEMA));
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<{ tom: 'verde' | 'vermelho' | 'azul'; texto: string } | null>(null);
   const idLogo = useId();
@@ -49,6 +51,7 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
     setCabecalho(perfil.pdf_header ?? '');
     setCor(perfil.cor_primaria ?? COR_MARCA);
     setFormato(perfil.formato_orcamento ?? 'pdf');
+    setCustos(paraCentavos(lerCustosPadrao(perfil.custos_padrao) ?? CUSTOS_SISTEMA));
     if (perfil.pdf_logo_path) {
       supabase.storage.from('logos').createSignedUrl(perfil.pdf_logo_path, 3600).then(({ data }) => setLogoUrl(data?.signedUrl ?? null));
     }
@@ -95,7 +98,9 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
       const { error } = await supabase.from('profiles').update({
         uf, municipio_padrao: municipio, cidade_nome: outra ? cidade.trim() : null, itbi_percentual,
         pdf_header: cabecalho.trim() || null, cor_primaria: cor === COR_MARCA ? null : cor, pdf_logo_path,
-        formato_orcamento: formato, configurado_em: perfil.configurado_em ?? new Date().toISOString(),
+        formato_orcamento: formato,
+        custos_padrao: Object.fromEntries((Object.keys(custos) as GrupoCustos[]).map((g) => [g, { certidoes: custos[g].certidoes / 100, honorarios: custos[g].honorarios / 100 }])),
+        configurado_em: perfil.configurado_em ?? new Date().toISOString(),
       }).eq('id', perfil.id);
       if (error) throw new Error(error.message);
       if (perfil.pdf_logo_path && perfil.pdf_logo_path !== pdf_logo_path) {
@@ -150,8 +155,27 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
                 dica={outra ? 'Confira com a prefeitura. Vale para os seus cálculos de escritura e financiamento.'
                   : `Prefeitura: ${String((daPrefeitura ?? 0) * 100).replace('.', ',')}%. Mude só se a sua cidade tiver outra alíquota para o seu caso.`} />
             </div>
+            <p className="rounded-xl bg-nevoa px-4 py-3 text-sm text-texto">
+              Nos seus orçamentos: ITBI de <strong className="text-tinta">{pctValido ? `${String(pct).replace('.', ',')}%` : '—'}</strong>
+              {' '}({outra ? (cidade.trim() || 'sua cidade') : MUNICIPIOS[municipio]?.nome}) e emolumentos de cartório pela <strong className="text-tinta">tabela de {uf} de {new Date().getFullYear()}</strong>.
+            </p>
           </>
         )}
+      </fieldset>
+
+      {/* Certidões e honorários */}
+      <fieldset className="flex flex-col gap-3">
+        <legend className="rotulo-secao mb-1">Certidões e honorários</legend>
+        <p className="text-sm text-suave">Valores que entram em todo orçamento. Na hora de calcular, dá para trocar e voltar a eles com um toque; no WhatsApp, escreva por exemplo <strong className="text-tinta">honorarios 900</strong>.</p>
+        {(Object.keys(ROTULO_GRUPO) as GrupoCustos[]).map((g) => (
+          <div key={g} className="flex flex-col gap-2">
+            <span className="font-bold">{ROTULO_GRUPO[g]}</span>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <CampoMoeda rotulo="Certidões" centavos={custos[g].certidoes} onChange={(c) => setCustos((v) => ({ ...v, [g]: { ...v[g], certidoes: c } }))} />
+              <CampoMoeda rotulo="Honorários" centavos={custos[g].honorarios} onChange={(c) => setCustos((v) => ({ ...v, [g]: { ...v[g], honorarios: c } }))} />
+            </div>
+          </div>
+        ))}
       </fieldset>
 
       {/* Marca no orçamento */}
@@ -214,6 +238,11 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
     </div>
   );
 }
+
+const paraCentavos = (c: CustosPadrao) => ({
+  escritura: { certidoes: Math.round(c.escritura.certidoes * 100), honorarios: Math.round(c.escritura.honorarios * 100) },
+  financiamento: { certidoes: Math.round(c.financiamento.certidoes * 100), honorarios: Math.round(c.financiamento.honorarios * 100) },
+});
 
 /** Prévia do topo e do total do orçamento com a marca escolhida. */
 function Previa({ cabecalho, cor, logoUrl, formato, cidade, aliquota }: { cabecalho: string; cor: string; logoUrl: string | null; formato: Formato; cidade: string; aliquota: number }) {

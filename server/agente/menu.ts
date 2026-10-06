@@ -1,4 +1,4 @@
-import { brl, type TipoCalculo } from '../../src/lib/calc';
+import { brl, custosDoCalculo, type Custos, type CustosPadrao, type TipoCalculo } from '../../src/lib/calc';
 import { ANO_BASE_INCC } from '../../src/lib/calc/correcao';
 
 /**
@@ -157,7 +157,12 @@ export type Tela =
   | { tela: 'pergunta'; fluxo: string; i: number; dados: Record<string, unknown>; origem: string }
   | { tela: 'formato'; fluxo?: string; dados?: Record<string, unknown>; origem?: string; reenvio?: boolean };
 
-export type Estado = Tela & { /** Número (seq) do último orçamento feito nesta conversa. */ ultimo?: number };
+export type Estado = Tela & {
+  /** Número (seq) do último orçamento feito nesta conversa. */
+  ultimo?: number;
+  /** Certidões/honorários trocados pelo corretor só para o próximo orçamento ("honorarios 900"). */
+  custos?: Partial<Custos>;
+};
 
 export interface MensagemMenu { texto: string; opcoes?: { id: string; titulo: string }[] }
 
@@ -170,7 +175,13 @@ export type Acao =
 
 export interface Passo { estado: Estado; mensagens: MensagemMenu[]; acao?: Acao }
 
-export interface ContextoMenu { nome?: string | null; formatoPadrao: FormatoEntrega; temAnexo?: boolean }
+export interface ContextoMenu {
+  nome?: string | null;
+  formatoPadrao: FormatoEntrega;
+  temAnexo?: boolean;
+  /** Certidões e honorários padrão do assinante (null = valores sugeridos pelo sistema). */
+  custosPadrao?: CustosPadrao | null;
+}
 
 // ---------------- Leitura do que a pessoa digitou ----------------
 
@@ -268,8 +279,19 @@ function comoTexto(p: Pergunta, valor: unknown): string {
   return brl(Number(valor));
 }
 
-function telaFormato(padrao: FormatoEntrega, prefixo = ''): MensagemMenu {
-  return mensagemMenu('*Como você quer receber o orçamento?*', FORMATOS.map((f) => f.id === padrao ? `${f.rotulo} · seu padrão` : f.rotulo), true, prefixo);
+/** Certidões e honorários que vão entrar no orçamento em andamento. */
+function custosEmUso(e: Estado, ctx: ContextoMenu): Custos | null {
+  if (e.tela !== 'formato' && e.tela !== 'pergunta') return null;
+  if (e.tela === 'formato' && (e.reenvio || !e.fluxo)) return null;
+  const f = FLUXOS[e.fluxo!];
+  const base = custosDoCalculo(f.calculo, ctx.custosPadrao ?? null, e.dados ?? {});
+  return base && { ...base, ...e.custos };
+}
+
+function telaFormato(ctx: ContextoMenu, e?: Estado, prefixo = ''): MensagemMenu {
+  const c = e ? custosEmUso(e, ctx) : null;
+  const custos = c ? `Certidões: *${brl(c.certidoes)}*\nHonorários: *${brl(c.honorarios)}*\n_Para mudar só neste orçamento, escreva_ *honorarios 900* _ou_ *certidoes 350*\n\n` : '';
+  return mensagemMenu(`${custos}*Como você quer receber o orçamento?*`, FORMATOS.map((f) => f.id === ctx.formatoPadrao ? `${f.rotulo} · seu padrão` : f.rotulo), true, prefixo);
 }
 
 const saudacao = (nome?: string | null) => `Olá${nome ? `, ${nome.split(' ')[0]}` : ''}! 👋 Eu faço o orçamento da documentação do imóvel.\n\n`;
@@ -280,7 +302,7 @@ const saudacao = (nome?: string | null) => `Olá${nome ? `, ${nome.split(' ')[0]
 export function telaAtual(e: Estado, ctx: ContextoMenu, prefixo = ''): MensagemMenu {
   if (e.tela === 'menu') return telaMenu(e.id, prefixo);
   if (e.tela === 'pergunta') return telaPergunta(FLUXOS[e.fluxo], e.i, prefixo, e.dados);
-  return telaFormato(ctx.formatoPadrao, prefixo);
+  return telaFormato(ctx, e, prefixo);
 }
 
 const NAO_ENTENDI = 'Não entendi 🙂 Responda só com o *número* de uma opção.\n\n';
@@ -294,8 +316,7 @@ function irPara(destino: string, origem: string, ultimo?: number): Passo {
   return { estado: { tela: 'menu', id: destino, ultimo }, mensagens: [telaMenu(destino)] };
 }
 
-/** Um passo da conversa. `estado` null = conversa nova (ou parada há muito tempo). */
-export function passo(estado: Estado | null, texto: string, ctx: ContextoMenu): Passo {
+function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): Passo {
   const t = semAcento(texto ?? '');
   const ultimo = estado?.ultimo;
 
@@ -324,7 +345,7 @@ export function passo(estado: Estado | null, texto: string, ctx: ContextoMenu): 
     }
     if (opcao.vai === 'reenviar') {
       if (!ultimo) return irPara('inicio', 'inicio');
-      return { estado: { tela: 'formato', reenvio: true, ultimo }, mensagens: [telaFormato(ctx.formatoPadrao)] };
+      return { estado: { tela: 'formato', reenvio: true, ultimo }, mensagens: [telaFormato(ctx)] };
     }
     if (opcao.vai === 'detalhar') {
       if (!ultimo) return irPara('inicio', 'inicio');
@@ -366,7 +387,8 @@ export function passo(estado: Estado | null, texto: string, ctx: ContextoMenu): 
     if (estado.i + 1 < f.perguntas.length) {
       return { estado: { ...estado, i: estado.i + 1, dados }, mensagens: [telaPergunta(f, estado.i + 1, entendido, dados)] };
     }
-    return { estado: { tela: 'formato', fluxo: estado.fluxo, dados, origem: estado.origem, ultimo }, mensagens: [telaFormato(ctx.formatoPadrao, entendido)] };
+    const noFormato: Estado = { tela: 'formato', fluxo: estado.fluxo, dados, origem: estado.origem, ultimo, custos: estado.custos };
+    return { estado: noFormato, mensagens: [telaFormato(ctx, noFormato, entendido)] };
   }
 
   // Escolha do formato.
@@ -385,5 +407,36 @@ export function passo(estado: Estado | null, texto: string, ctx: ContextoMenu): 
     return { estado: depois, mensagens: [telaMenu('depois')], acao: { tipo: 'reenviar', seq: ultimo, formato } };
   }
   const f = FLUXOS[estado.fluxo!];
-  return { estado: depois, mensagens: [telaMenu('depois')], acao: { tipo: 'calcular', calculo: f.calculo, dados: estado.dados ?? {}, formato, titulo: f.titulo } };
+  return { estado: depois, mensagens: [telaMenu('depois')], acao: { tipo: 'calcular', calculo: f.calculo, dados: { ...estado.dados, ...estado.custos }, formato, titulo: f.titulo } };
+}
+
+const COMANDO_CUSTOS = /^(honorarios?|certidoes|certidao)\b\s*:?\s*(.*)$/;
+
+/**
+ * Um passo da conversa. `estado` null = conversa nova (ou parada há muito tempo).
+ * Em qualquer tela, "honorarios 900" ou "certidoes 350" troca o valor só para o próximo orçamento.
+ */
+export function passo(estado: Estado | null, texto: string, ctx: ContextoMenu): Passo {
+  const m = semAcento(texto ?? '').match(COMANDO_CUSTOS);
+  if (m) {
+    const atual: Estado = estado ?? { tela: 'menu', id: 'inicio' };
+    const campo: keyof Custos = m[1].startsWith('honorario') ? 'honorarios' : 'certidoes';
+    const nome = campo === 'honorarios' ? 'Honorários' : 'Certidões';
+    const resto = m[2].trim();
+    if (/^padra?o/.test(resto)) {
+      const { [campo]: _, ...outros } = atual.custos ?? {};
+      const novo = { ...atual, custos: outros };
+      return { estado: novo, mensagens: [telaAtual(novo, ctx, `✅ ${nome}: voltou para o seu valor padrão.\n\n`)] };
+    }
+    const v = resto ? lerValor(resto) : null;
+    if (v === null) {
+      return { estado: atual, mensagens: [telaAtual(atual, ctx, `Para mudar ${nome.toLowerCase()} só neste orçamento, escreva o valor junto. Ex.: *${campo} 900*\nPara voltar ao seu padrão: *${campo} padrao*\n\n`)] };
+    }
+    const novo: Estado = { ...atual, custos: { ...atual.custos, [campo]: v } };
+    return { estado: novo, mensagens: [telaAtual(novo, ctx, `✅ ${nome} deste orçamento: *${brl(v)}*\n\n`)] };
+  }
+  const p = passoDoMenu(estado, texto, ctx);
+  // A troca de custos vale até o próximo orçamento sair.
+  if (estado?.custos && p.acao?.tipo !== 'calcular' && !p.estado.custos) p.estado = { ...p.estado, custos: estado.custos };
+  return p;
 }

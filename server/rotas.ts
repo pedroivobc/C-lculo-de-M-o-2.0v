@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
-import { calcular, CALCULADORAS, type TipoCalculo } from '../src/lib/calc';
+import { calcular, CALCULADORAS, comCustos, type TipoCalculo } from '../src/lib/calc';
 import { config } from './config';
 import { exigirAgente, exigirUsuario } from './auth';
 import { supabaseAdmin, salvarArquivo, urlAssinada } from './supabase';
@@ -75,7 +75,8 @@ rotas.post('/api/calculos/:tipo', exigirUsuario, h(async (req, res) => {
   const { descricao, salvar = true, ...informado } = req.body ?? {};
   // Cidade e alíquota do ITBI do assinante entram quando a tela não manda outra.
   const usaLocalidade = tipo !== 'correcao';
-  const entrada = usaLocalidade ? comLocalidade(informado, (await configuracaoDoUsuario(req.userId!)).localidade) : informado;
+  const conf = await configuracaoDoUsuario(req.userId!);
+  const entrada = usaLocalidade ? comCustos(tipo, comLocalidade(informado, conf.localidade), conf.custos) : informado;
   const resultado = calcular(tipo, entrada);
   if (!salvar) return res.json({ resultado });
   const salvo = await salvarCalculo({ userId: req.userId!, resultado, entrada, origem: 'site', descricao });

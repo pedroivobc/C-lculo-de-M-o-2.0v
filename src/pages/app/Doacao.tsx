@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PaginaCalculadora, Grade } from '@/components/calc/PaginaCalculadora';
 import { CampoMoeda, CampoNumero, Opcoes } from '@/components/ui/Campos';
+import { BotaoCustos, useCustos } from '@/hooks/useCustos';
 
 type Subtipo = 'doacao_simples' | 'doacao_usufruto' | 'renuncia_usufruto';
 const ROTULOS: Record<Subtipo, string> = { doacao_simples: 'Doação simples', doacao_usufruto: 'Doação com usufruto', renuncia_usufruto: 'Renúncia de usufruto' };
@@ -10,13 +11,12 @@ export default function Doacao() {
   const [atribuido, setAtribuido] = useState(0);
   const [fazenda, setFazenda] = useState(0);
   const [folhas, setFolhas] = useState(25);
-  const [certidoes, setCertidoes] = useState(40000);
-  const [honorarios, setHonorarios] = useState(70000);
+  const c = useCustos('escritura');
 
   return (
     <PaginaCalculadora
       tipo="doacao"
-      entrada={{ subtipo, valorAtribuido: atribuido / 100, avaliacaoFazenda: fazenda / 100, folhas, certidoes: certidoes / 100, honorarios: honorarios / 100 }}
+      entrada={{ subtipo, valorAtribuido: atribuido / 100, avaliacaoFazenda: fazenda / 100, folhas, certidoes: c.certidoes / 100, honorarios: c.honorarios / 100 }}
       rotulo="Doação"
       titulo="Custos da doação de imóvel"
       descricao="ITCD de Minas Gerais, lavratura, registro e arquivamento."
@@ -30,9 +30,10 @@ export default function Doacao() {
       </Grade>
       <div className="grid gap-4 sm:grid-cols-3">
         <CampoNumero rotulo="Folhas" valor={folhas} onChange={setFolhas} />
-        <CampoMoeda rotulo="Certidões" centavos={certidoes} onChange={setCertidoes} />
-        <CampoMoeda rotulo="Honorários" centavos={honorarios} onChange={setHonorarios} />
+        <CampoMoeda rotulo="Certidões" centavos={c.certidoes} onChange={c.setCertidoes} />
+        <CampoMoeda rotulo="Honorários" centavos={c.honorarios} onChange={c.setHonorarios} />
       </div>
+      <BotaoCustos c={c} />
     </PaginaCalculadora>
   );
 }

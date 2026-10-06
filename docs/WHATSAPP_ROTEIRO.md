@@ -75,6 +75,10 @@ _Pode digitar só os números: 350000 vira R$ 350.000,00_
 ```
 ✅ Valor do imóvel: *R$ 350.000,00*
 
+Certidões: *R$ 400,00*
+Honorários: *R$ 700,00*
+_Para mudar só neste orçamento, escreva_ *honorarios 900* _ou_ *certidoes 350*
+
 *Como você quer receber o orçamento?*
 
 1️⃣ Imagem (foto) · seu padrão
@@ -230,6 +234,10 @@ _Responda com o número da opção._
 
 ```
 ✅ Primeiro imóvel: *Sim*
+
+Certidões: *R$ 260,07*
+Honorários: *R$ 700,00*
+_Para mudar só neste orçamento, escreva_ *honorarios 900* _ou_ *certidoes 350*
 
 *Como você quer receber o orçamento?*
 

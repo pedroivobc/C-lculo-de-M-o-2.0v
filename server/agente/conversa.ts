@@ -1,7 +1,7 @@
 import { GoogleGenAI, type Content } from '@google/genai';
 import { confirmarPorMensagem, type ResultadoConfirmacao } from '../verificacao';
 import { ZodError } from 'zod';
-import { brl, calcular, MUNICIPIOS, MUNICIPIO_OUTRA } from '../../src/lib/calc';
+import { brl, calcular, comCustos, MUNICIPIOS, MUNICIPIO_OUTRA } from '../../src/lib/calc';
 import { config } from '../config';
 import { supabaseAdmin } from '../supabase';
 import { variantesTelefone } from '../telefone';
@@ -151,7 +151,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   await registrar(msg.telefone, assinante.userId, 'entrada', msg.temAnexo ? 'midia' : 'texto', textoUsuario, msg.messageId);
 
   // Conversa por menus numerados (./menu.ts). Texto livre no menu inicial vai para o agente com IA.
-  const ctxMenu: ContextoMenu = { nome: assinante.nome, formatoPadrao: assinante.configuracao.estilo.formato, temAnexo: msg.temAnexo };
+  const ctxMenu: ContextoMenu = { nome: assinante.nome, formatoPadrao: assinante.configuracao.estilo.formato, temAnexo: msg.temAnexo, custosPadrao: assinante.configuracao.custos };
   const p = passo(await lerSessao(msg.telefone), textoUsuario, ctxMenu);
   if (p.acao?.tipo === 'livre') {
     await salvarSessao(msg.telefone, assinante.userId, p.estado);
@@ -165,7 +165,8 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   try {
     const estilo = assinante.configuracao.estilo;
     if (p.acao?.tipo === 'calcular') {
-      const dados = p.acao.calculo === 'correcao' ? p.acao.dados : comLocalidade(p.acao.dados, assinante.configuracao.localidade);
+      const dados = p.acao.calculo === 'correcao' ? p.acao.dados
+        : comCustos(p.acao.calculo, comLocalidade(p.acao.dados, assinante.configuracao.localidade), assinante.configuracao.custos);
       const resultado = calcular(p.acao.calculo, dados);
       const salvo = await salvarCalculo({ userId: assinante.userId, resultado, entrada: dados, origem: 'whatsapp' });
       respostas.push(...await entregar(salvo, p.acao.formato, estilo));

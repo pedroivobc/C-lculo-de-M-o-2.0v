@@ -1,5 +1,5 @@
 import type { FunctionDeclaration } from '@google/genai';
-import { brl, calcular, type Resultado, type TipoCalculo } from '../../src/lib/calc';
+import { brl, calcular, comCustos, type Resultado, type TipoCalculo } from '../../src/lib/calc';
 import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, numeroCalculo, salvarCalculo } from '../historico';
 import { comLocalidade, type Configuracao } from '../estilo';
 import { gerarCsv } from '../exportar';
@@ -22,8 +22,8 @@ export interface Contexto {
 
 const num = { type: 'number' };
 const custos = {
-  certidoes: { ...num, description: 'Certidões em reais. Omitir para usar o padrão.' },
-  honorarios: { ...num, description: 'Honorários em reais. Omitir para usar o padrão.' },
+  certidoes: { ...num, description: 'Certidões em reais. Omitir para usar o padrão do assinante.' },
+  honorarios: { ...num, description: 'Honorários em reais. Omitir para usar o padrão do assinante.' },
   descricao: { type: 'string', description: 'Referência curta do imóvel (ex.: bairro ou "apto Centro"), se o usuário informar. Nunca nome, CPF, telefone ou e-mail de pessoas.' },
   municipio: { type: 'string', enum: ['mg-juiz-de-fora', 'mg-belo-horizonte', 'mg-outra'], description: 'Omitir para usar a cidade do assinante. "mg-outra" = cidade de MG sem regra cadastrada (exige cidade e itbiPercentual).' },
   cidade: { type: 'string', description: 'Nome da cidade quando municipio = "mg-outra".' },
@@ -146,7 +146,7 @@ export async function executar(nome: string, args: Record<string, unknown>, ctx:
     const tipo = TIPO_POR_FERRAMENTA[nome];
     if (tipo) {
       const { descricao, ...entrada } = args as Record<string, unknown> & { descricao?: string };
-      const dados = tipo === 'correcao' ? entrada : comLocalidade(entrada, ctx.configuracao.localidade);
+      const dados = tipo === 'correcao' ? entrada : comCustos(tipo, comLocalidade(entrada, ctx.configuracao.localidade), ctx.configuracao.custos);
       const resultado = calcular(tipo, dados);
       const salvo = await salvarCalculo({ userId: ctx.userId, resultado, entrada: dados, origem: 'whatsapp', descricao });
       await anexar(ctx, salvo);

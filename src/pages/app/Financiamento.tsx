@@ -3,6 +3,7 @@ import { PaginaCalculadora, Grade } from '@/components/calc/PaginaCalculadora';
 import { Alternar, CampoMoeda, CampoNumero, EntradaMoeda, Opcoes } from '@/components/ui/Campos';
 import { brl } from '@/lib/formato';
 import { cn } from '@/lib/utils';
+import { BotaoCustos, useCustos } from '@/hooks/useCustos';
 
 const R = (c: number) => c / 100;
 
@@ -10,8 +11,7 @@ function useValores() {
   const [declarado, setDeclarado] = useState(0);
   const [financiado, setFinanciado] = useState(0);
   const [primeiro, setPrimeiro] = useState(false);
-  const [certidoes, setCertidoes] = useState(26007);
-  return { declarado, setDeclarado, financiado, setFinanciado, primeiro, setPrimeiro, certidoes, setCertidoes };
+  return { declarado, setDeclarado, financiado, setFinanciado, primeiro, setPrimeiro };
 }
 
 const pctTexto = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
@@ -78,7 +78,6 @@ function CamposCompra({ s }: { s: ReturnType<typeof useValores> }) {
       <Grade>
         <CampoMoeda rotulo="Valor declarado" centavos={s.declarado} onChange={s.setDeclarado} />
         <CampoFinanciado declarado={s.declarado} financiado={s.financiado} onChange={s.setFinanciado} />
-        <CampoMoeda rotulo="Certidões" centavos={s.certidoes} onChange={s.setCertidoes} />
       </Grade>
     </>
   );
@@ -90,26 +89,27 @@ export function FinanciamentoCaixa() {
   const s = useValores();
   const [modalidade, setModalidade] = useState<Modalidade>('SBPE');
   const [taxa, setTaxa] = useState(1.5);
-  const [honorarios, setHonorarios] = useState<number | null>(null);
-  const honorariosPadrao = modalidade === 'FGTS' ? 120000 : 70000;
+  const c = useCustos('financiamento', { fgts: modalidade === 'FGTS' });
   const sfh = modalidade === 'SBPE' || modalidade === 'MCMV';
 
   return (
     <PaginaCalculadora
       tipo="financiamento_caixa"
-      entrada={{ modalidade, valorDeclarado: R(s.declarado), valorFinanciado: R(s.financiado), primeiroImovel: s.primeiro, taxaPercent: taxa, certidoes: R(s.certidoes), honorarios: R(honorarios ?? honorariosPadrao) }}
+      entrada={{ modalidade, valorDeclarado: R(s.declarado), valorFinanciado: R(s.financiado), primeiroImovel: s.primeiro, taxaPercent: taxa, certidoes: R(c.certidoes), honorarios: R(c.honorarios) }}
       rotulo="Financiamento Caixa"
       titulo="Custos do financiamento pela Caixa"
       descricao="Taxa da Caixa, ITBI (com a regra do SFH quando couber), prenotação e registro do contrato."
       tituloOrcamento={`Caixa ${modalidade}`}
-      opcoes={<Opcoes rotulo="Modalidade" valor={modalidade} onChange={(m) => { setModalidade(m); setHonorarios(null); }}
+      opcoes={<Opcoes rotulo="Modalidade" valor={modalidade} onChange={setModalidade}
         opcoes={[{ valor: 'SBPE', rotulo: 'SBPE' }, { valor: 'MCMV', rotulo: 'MCMV' }, { valor: 'SFI', rotulo: 'SFI' }, { valor: 'EGI', rotulo: 'EGI' }, { valor: 'FGTS', rotulo: 'FGTS total' }]} />}
     >
       <CamposCompra s={s} />
       <Grade>
         <CampoNumero rotulo="Taxa Caixa" sufixo="%" passo={0.1} valor={taxa} onChange={setTaxa} />
-        <CampoMoeda rotulo="Honorários" centavos={honorarios ?? honorariosPadrao} onChange={setHonorarios} />
+        <CampoMoeda rotulo="Certidões" centavos={c.certidoes} onChange={c.setCertidoes} />
+        <CampoMoeda rotulo="Honorários" centavos={c.honorarios} onChange={c.setHonorarios} />
       </Grade>
+      <BotaoCustos c={c} />
       {sfh && <Alternar rotulo="Primeiro imóvel do comprador" dica="Registro com redução de 50% (média das lavraturas)" ligado={s.primeiro} onChange={s.setPrimeiro} />}
     </PaginaCalculadora>
   );
@@ -122,12 +122,12 @@ export function BancoPrivado() {
   const s = useValores();
   const [banco, setBanco] = useState<Banco>('itau');
   const [modalidade, setModalidade] = useState<'SBPE' | 'SFI'>('SBPE');
-  const [honorarios, setHonorarios] = useState(70000);
+  const c = useCustos('financiamento');
 
   return (
     <PaginaCalculadora
       tipo="banco_privado"
-      entrada={{ banco, modalidade, valorDeclarado: R(s.declarado), valorFinanciado: R(s.financiado), primeiroImovel: s.primeiro, certidoes: R(s.certidoes), honorarios: R(honorarios) }}
+      entrada={{ banco, modalidade, valorDeclarado: R(s.declarado), valorFinanciado: R(s.financiado), primeiroImovel: s.primeiro, certidoes: R(c.certidoes), honorarios: R(c.honorarios) }}
       rotulo="Banco privado"
       titulo="Custos do financiamento em banco privado"
       descricao="Tarifa de contrato do banco, ITBI, prenotação e registro da alienação fiduciária."
@@ -140,7 +140,11 @@ export function BancoPrivado() {
       }
     >
       <CamposCompra s={s} />
-      <CampoMoeda rotulo="Honorários" centavos={honorarios} onChange={setHonorarios} />
+      <Grade>
+        <CampoMoeda rotulo="Certidões" centavos={c.certidoes} onChange={c.setCertidoes} />
+        <CampoMoeda rotulo="Honorários" centavos={c.honorarios} onChange={c.setHonorarios} />
+      </Grade>
+      <BotaoCustos c={c} />
       {modalidade === 'SBPE' && <Alternar rotulo="Primeiro imóvel do comprador" dica="Desmarcado: o registro soma as duas lavraturas" ligado={s.primeiro} onChange={s.setPrimeiro} />}
     </PaginaCalculadora>
   );

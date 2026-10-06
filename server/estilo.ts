@@ -1,3 +1,4 @@
+import { lerCustosPadrao, type CustosPadrao } from '../src/lib/calc';
 import sharp from 'sharp';
 import { config } from './config';
 import { supabaseAdmin } from './supabase';
@@ -28,6 +29,8 @@ export interface Localidade {
 export interface Configuracao {
   estilo: Estilo;
   localidade: Localidade;
+  /** Certidões e honorários padrão do assinante (null = ainda não definiu; valem os sugeridos). */
+  custos: CustosPadrao | null;
 }
 
 const LOGO_CACHE = new Map<string, { em: number; png: Buffer }>();
@@ -49,7 +52,7 @@ export async function configuracaoDoUsuario(userId: string): Promise<Configuraca
   const db = supabaseAdmin();
   const [{ data: p }, { data: s }] = await Promise.all([
     db.from('profiles')
-      .select('pdf_header, pdf_logo_path, cor_primaria, formato_orcamento, municipio_padrao, cidade_nome, itbi_percentual')
+      .select('pdf_header, pdf_logo_path, cor_primaria, formato_orcamento, municipio_padrao, cidade_nome, itbi_percentual, custos_padrao')
       .eq('id', userId).maybeSingle(),
     db.rpc('situacao_acesso', { uid: userId }).maybeSingle<{ personaliza_orcamento: boolean }>(),
   ]);
@@ -68,6 +71,7 @@ export async function configuracaoDoUsuario(userId: string): Promise<Configuraca
       cidade: p?.cidade_nome ?? undefined,
       itbiPercentual: p?.itbi_percentual != null ? Number(p.itbi_percentual) : undefined,
     },
+    custos: lerCustosPadrao(p?.custos_padrao),
   };
 }
 

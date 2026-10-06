@@ -65,7 +65,7 @@ describe('menu do WhatsApp', () => {
 
   it('mostra cada valor entendido em reais', () => {
     expect(conversa('oi', '2', '1', '1', '400000').mensagens[0].texto).toMatch(/^✅ Valor do imóvel: \*R\$\s400\.000,00\*/);
-    expect(conversa('oi', '1', '1', '1', '350000').mensagens[0].texto).toMatch(/^✅ Valor do imóvel: \*R\$\s350\.000,00\*\n\n\*Como você quer receber/);
+    expect(conversa('oi', '1', '1', '1', '350000').mensagens[0].texto).toMatch(/^✅ Valor do imóvel: \*R\$\s350\.000,00\*\n\nCertidões: \*R\$\s400,00\*\nHonorários: \*R\$\s700,00\*/);
     expect(conversa('oi', '1', '2', '1', '350000', 'não sei').mensagens[0].texto).toContain('✅ Avaliação da Fazenda: *ainda não tem*');
   });
 
@@ -108,6 +108,42 @@ describe('menu do WhatsApp', () => {
     p = passo(estado, '2', ctx);
     expect(p.estado).toMatchObject({ tela: 'formato', reenvio: true });
     expect(passo(p.estado, '3', ctx).acao).toEqual({ tipo: 'reenviar', seq: 143, formato: 'texto' });
+  });
+});
+
+describe('certidões e honorários no WhatsApp', () => {
+  const padrao = { escritura: { certidoes: 350, honorarios: 900 }, financiamento: { certidoes: 260.07, honorarios: 800 } };
+  const comPadrao: ContextoMenu = { ...ctx, custosPadrao: padrao };
+  const rodar = (c: ContextoMenu, ...mensagens: string[]) => {
+    let estado: Estado | null = null; let p: Passo | undefined;
+    for (const m of mensagens) { p = passo(estado, m, c); estado = p.estado; }
+    return p!;
+  };
+
+  it('mostra os valores padrão do assinante antes de escolher o formato', () => {
+    const p = rodar(comPadrao, 'oi', '1', '1', '1', '350000');
+    expect(p.mensagens[0].texto).toMatch(/Certidões: \*R\$\s350,00\*\nHonorários: \*R\$\s900,00\*/);
+    expect(p.mensagens[0].texto).toContain('*honorarios 900*');
+  });
+
+  it('"honorarios 1200" troca só neste orçamento e entra no cálculo', () => {
+    const p = rodar(comPadrao, 'oi', '1', '1', '1', '350000', 'honorarios 1.200');
+    expect(p.mensagens[0].texto).toMatch(/^✅ Honorários deste orçamento: \*R\$\s1\.200,00\*/);
+    expect(p.mensagens[0].texto).toMatch(/Honorários: \*R\$\s1\.200,00\*/);
+    const fim = passo(p.estado, '3', comPadrao);
+    expect(fim.acao).toMatchObject({ tipo: 'calcular', dados: { honorarios: 1200 } });
+    expect(fim.estado.custos).toBeUndefined(); // o próximo orçamento volta ao padrão
+  });
+
+  it('o comando funciona no meio das perguntas e antes de escolher o tipo', () => {
+    const p = rodar(comPadrao, 'oi', 'certidoes 500', '2', '1', '1', '400000', '80%', '1');
+    expect(p.mensagens[0].texto).toMatch(/Certidões: \*R\$\s500,00\*\nHonorários: \*R\$\s800,00\*/);
+  });
+
+  it('"honorarios padrao" volta ao valor do assinante e sem valor explica o uso', () => {
+    const p = rodar(comPadrao, 'oi', '1', '1', '1', '350000', 'honorarios 1200', 'honorarios padrao');
+    expect(p.mensagens[0].texto).toMatch(/Honorários: \*R\$\s900,00\*/);
+    expect(rodar(comPadrao, 'oi', 'honorarios').mensagens[0].texto).toContain('Ex.: *honorarios 900*');
   });
 });
 
