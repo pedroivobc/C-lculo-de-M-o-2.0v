@@ -1,83 +1,97 @@
 import sharp from 'sharp';
 import { brl, type Resultado } from '../src/lib/calc';
 import { config } from './config';
-import { clarear, type Estilo } from './estilo';
-import { ESTILO_PADRAO, ROTULO_ORIGEM, TITULO } from './pdf';
+import type { Estilo } from './estilo';
+import { ESTILO_PADRAO } from './pdf';
+import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContexto, lockupOrcaiSvg, SUAVE, TEXTO, TINTA, tituloDoDocumento } from './documento';
 
 const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const FONTE = `font-family="Inter, 'DejaVu Sans', Arial, sans-serif"`;
-const TINTA = '#101828', SUAVE = '#556070', LINHA = '#E4E7EC';
-
-const CHIP: Record<string, [string, string]> = {
-  municipio: ['#FDECEC', '#9F1D1D'], uf: ['#E8EDFF', '#1B33A8'], banco: ['#F1F3F6', '#344054'], usuario: ['#FFF4CC', '#7A5A00'],
-};
+const FONTE = `font-family="'DejaVu Sans', Arial, sans-serif"`;
 
 /**
  * Orçamento em imagem (JPEG, 1080 px de largura): o formato que circula melhor no WhatsApp.
- * Mesmo conteúdo e mesma regra de marca do PDF.
+ * Logo no topo, linhas sóbrias com as partes de Escritura e Registro, total numa faixa.
  */
 export async function gerarJpegOrcamento(r: Resultado, meta: { numero: string; data: Date }, estilo: Estilo = ESTILO_PADRAO): Promise<Buffer> {
-  const W = 1080, P = 64;
-  const partes: string[] = [];
+  const W = 1080, P = 72, D = W - P;
+  const t: string[] = [];
   let y = P;
 
+  // Cabeçalho: logo à esquerda, número e data à direita.
+  let alturaLogo = 64;
   if (estilo.logoPng) {
     const { width = 1, height = 1 } = await sharp(estilo.logoPng).metadata();
-    const h = Math.min(110, (420 * height) / width);
-    const w = (h * width) / height;
-    partes.push(`<image x="${P}" y="${y}" width="${w}" height="${h}" href="data:image/png;base64,${estilo.logoPng.toString('base64')}"/>`);
-    y += h + 44;
-  } else {
+    alturaLogo = Math.min(96, (420 * height) / width);
+    const w = (alturaLogo * width) / height;
+    t.push(`<image x="${P}" y="${y}" width="${w}" height="${alturaLogo}" href="data:image/png;base64,${estilo.logoPng.toString('base64')}"/>`);
+  } else if (!estilo.personalizado) {
+    t.push(`<g transform="translate(${P} ${y})">${lockupOrcaiSvg(64)}</g>`);
+  }
+  t.push(`<text x="${D}" y="${y + 22}" ${FONTE} font-size="18" font-weight="700" letter-spacing="2" fill="${SUAVE}" text-anchor="end">ORÇAMENTO</text>`);
+  t.push(`<text x="${D}" y="${y + 58}" ${FONTE} font-size="34" font-weight="700" fill="${TINTA}" text-anchor="end">Nº ${esc(meta.numero.replace('#', ''))}</text>`);
+  t.push(`<text x="${D}" y="${y + 88}" ${FONTE} font-size="20" fill="${SUAVE}" text-anchor="end">${meta.data.toLocaleDateString('pt-BR')}</text>`);
+  y += Math.max(alturaLogo, 92);
+  if (estilo.personalizado || estilo.logoPng) {
+    y += 34;
+    t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="24" font-weight="700" fill="${TINTA}">${esc(estilo.cabecalho)}</text>`);
+  }
+  y += 30;
+  t.push(`<rect x="${P}" y="${y}" width="${D - P}" height="3" fill="${estilo.personalizado ? estilo.cor : TINTA}"/>`);
+
+  // Título e contexto.
+  y += 70;
+  t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="38" font-weight="700" fill="${TINTA}">${esc(tituloDoDocumento(r))}</text>`);
+  const contexto = linhaDeContexto(r, brl);
+  if (contexto) {
     y += 40;
-  }
-  partes.push(`<text x="${P}" y="${y}" ${FONTE} font-size="${estilo.logoPng ? 32 : 44}" font-weight="800" fill="${TINTA}">${esc(estilo.cabecalho)}</text>`);
-  partes.push(`<text x="${W - P}" y="${y}" ${FONTE} font-size="24" fill="${SUAVE}" text-anchor="end">Orçamento ${esc(meta.numero)} · ${meta.data.toLocaleDateString('pt-BR')}</text>`);
-  y += 22;
-  partes.push(`<rect x="${P}" y="${y}" width="${W - 2 * P}" height="6" rx="3" fill="${estilo.cor}"/>`);
-
-  y += 76;
-  partes.push(`<text x="${P}" y="${y}" ${FONTE} font-size="40" font-weight="800" fill="${TINTA}">${esc(TITULO[r.tipo] ?? r.tipo)}</text>`);
-  if (r.bases.length) {
-    y += 42;
-    partes.push(`<text x="${P}" y="${y}" ${FONTE} font-size="26" fill="${SUAVE}">Base de cálculo: ${esc(r.bases.map(brl).join(' + '))}</text>`);
-  }
-  if (r.municipioNome && r.municipio !== 'n/a') {
-    y += 38;
-    partes.push(`<text x="${P}" y="${y}" ${FONTE} font-size="26" fill="${SUAVE}">Imóvel em ${esc(r.municipioNome)} (MG)</text>`);
+    t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="22" fill="${SUAVE}">${esc(contexto)}</text>`);
   }
 
-  y += 40;
+  // Cabeçalho da tabela.
+  y += 60;
+  t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="17" font-weight="700" letter-spacing="2" fill="${SUAVE}">DESCRIÇÃO</text>`);
+  t.push(`<text x="${D}" y="${y}" ${FONTE} font-size="17" font-weight="700" letter-spacing="2" fill="${SUAVE}" text-anchor="end">VALOR</text>`);
+  y += 18;
+  t.push(`<rect x="${P}" y="${y}" width="${D - P}" height="2" fill="${TINTA}"/>`);
+
   for (const l of r.linhas) {
-    y += 46;
-    const [fundo, texto] = CHIP[l.origem] ?? CHIP.banco;
-    const rotulo = ROTULO_ORIGEM[l.origem];
-    const larguraChip = 26 + rotulo.length * 12.5;
-    partes.push(`<rect x="${P}" y="${y - 27}" width="${larguraChip}" height="34" rx="8" fill="${fundo}"/>`);
-    partes.push(`<text x="${P + larguraChip / 2}" y="${y - 4}" ${FONTE} font-size="18" font-weight="800" fill="${texto}" text-anchor="middle">${esc(rotulo)}</text>`);
-    partes.push(`<text x="${P + larguraChip + 18}" y="${y}" ${FONTE} font-size="30" fill="${TINTA}">${esc(l.rotulo)}</text>`);
-    partes.push(`<text x="${W - P}" y="${y}" ${FONTE} font-size="30" font-weight="700" fill="${TINTA}" text-anchor="end">${brl(l.valor)}</text>`);
-    if (l.nota) {
-      y += 34;
-      partes.push(`<text x="${P + larguraChip + 18}" y="${y}" ${FONTE} font-size="22" fill="${SUAVE}">${esc(l.nota)}</text>`);
+    y += 50;
+    t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="28" font-weight="700" fill="${TINTA}">${esc(l.rotulo)}</text>`);
+    t.push(`<text x="${D}" y="${y}" ${FONTE} font-size="28" font-weight="700" fill="${TINTA}" text-anchor="end">${brl(l.valor)}</text>`);
+    if (l.detalhes?.length) {
+      for (const d of l.detalhes) {
+        y += 34;
+        t.push(`<text x="${P + 24}" y="${y}" ${FONTE} font-size="21" fill="${TEXTO}">${esc(d.rotulo)}</text>`);
+        t.push(`<text x="${D}" y="${y}" ${FONTE} font-size="21" fill="${TEXTO}" text-anchor="end">${brl(d.valor)}</text>`);
+      }
+    } else if (l.nota) {
+      y += 32;
+      t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="20" fill="${SUAVE}">${esc(l.nota)}</text>`);
     }
     y += 24;
-    partes.push(`<rect x="${P}" y="${y}" width="${W - 2 * P}" height="2" fill="${LINHA}"/>`);
+    t.push(`<rect x="${P}" y="${y}" width="${D - P}" height="1.5" fill="${LINHA}"/>`);
   }
 
-  y += 40;
-  const fundoTotal = estilo.personalizado ? `rgb(${clarear(estilo.cor, 0.8).join(',')})` : '#FFD24A';
-  partes.push(`<rect x="${P}" y="${y}" width="${W - 2 * P}" height="120" rx="20" fill="${fundoTotal}"/>`);
-  partes.push(`<text x="${P + 32}" y="${y + 74}" ${FONTE} font-size="32" font-weight="800" fill="${TINTA}">${r.tipo === 'correcao' ? 'Valor corrigido' : 'Total estimado'}</text>`);
-  partes.push(`<text x="${W - P - 32}" y="${y + 80}" ${FONTE} font-size="50" font-weight="900" fill="${TINTA}" text-anchor="end">${brl(r.total)}</text>`);
-  y += 120 + 64;
+  // Total.
+  y += 36;
+  const cor = coresDoTotal(estilo);
+  t.push(`<rect x="${P}" y="${y}" width="${D - P}" height="112" rx="14" fill="${cor.fundo}"/>`);
+  t.push(`<text x="${P + 32}" y="${y + 66}" ${FONTE} font-size="22" font-weight="700" letter-spacing="2" fill="${cor.texto}">${r.tipo === 'correcao' ? 'VALOR CORRIGIDO' : 'TOTAL ESTIMADO'}</text>`);
+  t.push(`<text x="${D - 32}" y="${y + 72}" ${FONTE} font-size="48" font-weight="700" fill="${cor.texto}" text-anchor="end">${brl(r.total)}</text>`);
+  y += 112 + 56;
 
-  partes.push(`<text x="${P}" y="${y}" ${FONTE} font-size="21" fill="${SUAVE}">Valores estimados com as tabelas vigentes.</text>`);
-  y += 30;
-  partes.push(`<text x="${P}" y="${y}" ${FONTE} font-size="21" fill="${SUAVE}">Confirme com o cartório e a prefeitura antes do ato.</text>`);
-  y += 38;
-  partes.push(`<text x="${P}" y="${y}" ${FONTE} font-size="21" font-weight="700" fill="${SUAVE}">${esc(estilo.personalizado ? `Feito com ${config.marca}` : config.marca)}</text>`);
+  // Rodapé.
+  t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="19" fill="${SUAVE}">Valores estimados com as tabelas vigentes de MG.</text>`);
+  y += 28;
+  t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="19" fill="${SUAVE}">Confirme com o cartório e a prefeitura antes do ato.</text>`);
+  if (estilo.personalizado) {
+    t.push(`<g transform="translate(${D - (LARGURA_LOCKUP * 26) / 64} ${y - 22})">${lockupOrcaiSvg(26)}</g>`);
+    t.push(`<text x="${D - (LARGURA_LOCKUP * 26) / 64 - 10}" y="${y - 3}" ${FONTE} font-size="16" fill="${SUAVE}" text-anchor="end">feito com</text>`);
+  } else {
+    t.push(`<text x="${D}" y="${y}" ${FONTE} font-size="19" fill="${SUAVE}" text-anchor="end">${esc(config.marca)}</text>`);
+  }
   const H = Math.ceil(y + P);
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="100%" height="100%" fill="#FFFFFF"/>${partes.join('')}</svg>`;
-  return sharp(Buffer.from(svg), { density: 144 }).resize({ width: W }).jpeg({ quality: 90, mozjpeg: true }).toBuffer();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="100%" height="100%" fill="#FFFFFF"/>${t.join('')}</svg>`;
+  return sharp(Buffer.from(svg), { density: 144 }).resize({ width: W }).jpeg({ quality: 92, mozjpeg: true }).toBuffer();
 }
