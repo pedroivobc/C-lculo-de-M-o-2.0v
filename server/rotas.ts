@@ -9,7 +9,7 @@ import { normalizarTelefone, telefoneDoJid, variantesTelefone } from './telefone
 import { criarCodigo, mensagemDeConfirmacao } from './verificacao';
 import { codigoDoUsuario, linkDeIndicacao, resumoDaIndicacao, usarCodigo, validarCodigo } from './indicacao';
 import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, salvarCalculo } from './historico';
-import { comLocalidade, configuracaoDoUsuario } from './estilo';
+import { comLocalidade, configuracaoDoUsuario, correcaoLiberada } from './estilo';
 import { gerarCsv } from './exportar';
 import { identificar, processarMensagem } from './agente/conversa';
 
@@ -103,6 +103,9 @@ rotas.post('/api/calculos/:tipo', exigirUsuario, h(async (req, res) => {
   // Cidade e alíquota do ITBI do assinante entram quando a tela não manda outra.
   const usaLocalidade = tipo !== 'correcao';
   const conf = await configuracaoDoUsuario(req.userId!);
+  if (tipo === 'correcao' && !correcaoLiberada(conf.localidade.municipio)) {
+    return res.status(403).json({ erro: 'A correção contratual está disponível só para Juiz de Fora (MG).' });
+  }
   const entrada = usaLocalidade ? comCustos(tipo, comLocalidade(informado, conf.localidade), conf.custos) : informado;
   const resultado = calcular(tipo, entrada);
   if (!salvar) return res.json({ resultado });

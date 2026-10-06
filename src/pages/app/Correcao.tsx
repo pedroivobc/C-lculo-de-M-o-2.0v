@@ -2,11 +2,27 @@ import { useId, useState } from 'react';
 import { PaginaCalculadora, useResultado } from '@/components/calc/PaginaCalculadora';
 import { CampoMoeda } from '@/components/ui/Campos';
 import { INCC, ANO_BASE_INCC } from '@/lib/calc/correcao';
+import { Link } from 'react-router-dom';
+import { useConta } from '@/hooks/useConta';
+import { MUNICIPIO_CORRECAO } from '@/components/layout/AppLayout';
+import { Cartao } from '@/components/ui/Campos';
 
 const ANOS = Object.keys(INCC).map(Number).sort((a, b) => b - a);
 const MAX = INCC[ANO_BASE_INCC];
 
 export default function Correcao() {
+  const { perfil } = useConta();
+  if (perfil && perfil.municipio_padrao !== MUNICIPIO_CORRECAO) {
+    return (
+      <Cartao titulo="Correção contratual">
+        <p className="text-suave">A correção de contrato pelo INCC está disponível só para quem atua em <strong className="text-tinta">Juiz de Fora (MG)</strong>. O seu município pode ser trocado em <Link to="/app/conta" className="font-bold text-acao">Conta</Link>.</p>
+      </Cartao>
+    );
+  }
+  return <CalculadoraCorrecao />;
+}
+
+function CalculadoraCorrecao() {
   const [valor, setValor] = useState(0);
   const [ano, setAno] = useState(2015);
   const id = useId();

@@ -83,6 +83,9 @@ export async function configuracaoDoUsuario(userId: string): Promise<Configuraca
   };
 }
 
+/** A correção contratual (INCC) é só para quem atua em Juiz de Fora. */
+export const correcaoLiberada = (municipio?: string) => municipio === 'mg-juiz-de-fora';
+
 /** Preenche a localidade do assinante nos dados de um cálculo, sem sobrescrever o que veio informado. */
 export function comLocalidade<T extends Record<string, unknown>>(dados: T, l: Localidade): T {
   if (dados.municipio && dados.municipio !== l.municipio) return dados; // outra cidade cadastrada: regra da prefeitura

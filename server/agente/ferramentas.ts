@@ -1,7 +1,7 @@
 import type { FunctionDeclaration } from '@google/genai';
 import { brl, calcular, comCustos, type Resultado, type TipoCalculo } from '../../src/lib/calc';
 import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, numeroCalculo, salvarCalculo } from '../historico';
-import { comLocalidade, type Configuracao } from '../estilo';
+import { comLocalidade, correcaoLiberada, type Configuracao } from '../estilo';
 import { gerarCsv } from '../exportar';
 import { salvarArquivo, supabaseAdmin, urlAssinada } from '../supabase';
 
@@ -144,6 +144,9 @@ async function anexar(ctx: Contexto, salvo: Parameters<typeof arquivoDoOrcamento
 export async function executar(nome: string, args: Record<string, unknown>, ctx: Contexto): Promise<Record<string, unknown>> {
   try {
     const tipo = TIPO_POR_FERRAMENTA[nome];
+    if (tipo === 'correcao' && !correcaoLiberada(ctx.configuracao.localidade.municipio)) {
+      return { ok: false, erro: 'A correção contratual pelo INCC está disponível só para Juiz de Fora (MG).' };
+    }
     if (tipo) {
       const { descricao, ...entrada } = args as Record<string, unknown> & { descricao?: string };
       const dados = tipo === 'correcao' ? entrada : comCustos(tipo, comLocalidade(entrada, ctx.configuracao.localidade), ctx.configuracao.custos);

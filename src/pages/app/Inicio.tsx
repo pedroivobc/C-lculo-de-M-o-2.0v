@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, MessageCircle, Plus } from 'lucide-react';
 import { useConta } from '@/hooks/useConta';
 import { NOME_TIPO, mesAtual, useCalculos } from '@/hooks/useCalculos';
-import { CALCULADORAS } from '@/components/layout/AppLayout';
+import { useCalculadoras } from '@/components/layout/AppLayout';
 import { BotaoLink, Cartao } from '@/components/ui/Campos';
 import { brl, dataHora, numeroCalculo } from '@/lib/formato';
 import { AGENTE_WHATSAPP } from '@/lib/config';
@@ -14,6 +14,7 @@ function saudacao() {
 
 export default function Inicio() {
   const { perfil } = useConta();
+  const calculadoras = useCalculadoras();
   const { dados, erro } = useCalculos(mesAtual());
   const pelosite = dados?.filter((c) => c.origem === 'site').length ?? 0;
   const pelozap = dados?.filter((c) => c.origem === 'whatsapp').length ?? 0;
@@ -42,7 +43,7 @@ export default function Inicio() {
         <div className="flex flex-col gap-6">
           <Cartao titulo="Calculadoras">
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              {CALCULADORAS.map((c) => (
+              {calculadoras.map((c) => (
                 <Link key={c.para} to={c.para} className="flex min-h-16 flex-col gap-0.5 rounded-xl bg-nevoa p-3.5 text-tinta no-underline transition-colors hover:bg-acao-claro">
                   <span className="font-bold">{c.rotulo}</span>
                   <span className="text-xs text-suave">{c.nota}</span>

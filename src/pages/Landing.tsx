@@ -171,7 +171,7 @@ export default function Landing() {
         <section className="mx-auto flex max-w-[1200px] flex-col gap-7 px-4 pt-24 sm:px-6">
           <h2 className="max-w-[720px] text-[30px] font-[850] leading-9 sm:text-[38px] sm:leading-[44px]">Tudo o que aparece na mesa de quem vende imóvel.</h2>
           <ul className="grid gap-x-8 border-t-2 border-tinta sm:grid-cols-2 lg:grid-cols-3">
-            {[['Escrituras', 'compra e venda, interveniência, vínculo'], ['Financiamento Caixa', 'SBPE, MCMV, SFI, FGTS'], ['Banco privado', 'Itaú, Bradesco, Santander'], ['Doação', 'simples, com ou sem usufruto'], ['Correção contratual', 'pelo INCC']].map(([t, d]) => (
+            {[['Escrituras', 'compra e venda, interveniência, vínculo'], ['Financiamento Caixa', 'SBPE, MCMV, SFI, FGTS'], ['Banco privado', 'Itaú, Bradesco, Santander'], ['Doação', 'simples, com ou sem usufruto'], ['Correção contratual', 'pelo INCC, em Juiz de Fora']].map(([t, d]) => (
               <li key={t} className="flex justify-between gap-3 border-b border-[#d5dae2] py-4"><strong>{t}</strong><span className="text-right text-suave">{d}</span></li>
             ))}
           </ul>

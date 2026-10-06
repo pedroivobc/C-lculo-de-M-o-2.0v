@@ -161,7 +161,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   }
 
   // Conversa por menus numerados (./menu.ts). Texto livre no menu inicial vai para o agente com IA.
-  const ctxMenu: ContextoMenu = { nome: assinante.nome, formatoPadrao: assinante.configuracao.estilo.formato, temAnexo: msg.temAnexo, custosPadrao: assinante.configuracao.custos };
+  const ctxMenu: ContextoMenu = { nome: assinante.nome, formatoPadrao: assinante.configuracao.estilo.formato, temAnexo: msg.temAnexo, custosPadrao: assinante.configuracao.custos, municipio: assinante.configuracao.localidade.municipio };
   const p = passo(await lerSessao(msg.telefone), textoUsuario, ctxMenu);
   if (p.acao?.tipo === 'livre') {
     await salvarSessao(msg.telefone, assinante.userId, p.estado);

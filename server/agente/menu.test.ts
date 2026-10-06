@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { calcular } from '../../src/lib/calc';
 import { FLUXOS, MENUS, lerOpcao, lerValor, passo, type ContextoMenu, type Estado, type Passo } from './menu';
 
-const ctx: ContextoMenu = { nome: 'Pedro Ivo', formatoPadrao: 'jpeg' };
+const ctx: ContextoMenu = { nome: 'Pedro Ivo', formatoPadrao: 'jpeg', municipio: 'mg-juiz-de-fora' };
 
 /** Manda várias mensagens seguidas e devolve o último passo. */
 function conversa(...mensagens: string[]): Passo {
@@ -35,6 +35,14 @@ describe('menu do WhatsApp', () => {
     expect(p.mensagens[0].texto).toContain('Olá, Pedro!');
     expect(p.mensagens[0].texto).toContain('1️⃣ Escritura');
     expect(p.mensagens[0].texto).toContain('2️⃣ Financiamento');
+  });
+
+  it('correção contratual só aparece para Juiz de Fora', () => {
+    expect(conversa('oi').mensagens[0].texto).toContain('3️⃣ Atualizar valor de contrato');
+    const bh: ContextoMenu = { ...ctx, municipio: 'mg-belo-horizonte' };
+    const p = passo(null, 'oi', bh);
+    expect(p.mensagens[0].texto).not.toContain('Atualizar valor de contrato');
+    expect(passo(p.estado, '3', bh).mensagens[0].texto).toContain('Não entendi');
   });
 
   it('escritura → compra e venda → tipos, com "voltar" no fim', () => {

@@ -14,10 +14,18 @@ export const CALCULADORAS = [
   { para: '/app/escrituras', rotulo: 'Escrituras', nota: '6 tipos de ato' },
   { para: '/app/financiamento-caixa', rotulo: 'Financiamento Caixa', nota: 'ITBI pelo SFH' },
   { para: '/app/banco-privado', rotulo: 'Banco privado', nota: 'Itaú, Bradesco, Santander' },
-  { para: '/app/correcao', rotulo: 'Correção contratual', nota: 'Pelo INCC' },
   { para: '/app/doacao', rotulo: 'Doação', nota: 'ITCD e atos' },
-  { para: '/app/regularizacao', rotulo: 'Regularização', nota: 'Em breve' },
+  { para: '/app/correcao', rotulo: 'Correção contratual', nota: 'Pelo INCC · Juiz de Fora', soJuizDeFora: true },
 ];
+
+/** A correção contratual (INCC) só aparece para quem atua em Juiz de Fora. */
+export const MUNICIPIO_CORRECAO = 'mg-juiz-de-fora';
+
+/** Calculadoras que esta conta vê. */
+export function useCalculadoras() {
+  const { perfil } = useConta();
+  return CALCULADORAS.filter((c) => !c.soJuizDeFora || perfil?.municipio_padrao === MUNICIPIO_CORRECAO);
+}
 
 const CONTA = [
   { para: '/app/historico', rotulo: 'Histórico' },
@@ -65,6 +73,7 @@ export function AppLayout() {
   const { ativa, carregando } = useConta();
   const { pathname } = useLocation();
   const telaDeCalculo = CALCULADORAS.some((c) => pathname.startsWith(c.para));
+  const calculadoras = useCalculadoras();
 
   return (
     <div className="min-h-screen lg:flex">
@@ -75,7 +84,7 @@ export function AppLayout() {
         <nav aria-label="Menu principal" className="flex flex-col gap-0.5">
           <NavLink to="/app" end className={itemMenu}>Início</NavLink>
           <span className="px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-suave">Calcular</span>
-          {CALCULADORAS.map((c) => <NavLink key={c.para} to={c.para} className={itemMenu}>{c.rotulo}</NavLink>)}
+          {calculadoras.map((c) => <NavLink key={c.para} to={c.para} className={itemMenu}>{c.rotulo}</NavLink>)}
           <span className="px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-suave">Minha conta</span>
           {CONTA.map((c) => <NavLink key={c.para} to={c.para} className={itemMenu}>{c.rotulo}</NavLink>)}
         </nav>

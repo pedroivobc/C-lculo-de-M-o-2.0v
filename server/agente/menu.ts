@@ -183,6 +183,8 @@ export interface ContextoMenu {
   temAnexo?: boolean;
   /** Certidões e honorários padrão do assinante (null = valores sugeridos pelo sistema). */
   custosPadrao?: CustosPadrao | null;
+  /** Município do assinante: define, por exemplo, se a correção contratual aparece. */
+  municipio?: string;
 }
 
 // ---------------- Leitura do que a pessoa digitou ----------------
@@ -257,8 +259,18 @@ function mensagemMenu(titulo: string, rotulos: string[], comVoltar: boolean, pre
   };
 }
 
-const telaMenu = (id: string, prefixo = '') => {
+/** Correção contratual (INCC) só aparece para quem atua em Juiz de Fora. */
+export const MUNICIPIO_CORRECAO = 'mg-juiz-de-fora';
+
+/** O menu como esta pessoa vê: no inicial, a correção contratual só para Juiz de Fora. */
+export function menuDe(id: string, ctx?: ContextoMenu): Menu {
   const m = MENUS[id];
+  if (id !== 'inicio' || ctx?.municipio === MUNICIPIO_CORRECAO) return m;
+  return { ...m, opcoes: m.opcoes.filter((o) => o.vai !== 'fluxo:correcao') };
+}
+
+const telaMenu = (id: string, prefixo = '', ctx?: ContextoMenu) => {
+  const m = menuDe(id, ctx);
   return mensagemMenu(m.titulo, m.opcoes.map((o) => o.rotulo), !!m.voltar, prefixo);
 };
 
@@ -309,7 +321,7 @@ function telaEndereco(etapa: 'pergunta' | 'digitar', prefixo = ''): MensagemMenu
 
 /** Re-mostra a tela atual (usado quando a resposta não foi entendida). */
 export function telaAtual(e: Estado, ctx: ContextoMenu, prefixo = ''): MensagemMenu {
-  if (e.tela === 'menu') return telaMenu(e.id, prefixo);
+  if (e.tela === 'menu') return telaMenu(e.id, prefixo, ctx);
   if (e.tela === 'pergunta') return telaPergunta(FLUXOS[e.fluxo], e.i, prefixo, e.dados);
   if (e.tela === 'endereco') return telaEndereco(e.etapa, prefixo);
   return telaFormato(ctx, e, prefixo);
@@ -317,13 +329,13 @@ export function telaAtual(e: Estado, ctx: ContextoMenu, prefixo = ''): MensagemM
 
 const NAO_ENTENDI = 'Não entendi 🙂 Responda só com o *número* de uma opção.\n\n';
 
-function irPara(destino: string, origem: string, ultimo?: number): Passo {
+function irPara(destino: string, origem: string, ultimo: number | undefined, ctx: ContextoMenu): Passo {
   if (destino.startsWith('fluxo:')) {
     const fluxo = destino.slice(6);
     const f = FLUXOS[fluxo];
     return { estado: { tela: 'pergunta', fluxo, i: 0, dados: { ...f.fixos }, origem, ultimo }, mensagens: [telaPergunta(f, 0, `*${f.titulo}*\n\n`)] };
   }
-  return { estado: { tela: 'menu', id: destino, ultimo }, mensagens: [telaMenu(destino)] };
+  return { estado: { tela: 'menu', id: destino, ultimo }, mensagens: [telaMenu(destino, '', ctx)] };
 }
 
 function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): Passo {
@@ -332,10 +344,11 @@ function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): P
 
   if (!estado || PALAVRAS_INICIO.some((p) => t === p || t.startsWith(`${p} `) || t.startsWith(`${p},`) || t.startsWith(`${p}!`))) {
     // Conversa nova: se já veio um número válido do menu inicial, segue direto.
-    const n = estado ? null : lerOpcao(texto, MENUS.inicio.opcoes.map((o) => o.rotulo));
-    if (n && MENUS.inicio.opcoes[n - 1]) return irPara(MENUS.inicio.opcoes[n - 1].vai, 'inicio', ultimo);
+    const inicio = menuDe('inicio', ctx);
+    const n = estado ? null : lerOpcao(texto, inicio.opcoes.map((o) => o.rotulo));
+    if (n && inicio.opcoes[n - 1]) return irPara(inicio.opcoes[n - 1].vai, 'inicio', ultimo, ctx);
     if (!estado && /\d/.test(t) && t.length > 8) return { estado: { tela: 'menu', id: 'inicio', ultimo }, mensagens: [], acao: { tipo: 'livre' } };
-    return { estado: { tela: 'menu', id: 'inicio', ultimo }, mensagens: [telaMenu('inicio', saudacao(ctx.nome))] };
+    return { estado: { tela: 'menu', id: 'inicio', ultimo }, mensagens: [telaMenu('inicio', saudacao(ctx.nome), ctx)] };
   }
 
   const naoEntendi = (): Passo => ({
@@ -345,8 +358,8 @@ function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): P
   const voltar = PALAVRAS_VOLTAR.includes(t);
 
   if (estado.tela === 'menu') {
-    const menu = MENUS[estado.id];
-    if (voltar && menu.voltar) return irPara(menu.voltar, menu.voltar, ultimo);
+    const menu = menuDe(estado.id, ctx);
+    if (voltar && menu.voltar) return irPara(menu.voltar, menu.voltar, ultimo, ctx);
     const n = lerOpcao(texto, menu.opcoes.map((o) => o.rotulo));
     const opcao = n ? menu.opcoes[n - 1] : undefined;
     if (!opcao) {
@@ -354,21 +367,21 @@ function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): P
       return naoEntendi();
     }
     if (opcao.vai === 'reenviar') {
-      if (!ultimo) return irPara('inicio', 'inicio');
+      if (!ultimo) return irPara('inicio', 'inicio', undefined, ctx);
       return { estado: { tela: 'formato', reenvio: true, ultimo }, mensagens: [telaFormato(ctx)] };
     }
     if (opcao.vai === 'detalhar') {
-      if (!ultimo) return irPara('inicio', 'inicio');
+      if (!ultimo) return irPara('inicio', 'inicio', undefined, ctx);
       return { estado: { tela: 'menu', id: 'depois', ultimo }, mensagens: [telaMenu('depois')], acao: { tipo: 'detalhar', seq: ultimo } };
     }
-    return irPara(opcao.vai, estado.id, ultimo);
+    return irPara(opcao.vai, estado.id, ultimo, ctx);
   }
 
   if (estado.tela === 'pergunta') {
     const f = FLUXOS[estado.fluxo];
     const p = f.perguntas[estado.i];
     if (voltar && p.tipo !== 'simnao') {
-      if (estado.i === 0) return irPara(estado.origem, estado.origem, ultimo);
+      if (estado.i === 0) return irPara(estado.origem, estado.origem, ultimo, ctx);
       return { estado: { ...estado, i: estado.i - 1 }, mensagens: [telaPergunta(f, estado.i - 1, '', estado.dados)] };
     }
     let valor: unknown;
@@ -427,7 +440,7 @@ function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): P
 
   // Escolha do formato.
   if (voltar) {
-    if (estado.reenvio || !estado.fluxo) return irPara('depois', 'inicio', ultimo);
+    if (estado.reenvio || !estado.fluxo) return irPara('depois', 'inicio', ultimo, ctx);
     const f = FLUXOS[estado.fluxo];
     if (f.calculo !== 'correcao') {
       return { estado: { tela: 'endereco', etapa: 'pergunta', fluxo: estado.fluxo, dados: estado.dados ?? {}, origem: estado.origem ?? 'inicio', ultimo }, mensagens: [telaEndereco('pergunta')] };
@@ -440,7 +453,7 @@ function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): P
   if (!formato) return naoEntendi();
   const depois: Estado = { tela: 'menu', id: 'depois', ultimo };
   if (estado.reenvio) {
-    if (!ultimo) return irPara('inicio', 'inicio');
+    if (!ultimo) return irPara('inicio', 'inicio', undefined, ctx);
     return { estado: depois, mensagens: [telaMenu('depois')], acao: { tipo: 'reenviar', seq: ultimo, formato } };
   }
   const f = FLUXOS[estado.fluxo!];
