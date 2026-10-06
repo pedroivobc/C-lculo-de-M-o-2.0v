@@ -1,4 +1,3 @@
-import { createHash, randomInt } from 'node:crypto';
 import { Router, type Request, type Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
@@ -6,8 +5,8 @@ import { calcular, CALCULADORAS, type TipoCalculo } from '../src/lib/calc';
 import { config } from './config';
 import { exigirAgente, exigirUsuario } from './auth';
 import { supabaseAdmin, salvarArquivo, urlAssinada } from './supabase';
-import { normalizarTelefone, telefoneDoJid } from './telefone';
-import { enviarTexto } from './evolution';
+import { normalizarTelefone, telefoneDoJid, variantesTelefone } from './telefone';
+import { criarCodigo, mensagemDeConfirmacao } from './verificacao';
 import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, salvarCalculo } from './historico';
 import { comLocalidade, configuracaoDoUsuario } from './estilo';
 import { gerarCsv } from './exportar';
@@ -55,40 +54,17 @@ rotas.get('/api/agente/identificar', exigirAgente, h(async (req, res) => {
 
 // ---------------- Verificação do WhatsApp ----------------
 
-const hashCodigo = (userId: string, codigo: string) =>
-  createHash('sha256').update(`${config.codigoSegredo}:${userId}:${codigo}`).digest('hex');
-
 const limiteCodigo = rateLimit({ windowMs: 15 * 60_000, limit: 5, standardHeaders: true, legacyHeaders: false });
 
+/** Gera o código que o corretor envia ao agente pelo WhatsApp (ver ./verificacao.ts). Nada é enviado daqui. */
 rotas.post('/api/whatsapp/codigo', limiteCodigo, exigirUsuario, h(async (req, res) => {
   const telefone = normalizarTelefone(z.object({ whatsapp: z.string() }).parse(req.body).whatsapp);
   if (!telefone) return res.status(400).json({ erro: 'Informe o WhatsApp com DDD.' });
-  const db = supabaseAdmin();
-  const { data: emUso } = await db.from('profiles').select('id').eq('whatsapp_e164', telefone).neq('id', req.userId!).maybeSingle();
+  const { data: emUso } = await supabaseAdmin().from('profiles').select('id')
+    .in('whatsapp_e164', variantesTelefone(telefone)).neq('id', req.userId!).limit(1).maybeSingle();
   if (emUso) return res.status(409).json({ erro: 'Este WhatsApp já está ligado a outra conta.' });
-  const codigo = String(randomInt(0, 1_000_000)).padStart(6, '0');
-  await db.from('phone_verifications').insert({
-    user_id: req.userId, whatsapp_e164: telefone, code_hash: hashCodigo(req.userId!, codigo),
-    expires_at: new Date(Date.now() + 10 * 60_000).toISOString(),
-  });
-  await enviarTexto(telefone, `Seu código do ${config.marca}: *${codigo}*\nVale por 10 minutos. Não compartilhe.`);
-  res.json({ ok: true, enviadoPara: telefone });
-}));
-
-rotas.post('/api/whatsapp/verificar', exigirUsuario, h(async (req, res) => {
-  const { codigo } = z.object({ codigo: z.string().regex(/^\d{6}$/) }).parse(req.body);
-  const db = supabaseAdmin();
-  const { data: v } = await db.from('phone_verifications').select('*').eq('user_id', req.userId!)
-    .order('created_at', { ascending: false }).limit(1).maybeSingle();
-  if (!v || new Date(v.expires_at) < new Date()) return res.status(400).json({ erro: 'Código expirado. Peça um novo.' });
-  if (v.attempts >= 5) return res.status(429).json({ erro: 'Muitas tentativas. Peça um novo código.' });
-  if (v.code_hash !== hashCodigo(req.userId!, codigo)) {
-    await db.from('phone_verifications').update({ attempts: v.attempts + 1 }).eq('id', v.id);
-    return res.status(400).json({ erro: 'Código incorreto.' });
-  }
-  await db.from('profiles').update({ whatsapp_e164: v.whatsapp_e164, whatsapp_verified_at: new Date().toISOString() }).eq('id', req.userId!);
-  await db.from('phone_verifications').delete().eq('user_id', req.userId!);
-  res.json({ ok: true, whatsapp: v.whatsapp_e164 });
+  const codigo = await criarCodigo(req.userId!, telefone);
+  res.json({ whatsapp: telefone, codigo, mensagem: mensagemDeConfirmacao(codigo) });
 }));
 
 // ---------------- Cálculos pelo site ----------------

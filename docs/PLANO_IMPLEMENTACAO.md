@@ -140,8 +140,7 @@ Separar em `server/routes/*.ts`. Três tipos de autenticação:
 
 | Rota | Quem chama | O que faz |
 |---|---|---|
-| `POST /api/whatsapp/codigo` | usuário | Gera código de 6 dígitos, salva hash, envia pela Evolution (`sendText`) |
-| `POST /api/whatsapp/verificar` | usuário | Confere código (máx. 5 tentativas, 10 min), grava `whatsapp_e164` + `verified_at` |
+| `POST /api/whatsapp/codigo` | usuário | Gera código de 6 dígitos (hash, 30 min) e devolve ao site, que abre o WhatsApp com a mensagem pronta. O corretor envia ao agente; `server/verificacao.ts` confere (máx. 5 tentativas) e grava `whatsapp_e164` + `verified_at`. O agente nunca chama primeiro. |
 | `POST /api/assinatura` | usuário | Cria cliente + assinatura no Asaas (Essencial R$ 9,90/mês ou R$ 99/ano; Pró R$ 19,90/mês ou R$ 199/ano), devolve Pix copia-e-cola/QR ou processa cartão |
 | `POST /api/webhooks/asaas` | gateway | Atualiza `subscriptions`; ao ativar, envia boas-vindas no WhatsApp |
 | `POST /api/calculos/:tipo` | usuário **e** agente | Roda a lib de cálculo, salva em `calculations` (origem site/whatsapp), devolve memória + total + `seq` |

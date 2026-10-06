@@ -33,7 +33,8 @@ interface ContaValor {
   assinatura: Assinatura | null;
   ativa: boolean;
   carregando: boolean;
-  recarregar: () => Promise<void>;
+  /** `silencioso` atualiza sem a tela de carregamento (usado na espera da confirmação do WhatsApp). */
+  recarregar: (opcoes?: { silencioso?: boolean }) => Promise<void>;
 }
 
 const Contexto = createContext<ContaValor | null>(null);
@@ -45,9 +46,9 @@ export function ContaProvider({ children }: { children: ReactNode }) {
   const [assinatura, setAssinatura] = useState<Assinatura | null>(null);
   const [carregando, setCarregando] = useState(true);
 
-  const recarregar = useCallback(async () => {
+  const recarregar = useCallback(async (opcoes: { silencioso?: boolean } = {}) => {
     if (!user) { setPerfil(null); setAssinatura(null); setCarregando(false); return; }
-    setCarregando(true);
+    if (!opcoes.silencioso) setCarregando(true);
     const [p, a] = await Promise.all([
       supabase.from('profiles').select('id, full_name, email, whatsapp_e164, whatsapp_verified_at, municipio_padrao, pdf_header, uf, cidade_nome, itbi_percentual, pdf_logo_path, cor_primaria, formato_orcamento, configurado_em').eq('id', user.id).maybeSingle(),
       supabase.from('subscriptions').select('plan, nivel, status, current_period_end').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),

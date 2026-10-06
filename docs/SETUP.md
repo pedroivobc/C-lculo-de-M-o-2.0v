@@ -102,7 +102,7 @@ No `infra/.env`, preencha `AGENTE_WHATSAPP` (número do chip do agente, com DDI)
 Enquanto o pagamento (Asaas) não está integrado, ative à mão:
 
 1. Crie uma conta pelo site.
-2. Confirme o WhatsApp na tela que aparece logo após o cadastro (o código chega pela Evolution). Para testar sem a Evolution conectada, no SQL Editor:
+2. Confirme o WhatsApp na tela que aparece logo após o cadastro (toque em "Abrir o WhatsApp e enviar" e mande o código ao número do agente; a tela avança sozinha). Para testar sem a Evolution conectada, no SQL Editor:
    ```sql
    update profiles set whatsapp_e164 = '+5532999990000', whatsapp_verified_at = now() where email = 'voce@exemplo.com';
    ```
@@ -128,7 +128,7 @@ Outros testes: *"detalha o registro"*; *"exportar 2026-10"*; mensagem de um núm
 |---|---|---|
 | `POST /api/agente/mensagem` | n8n (`x-agent-key`) | Processa a mensagem e devolve `{status, respostas[]}` |
 | `GET /api/agente/identificar?whatsapp=` | n8n | Status do número: `ativo`, `inativo`, `sem_cadastro` |
-| `POST /api/whatsapp/codigo` · `/verificar` | site (login) | Confirmação do WhatsApp por código |
+| `POST /api/whatsapp/codigo` | site (login) | Gera o código que o corretor envia ao agente para confirmar o WhatsApp |
 | `POST /api/calculos/:tipo` | site | `escritura`, `doacao`, `financiamento_caixa`, `banco_privado`, `correcao` |
 | `GET /api/calculos?mes=AAAA-MM` | site | Histórico |
 | `GET /api/calculos/:numero/arquivo?formato=pdf\|jpeg` | site | Link temporário do orçamento (sem `formato`, o da conta) |

@@ -1,4 +1,5 @@
 import { GoogleGenAI, type Content } from '@google/genai';
+import { confirmarPorMensagem, type ResultadoConfirmacao } from '../verificacao';
 import { MUNICIPIOS, MUNICIPIO_OUTRA } from '../../src/lib/calc';
 import { config } from '../config';
 import { supabaseAdmin } from '../supabase';
@@ -109,12 +110,26 @@ async function historicoRecente(telefone: string): Promise<Content[]> {
   return turnos;
 }
 
+const RESPOSTA_CONFIRMACAO: Record<ResultadoConfirmacao['status'], (url: string) => string> = {
+  confirmado: () => `Pronto, WhatsApp confirmado! ✅\n\nVolte ao site para terminar o cadastro. Depois é só me mandar os valores do negócio que eu faço o orçamento.`,
+  codigo_errado: () => 'Esse código não confere. Confira o código na tela do cadastro e envie de novo.',
+  expirado: (url) => `Esse código expirou. Gere um novo em ${url}/verificar e envie de novo.`,
+  em_uso: () => 'Este WhatsApp já está ligado a outra conta. Fale com o suporte para trocar.',
+};
+
 /** Processa uma mensagem do WhatsApp e devolve o que o n8n deve enviar. */
 export async function processarMensagem(msg: MensagemRecebida): Promise<{ status: string; respostas: Resposta[] }> {
   const db = supabaseAdmin();
   if (msg.messageId) {
     const { data } = await db.from('whatsapp_messages').select('id').eq('evolution_message_id', msg.messageId).maybeSingle();
     if (data) return { status: 'duplicada', respostas: [] };
+  }
+
+  // Confirmação do WhatsApp do cadastro: o corretor manda ao agente o código que aparece no site.
+  const confirmacao = await confirmarPorMensagem(msg.telefone, msg.texto);
+  if (confirmacao) {
+    await registrar(msg.telefone, confirmacao.status === 'confirmado' ? confirmacao.userId : null, 'entrada', 'texto', msg.texto ?? '', msg.messageId);
+    return { status: `verificacao_${confirmacao.status}`, respostas: [{ tipo: 'texto', texto: RESPOSTA_CONFIRMACAO[confirmacao.status](config.appUrl) }] };
   }
 
   const assinante = await identificar(msg.telefone);

@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useConta } from '@/hooks/useConta';
 import { Lockup } from '@/components/marca/Logo';
 import { Aviso, Botao, Campo } from '@/components/ui/Campos';
-import { PLANOS, PRECO, type Nivel } from '@/lib/config';
+import { AGENTE_WHATSAPP, PLANOS, PRECO, type Nivel } from '@/lib/config';
 import { telefoneBonito } from '@/lib/formato';
 import { ConfiguracaoOrcamento } from '@/components/conta/ConfiguracaoOrcamento';
 import { cn } from '@/lib/utils';
@@ -22,7 +22,7 @@ function Moldura({ etapa, children, largo = false }: { etapa?: 1 | 2 | 3 | 4; ch
           <p className="text-base leading-[26px] text-[#c7cedb]">Depois da assinatura, qualquer mensagem desse número cai direto na sua conta: o agente reconhece você, calcula e guarda tudo no seu histórico.</p>
         </div>
         <ol className="flex max-w-[480px] flex-col gap-3">
-          {['Crie a conta com seu WhatsApp', 'Confirme o número com o código', 'Configure seu orçamento: cidade, ITBI, logo e formato', `Escolha o plano: a partir de ${PRECO.mensal}/mês`].map((t, i) => (
+          {['Crie a conta com seu WhatsApp', 'Confirme o número enviando um código ao agente', 'Configure seu orçamento: cidade, ITBI, logo e formato', `Escolha o plano: a partir de ${PRECO.mensal}/mês`].map((t, i) => (
             <li key={t} className="flex items-center gap-3">
               <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-full font-extrabold', etapa && i + 1 <= etapa ? 'bg-marca-texto text-tinta' : 'bg-[#1f2b44]')}>{i + 1}</span>{t}
             </li>
@@ -99,8 +99,7 @@ export function Cadastro() {
         setErro('Conta criada. Confirme o e-mail que enviamos e depois entre para validar o WhatsApp.');
         return;
       }
-      await api('/api/whatsapp/codigo', { corpo: { whatsapp: d.whatsapp } });
-      sessionStorage.setItem('orcai:whatsapp', d.whatsapp);
+      await pedirConfirmacao(d.whatsapp);
       navegar(`/verificar${params.toString() ? `?${params}` : ''}`);
     } catch (err) {
       setErro(err instanceof Error ? err.message : String(err));
@@ -118,83 +117,102 @@ export function Cadastro() {
         <Campo rotulo="Nome completo" required autoComplete="name" value={d.nome} onChange={muda('nome')} />
         <Campo rotulo="E-mail" type="email" required autoComplete="email" value={d.email} onChange={muda('email')} />
         <Campo rotulo="WhatsApp com DDD" type="tel" required autoComplete="tel" placeholder="(32) 99999-0000" value={d.whatsapp} onChange={muda('whatsapp')}
-          dica="Enviaremos um código para confirmar. É por ele que o agente reconhece você." />
+          dica="Na próxima tela você confirma o número mandando um código para o agente. É por ele que o agente reconhece você." />
         <Campo rotulo="Senha" type="password" required minLength={8} autoComplete="new-password" value={d.senha} onChange={muda('senha')} dica="Mínimo de 8 caracteres." />
         <label className="flex items-start gap-2.5 text-suave">
           <input type="checkbox" required checked={aceite} onChange={(e) => setAceite(e.target.checked)} className="mt-0.5 size-[18px] accent-acao" />
           <span>Li e aceito os <Link to="/termos" target="_blank" className="font-bold text-acao">termos de uso</Link> e a <Link to="/privacidade" target="_blank" className="font-bold text-acao">política de privacidade</Link> (LGPD).</span>
         </label>
         {erro && <Aviso tom="vermelho">{erro}</Aviso>}
-        <Botao type="submit" disabled={enviando} className="min-h-[52px] text-base">{enviando ? 'Enviando…' : 'Enviar código no WhatsApp'}</Botao>
+        <Botao type="submit" disabled={enviando} className="min-h-[52px] text-base">{enviando ? 'Criando…' : 'Criar conta'}</Botao>
         <p className="text-center text-suave">Já tem conta? <Link to="/entrar" className="font-bold text-acao">Entrar</Link></p>
       </form>
     </Moldura>
   );
 }
 
+interface Pedido { whatsapp: string; codigo: string; mensagem: string }
+const CHAVE_PEDIDO = 'orcai:verificacao';
+
+function lerPedido(): Pedido | null {
+  try { return JSON.parse(sessionStorage.getItem(CHAVE_PEDIDO) ?? 'null'); } catch { return null; }
+}
+
+/** Gera o código de confirmação e guarda na sessão para a tela de verificação. */
+async function pedirConfirmacao(whatsapp: string): Promise<Pedido> {
+  const pedido = await api<Pedido>('/api/whatsapp/codigo', { corpo: { whatsapp } });
+  try { sessionStorage.setItem(CHAVE_PEDIDO, JSON.stringify(pedido)); } catch { /* sem sessionStorage: segue só em memória */ }
+  return pedido;
+}
+
+/**
+ * Confirmação do WhatsApp: o corretor envia ao agente a mensagem com o código.
+ * A tela consulta o perfil a cada 3 s e avança quando o agente confirma o número.
+ */
 export function Verificar() {
   const navegar = useNavigate();
   const [params] = useSearchParams();
   const { perfil, recarregar } = useConta();
-  const [whatsapp, setWhatsapp] = useState(sessionStorage.getItem('orcai:whatsapp') ?? '');
-  const [enviado, setEnviado] = useState(!!sessionStorage.getItem('orcai:whatsapp'));
-  const [codigo, setCodigo] = useState('');
+  const [pedido, setPedido] = useState<Pedido | null>(lerPedido);
+  const [whatsapp, setWhatsapp] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
-  const [espera, setEspera] = useState(enviado ? 60 : 0);
+  const [confirmadoAntes] = useState(perfil?.whatsapp_verified_at ?? null);
 
   useEffect(() => {
-    if (!espera) return;
-    const t = setTimeout(() => setEspera((s) => s - 1), 1000);
-    return () => clearTimeout(t);
-  }, [espera]);
+    if (!pedido) return;
+    const t = setInterval(() => { recarregar({ silencioso: true }); }, 3000);
+    return () => clearInterval(t);
+  }, [pedido, recarregar]);
 
-  async function pedirCodigo() {
+  useEffect(() => {
+    if (!pedido || !perfil?.whatsapp_verified_at || perfil.whatsapp_verified_at === confirmadoAntes) return;
+    try { sessionStorage.removeItem(CHAVE_PEDIDO); } catch { /* ok */ }
+    navegar(`/configurar${params.toString() ? `?${params}` : ''}`);
+  }, [pedido, perfil?.whatsapp_verified_at, confirmadoAntes, navegar, params]);
+
+  async function gerar(e?: FormEvent) {
+    e?.preventDefault();
     setOcupado(true); setErro(null);
-    try {
-      await api('/api/whatsapp/codigo', { corpo: { whatsapp } });
-      sessionStorage.setItem('orcai:whatsapp', whatsapp);
-      setEnviado(true); setEspera(60);
-    } catch (e) { setErro(e instanceof Error ? e.message : String(e)); }
+    try { setPedido(await pedirConfirmacao(whatsapp)); }
+    catch (err) { setErro(err instanceof Error ? err.message : String(err)); }
     finally { setOcupado(false); }
   }
 
-  async function confirmar(e: FormEvent) {
-    e.preventDefault();
-    setOcupado(true); setErro(null);
-    try {
-      await api('/api/whatsapp/verificar', { corpo: { codigo } });
-      sessionStorage.removeItem('orcai:whatsapp');
-      await recarregar();
-      navegar(`/configurar${params.toString() ? `?${params}` : ''}`);
-    } catch (e) { setErro(e instanceof Error ? e.message : String(e)); }
-    finally { setOcupado(false); }
-  }
+  const link = pedido && AGENTE_WHATSAPP ? `https://wa.me/${AGENTE_WHATSAPP}?text=${encodeURIComponent(pedido.mensagem)}` : null;
 
   return (
     <Moldura etapa={2}>
       <div>
         <h2 className="text-[28px] font-bold leading-[34px]">Confirme seu WhatsApp</h2>
         <p className="text-suave">
-          {enviado ? <>Mandamos um código de 6 dígitos para <strong className="text-tinta">{telefoneBonito(whatsapp.startsWith('+') ? whatsapp : `+55${whatsapp.replace(/\D/g, '')}`)}</strong>.</>
+          {pedido ? <>Envie o código abaixo para o nosso agente <strong className="text-tinta">a partir do {telefoneBonito(pedido.whatsapp)}</strong>. É só tocar no botão e apertar enviar.</>
             : perfil?.whatsapp_verified_at ? `Número atual: ${telefoneBonito(perfil.whatsapp_e164)}. Informe o novo número.` : 'Informe o número que vai conversar com o agente.'}
         </p>
       </div>
-      {!enviado ? (
-        <>
+      {!pedido ? (
+        <form onSubmit={gerar} className="flex flex-col gap-4">
           <Campo rotulo="WhatsApp com DDD" type="tel" placeholder="(32) 99999-0000" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
-          <Botao onClick={pedirCodigo} disabled={ocupado || whatsapp.replace(/\D/g, '').length < 10} className="min-h-[52px] text-base">{ocupado ? 'Enviando…' : 'Enviar código'}</Botao>
-        </>
-      ) : (
-        <form onSubmit={confirmar} className="flex flex-col gap-4">
-          <Campo rotulo="Código" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required value={codigo}
-            onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))} style={{ fontFamily: 'var(--font-display)', textAlign: 'center', fontSize: 24, letterSpacing: '0.5em' }} />
-          <Botao type="submit" disabled={ocupado || codigo.length !== 6} className="min-h-[52px] text-base">{ocupado ? 'Confirmando…' : 'Confirmar'}</Botao>
-          <div className="flex justify-between gap-3 text-sm">
-            <button type="button" className="min-h-11 font-bold text-acao disabled:text-suave" disabled={!!espera || ocupado} onClick={pedirCodigo}>{espera ? `Reenviar em 0:${String(espera).padStart(2, '0')}` : 'Reenviar código'}</button>
-            <button type="button" className="min-h-11 font-bold text-acao" onClick={() => { setEnviado(false); setCodigo(''); }}>Usar outro número</button>
-          </div>
+          <Botao type="submit" disabled={ocupado || whatsapp.replace(/\D/g, '').length < 10} className="min-h-[52px] text-base">{ocupado ? 'Gerando…' : 'Gerar código'}</Botao>
         </form>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div className="rounded-2xl border border-borda bg-nevoa py-5 text-center">
+            <span className="block text-xs font-bold uppercase tracking-[0.12em] text-suave">Seu código</span>
+            <span className="numero mt-1 block text-[34px] font-black tracking-[0.3em] text-tinta" style={{ fontFamily: 'var(--font-display)' }}>{pedido.codigo}</span>
+          </div>
+          {link ? (
+            <a href={link} target="_blank" rel="noreferrer" className="flex min-h-[52px] items-center justify-center rounded-xl bg-acao px-5 text-base font-bold text-white no-underline">Abrir o WhatsApp e enviar</a>
+          ) : (
+            <Aviso tom="vermelho">O número do agente não está configurado (VITE_AGENTE_WHATSAPP).</Aviso>
+          )}
+          {AGENTE_WHATSAPP && <p className="text-center text-sm text-suave">No computador? Envie <strong className="text-tinta">{pedido.codigo}</strong> pelo seu celular para {telefoneBonito(`+${AGENTE_WHATSAPP}`)}.</p>}
+          <Aviso>Aguardando a sua mensagem… Esta tela avança sozinha assim que o agente confirmar.</Aviso>
+          <div className="flex justify-between gap-3 text-sm">
+            <button type="button" className="min-h-11 font-bold text-acao" disabled={ocupado} onClick={async () => { setOcupado(true); setErro(null); try { setPedido(await pedirConfirmacao(pedido.whatsapp)); } catch (err) { setErro(err instanceof Error ? err.message : String(err)); } finally { setOcupado(false); } }}>Gerar outro código</button>
+            <button type="button" className="min-h-11 font-bold text-acao" onClick={() => { try { sessionStorage.removeItem(CHAVE_PEDIDO); } catch { /* ok */ } setPedido(null); }}>Usar outro número</button>
+          </div>
+        </div>
       )}
       {erro && <Aviso tom="vermelho">{erro}</Aviso>}
       <Aviso>É este número que o agente vai reconhecer. Use o WhatsApp que você leva no dia a dia.</Aviso>
