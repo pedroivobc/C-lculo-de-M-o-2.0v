@@ -231,7 +231,7 @@ export default function Landing() {
               );
             })}
           </div>
-          <span className="text-center text-sm text-suave">3 dias grátis para testar · cartão de crédito no cadastro, mesmo pagando no Pix · cancele quando quiser</span>
+          <span className="text-center text-sm text-suave">3 dias grátis para testar (5 com cupom de indicação) · cartão de crédito no cadastro, mesmo pagando no Pix · cancele quando quiser</span>
         </section>
 
         {/* Dúvidas */}

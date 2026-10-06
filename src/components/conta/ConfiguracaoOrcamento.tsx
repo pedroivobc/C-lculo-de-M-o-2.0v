@@ -212,7 +212,7 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
             </label>
           </div>
         </div>
-        <Aviso tom="azul">Logo e cor aparecem no teste de 3 dias e no plano Pró. No Essencial, o orçamento sai com a marca {MARCA}, e o que você configurar aqui fica guardado.</Aviso>
+        <Aviso tom="azul">Logo e cor aparecem no teste grátis e no plano Pró. No Essencial, o orçamento sai com a marca {MARCA}, e o que você configurar aqui fica guardado.</Aviso>
       </fieldset>
 
       {/* Formato */}

@@ -6,6 +6,7 @@ import { Aviso, Botao, BotaoLink, Campo, Cartao } from '@/components/ui/Campos';
 import { telefoneBonito } from '@/lib/formato';
 import { PLANOS } from '@/lib/config';
 import { ConfiguracaoOrcamento } from '@/components/conta/ConfiguracaoOrcamento';
+import { Indicacao } from '@/components/conta/Indicacao';
 
 export default function Conta() {
   const { perfil, assinatura, ativa, recarregar } = useConta();
@@ -75,6 +76,8 @@ export default function Conta() {
               <BotaoLink to="/assinar">Ver planos</BotaoLink>
             )}
           </section>
+
+          <Indicacao />
 
           <Cartao titulo="Privacidade">
             <p className="mb-3 text-suave">Não pedimos dados dos seus clientes: os orçamentos usam só valores. Seus orçamentos ficam guardados só para você, e as conversas com o agente, por 30 dias. Para baixar ou apagar seus dados, fale com o suporte pelo WhatsApp do agente. <Link to="/privacidade" className="font-bold text-acao">Política de privacidade</Link></p>

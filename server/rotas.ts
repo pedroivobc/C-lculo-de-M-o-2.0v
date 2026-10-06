@@ -7,6 +7,7 @@ import { exigirAgente, exigirUsuario } from './auth';
 import { supabaseAdmin, salvarArquivo, urlAssinada } from './supabase';
 import { normalizarTelefone, telefoneDoJid, variantesTelefone } from './telefone';
 import { criarCodigo, mensagemDeConfirmacao } from './verificacao';
+import { codigoDoUsuario, linkDeIndicacao, resumoDaIndicacao, usarCodigo, validarCodigo } from './indicacao';
 import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, salvarCalculo } from './historico';
 import { comLocalidade, configuracaoDoUsuario } from './estilo';
 import { gerarCsv } from './exportar';
@@ -65,6 +66,32 @@ rotas.post('/api/whatsapp/codigo', limiteCodigo, exigirUsuario, h(async (req, re
   if (emUso) return res.status(409).json({ erro: 'Este WhatsApp já está ligado a outra conta.' });
   const codigo = await criarCodigo(req.userId!, telefone);
   res.json({ whatsapp: telefone, codigo, mensagem: mensagemDeConfirmacao(codigo) });
+}));
+
+// ---------------- Cupom de indicação ----------------
+
+rotas.get('/api/indicacao', exigirUsuario, h(async (req, res) => {
+  res.json(await resumoDaIndicacao(req.userId!));
+}));
+
+rotas.post('/api/indicacao/codigo', exigirUsuario, h(async (req, res) => {
+  const codigo = await codigoDoUsuario(req.userId!);
+  res.json({ codigo, link: linkDeIndicacao(codigo) });
+}));
+
+rotas.post('/api/indicacao/usar', exigirUsuario, h(async (req, res) => {
+  const { codigo } = z.object({ codigo: z.string().min(3).max(40) }).parse(req.body);
+  try {
+    res.json(await usarCodigo(req.userId!, codigo));
+  } catch (e) {
+    res.status(400).json({ erro: e instanceof Error ? e.message : String(e) });
+  }
+}));
+
+/** Público, para a tela de cadastro mostrar "Cupom de Pedro: 5 dias grátis" antes de criar a conta. */
+const limiteCupom = rateLimit({ windowMs: 15 * 60_000, limit: 30, standardHeaders: true, legacyHeaders: false });
+rotas.get('/api/indicacao/validar', limiteCupom, h(async (req, res) => {
+  res.json(await validarCodigo(String(req.query.codigo ?? '')));
 }));
 
 // ---------------- Cálculos pelo site ----------------

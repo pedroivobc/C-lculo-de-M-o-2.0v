@@ -80,10 +80,47 @@ export function Entrar() {
   );
 }
 
+const CHAVE_CUPOM = 'orcai:cupom';
+const guardarCupom = (c: string | null) => { try { if (c) localStorage.setItem(CHAVE_CUPOM, c); else localStorage.removeItem(CHAVE_CUPOM); } catch { /* sem storage */ } };
+const cupomGuardado = () => { try { return localStorage.getItem(CHAVE_CUPOM); } catch { return null; } };
+
+/** Aplica o cupom de indicação guardado no cadastro (pode ficar para depois da confirmação do e-mail). */
+async function aplicarCupomPendente(): Promise<string | null> {
+  const c = cupomGuardado();
+  if (!c) return null;
+  try {
+    const r = await api<{ nome: string; dias: number }>('/api/indicacao/usar', { corpo: { codigo: c } });
+    return `Cupom de ${r.nome} aplicado: seu teste grátis é de ${r.dias} dias.`;
+  } catch {
+    return null; // cupom inválido ou já usado: segue sem ele
+  } finally { guardarCupom(null); }
+}
+
+/** Campo do cupom de indicação: confere enquanto a pessoa digita e mostra de quem é. */
+function CampoCupom({ valor, onChange }: { valor: string; onChange: (v: string) => void }) {
+  const [info, setInfo] = useState<{ valido: boolean; nome?: string; dias: number } | null>(null);
+  useEffect(() => {
+    const c = valor.trim();
+    if (c.length < 4) { setInfo(null); return; }
+    const t = setTimeout(() => {
+      api<{ valido: boolean; nome?: string; dias: number }>(`/api/indicacao/validar?codigo=${encodeURIComponent(c)}`, { publico: true })
+        .then((r) => setInfo(typeof r?.valido === 'boolean' ? r : null)).catch(() => setInfo(null));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [valor]);
+  return (
+    <Campo rotulo="Cupom de indicação (opcional)" value={valor} autoComplete="off" maxLength={20} placeholder="Ex.: PEDRO7K2"
+      onChange={(e) => onChange(e.target.value.toUpperCase())}
+      dica={info?.valido ? `✅ Cupom de ${info.nome}: você ganha ${info.dias} dias grátis em vez de 3.`
+        : info ? 'Cupom não encontrado. Confira as letras e os números.' : 'Com cupom de um assinante, o teste grátis é de 5 dias.'} />
+  );
+}
+
 export function Cadastro() {
   const navegar = useNavigate();
   const [params] = useSearchParams();
   const [d, setD] = useState({ nome: '', email: '', whatsapp: '', senha: '' });
+  const [cupom, setCupom] = useState((params.get('cupom') ?? cupomGuardado() ?? '').toUpperCase());
   const [aceite, setAceite] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -95,10 +132,12 @@ export function Cadastro() {
     try {
       const { data, error } = await supabase.auth.signUp({ email: d.email, password: d.senha, options: { data: { full_name: d.nome } } });
       if (error) throw error;
+      guardarCupom(cupom.trim() || null);
       if (!data.session) {
         setErro('Conta criada. Confirme o e-mail que enviamos e depois entre para validar o WhatsApp.');
         return;
       }
+      await aplicarCupomPendente();
       await pedirConfirmacao(d.whatsapp);
       navegar(`/verificar${params.toString() ? `?${params}` : ''}`);
     } catch (err) {
@@ -119,6 +158,7 @@ export function Cadastro() {
         <Campo rotulo="WhatsApp com DDD" type="tel" required autoComplete="tel" placeholder="(32) 99999-0000" value={d.whatsapp} onChange={muda('whatsapp')}
           dica="Na próxima tela você confirma o número mandando um código para o agente. É por ele que o agente reconhece você." />
         <Campo rotulo="Senha" type="password" required minLength={8} autoComplete="new-password" value={d.senha} onChange={muda('senha')} dica="Mínimo de 8 caracteres." />
+        <CampoCupom valor={cupom} onChange={setCupom} />
         <label className="flex items-start gap-2.5 text-suave">
           <input type="checkbox" required checked={aceite} onChange={(e) => setAceite(e.target.checked)} className="mt-0.5 size-[18px] accent-acao" />
           <span>Li e aceito os <Link to="/termos" target="_blank" className="font-bold text-acao">termos de uso</Link> e a <Link to="/privacidade" target="_blank" className="font-bold text-acao">política de privacidade</Link> (LGPD).</span>
@@ -158,6 +198,10 @@ export function Verificar() {
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [confirmadoAntes] = useState(perfil?.whatsapp_verified_at ?? null);
+  const [avisoCupom, setAvisoCupom] = useState<string | null>(null);
+
+  // Quem confirmou o e-mail antes de entrar chega aqui com o cupom ainda guardado.
+  useEffect(() => { aplicarCupomPendente().then(setAvisoCupom); }, []);
 
   useEffect(() => {
     if (!pedido) return;
@@ -214,6 +258,7 @@ export function Verificar() {
           </div>
         </div>
       )}
+      {avisoCupom && <Aviso tom="verde">{avisoCupom}</Aviso>}
       {erro && <Aviso tom="vermelho">{erro}</Aviso>}
       <Aviso>É este número que o agente vai reconhecer. Use o WhatsApp que você leva no dia a dia.</Aviso>
     </Moldura>

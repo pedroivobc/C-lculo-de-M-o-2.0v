@@ -8,6 +8,7 @@ import { variantesTelefone } from '../telefone';
 import { DECLARACOES, executar, type Contexto, type Resposta } from './ferramentas';
 import { passo, telaAtual, type ContextoMenu, type Estado, type FormatoEntrega } from './menu';
 import { orcamentoEmTexto } from './orcamentoTexto';
+import { codigoDoUsuario, DIAS_TESTE, DIAS_TESTE_INDICACAO, linkDeIndicacao } from '../indicacao';
 import { arquivoDoOrcamento, buscarPorSeq, numeroCalculo, salvarCalculo, type CalculoSalvo } from '../historico';
 import { comLocalidade, configuracaoDoUsuario, type Configuracao } from '../estilo';
 
@@ -52,7 +53,7 @@ const MENSAGEM_BLOQUEIO: Record<MotivoAcesso, (url: string) => string> = {
   ok: () => '',
   trial: () => '',
   sem_cartao: (u) => `Para usar o ${config.marca}, cadastre um cartão de crédito na sua conta (mesmo que vá pagar no Pix): ${u}/app/conta`,
-  trial_expirado: (u) => `Seus 3 dias de teste do ${config.marca} terminaram. Assine em ${u}/assinar e eu volto a calcular na hora.`,
+  trial_expirado: (u) => `Seu teste grátis do ${config.marca} terminou. Assine em ${u}/assinar e eu volto a calcular na hora.`,
   assinatura_inativa: (u) => `Sua assinatura do ${config.marca} não está ativa. Renove em ${u}/assinar e eu volto a calcular na hora.`,
   sem_perfil: (u) => `Não encontrei sua conta. Entre em ${u}/entrar.`,
 };
@@ -149,6 +150,15 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
 
   const textoUsuario = msg.texto?.trim() ?? '';
   await registrar(msg.telefone, assinante.userId, 'entrada', msg.temAnexo ? 'midia' : 'texto', textoUsuario, msg.messageId);
+
+  // "indicar" ou "cupom": manda o cupom de indicação do assinante, pronto para encaminhar.
+  if (/^(indicar|indicacao|indicação|cupom|meu cupom)$/i.test(textoUsuario)) {
+    const codigo = await codigoDoUsuario(assinante.userId);
+    return responder(msg.telefone, assinante.userId, 'ok', [
+      { tipo: 'texto', texto: `Seu cupom de indicação: *${codigo}*\nQuem se cadastrar com ele ganha ${DIAS_TESTE_INDICACAO} dias grátis (em vez de ${DIAS_TESTE}). Encaminhe a mensagem abaixo 👇` },
+      { tipo: 'texto', texto: `Uso o *${config.marca}* para fazer orçamento de escritura, ITBI e financiamento em segundos, direto no WhatsApp. Cadastre-se com o meu cupom *${codigo}* e ganhe ${DIAS_TESTE_INDICACAO} dias grátis:\n${linkDeIndicacao(codigo)}` },
+    ]);
+  }
 
   // Conversa por menus numerados (./menu.ts). Texto livre no menu inicial vai para o agente com IA.
   const ctxMenu: ContextoMenu = { nome: assinante.nome, formatoPadrao: assinante.configuracao.estilo.formato, temAnexo: msg.temAnexo, custosPadrao: assinante.configuracao.custos };

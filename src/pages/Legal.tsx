@@ -191,7 +191,7 @@ export function Termos() {
       <Secao n={5} titulo="Planos, teste e pagamento">
         <Lista itens={[
           `Essencial: ${e.mensal} por mês ou ${e.anual} por ano. Pró: ${p.mensal} por mês ou ${p.anual} por ano. Os preços vigentes ficam na página de planos.`,
-          'Novas contas têm 3 dias de teste grátis. Para continuar depois do teste, é preciso assinar um plano.',
+          'Novas contas têm 3 dias de teste grátis, ou 5 dias com o cupom de indicação de um assinante. Terminado o teste, o acesso fica bloqueado até você assinar um plano.',
           'A assinatura é renovada automaticamente no fim de cada período, até você cancelar.',
           'Você pode cancelar quando quiser. O acesso continua até o fim do período já pago, e não há cobrança no período seguinte.',
           'Na primeira contratação, você pode desistir em até 7 dias e receber de volta o valor pago (art. 49 do Código de Defesa do Consumidor).',
