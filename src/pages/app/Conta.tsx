@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useConta } from '@/hooks/useConta';
 import { Aviso, Botao, BotaoLink, Campo, Cartao } from '@/components/ui/Campos';
@@ -77,7 +77,7 @@ export default function Conta() {
           </section>
 
           <Cartao titulo="Privacidade">
-            <p className="mb-3 text-suave">Seus orçamentos e conversas ficam guardados só para você. Para baixar ou apagar seus dados, fale com o suporte pelo WhatsApp do agente.</p>
+            <p className="mb-3 text-suave">Não pedimos dados dos seus clientes: os orçamentos usam só valores. Seus orçamentos ficam guardados só para você, e as conversas com o agente, por 30 dias. Para baixar ou apagar seus dados, fale com o suporte pelo WhatsApp do agente. <Link to="/privacidade" className="font-bold text-acao">Política de privacidade</Link></p>
             <Botao variante="perigo" onClick={sair}>Sair da conta</Botao>
           </Cartao>
         </div>

@@ -21,12 +21,5 @@ const numero = (e164: string) => e164.replace(/\D/g, '');
 export const enviarTexto = (e164: string, texto: string) =>
   chamar('/message/sendText', { number: numero(e164), text: texto });
 
-/** Baixa a foto/PDF de uma mensagem recebida (a Evolution devolve em base64). */
-export async function baixarMidia(messageId: string): Promise<{ base64: string; mimetype: string }> {
-  const r = await chamar('/chat/getBase64FromMediaMessage', { message: { key: { id: messageId } }, convertToMp4: false });
-  if (!r?.base64) throw new Error('A Evolution não devolveu a mídia');
-  return { base64: r.base64, mimetype: r.mimetype ?? 'application/octet-stream' };
-}
-
 export const enviarDocumento = (e164: string, url: string, nomeArquivo: string, mimetype: string, legenda?: string) =>
   chamar('/message/sendMedia', { number: numero(e164), mediatype: 'document', mimetype, media: url, fileName: nomeArquivo, caption: legenda });

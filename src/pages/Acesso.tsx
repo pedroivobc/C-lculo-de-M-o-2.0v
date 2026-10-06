@@ -122,7 +122,7 @@ export function Cadastro() {
         <Campo rotulo="Senha" type="password" required minLength={8} autoComplete="new-password" value={d.senha} onChange={muda('senha')} dica="Mínimo de 8 caracteres." />
         <label className="flex items-start gap-2.5 text-suave">
           <input type="checkbox" required checked={aceite} onChange={(e) => setAceite(e.target.checked)} className="mt-0.5 size-[18px] accent-acao" />
-          <span>Li e aceito os termos de uso e a política de privacidade (LGPD).</span>
+          <span>Li e aceito os <Link to="/termos" target="_blank" className="font-bold text-acao">termos de uso</Link> e a <Link to="/privacidade" target="_blank" className="font-bold text-acao">política de privacidade</Link> (LGPD).</span>
         </label>
         {erro && <Aviso tom="vermelho">{erro}</Aviso>}
         <Botao type="submit" disabled={enviando} className="min-h-[52px] text-base">{enviando ? 'Enviando…' : 'Enviar código no WhatsApp'}</Botao>

@@ -20,3 +20,11 @@ export const PLANOS: Record<Nivel, { nome: string; mensal: string; anual: string
 
 /** Preço de entrada (Essencial), usado nas chamadas "a partir de". */
 export const PRECO = PLANOS.usuario;
+
+/** Quem opera o serviço (controlador na LGPD). CNPJ e e-mail vêm do ambiente para não ficarem fixos no código. */
+export const EMPRESA = {
+  nome: 'Clemente Assessoria',
+  cnpj: import.meta.env.VITE_EMPRESA_CNPJ ?? '',
+  emailPrivacidade: import.meta.env.VITE_EMAIL_PRIVACIDADE ?? '',
+  cidade: 'Juiz de Fora, MG',
+};

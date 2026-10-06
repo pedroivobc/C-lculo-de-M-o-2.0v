@@ -6,6 +6,7 @@ import { EXIGIR_ASSINATURA } from '@/lib/config';
 import { AppLayout } from '@/components/layout/AppLayout';
 import Landing from '@/pages/Landing';
 import { Assinar, Cadastro, Configurar, Entrar, Verificar } from '@/pages/Acesso';
+import { Privacidade, Termos } from '@/pages/Legal';
 
 // Telas do app carregadas sob demanda (a landing fica leve).
 const Inicio = lazy(() => import('@/pages/app/Inicio'));
@@ -46,6 +47,8 @@ export default function App() {
         <Suspense fallback={<Carregando />}>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/termos" element={<Termos />} />
+            <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/entrar" element={<Entrar />} />
             <Route path="/cadastro" element={<Cadastro />} />
             <Route path="/verificar" element={<Protegido><Verificar /></Protegido>} />

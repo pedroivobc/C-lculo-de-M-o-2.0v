@@ -7,7 +7,7 @@ import { config } from './config';
 import { exigirAgente, exigirUsuario } from './auth';
 import { supabaseAdmin, salvarArquivo, urlAssinada } from './supabase';
 import { normalizarTelefone, telefoneDoJid } from './telefone';
-import { baixarMidia, enviarTexto } from './evolution';
+import { enviarTexto } from './evolution';
 import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, salvarCalculo } from './historico';
 import { comLocalidade, configuracaoDoUsuario } from './estilo';
 import { gerarCsv } from './exportar';
@@ -33,8 +33,8 @@ const mensagemSchema = z.object({
   texto: z.string().optional(),
   messageId: z.string().optional(),
   nome: z.string().optional(),
+  /** Aceitos por compatibilidade com o fluxo do n8n. O conteúdo de anexos não é baixado, lido nem guardado. */
   midia: z.object({ base64: z.string(), mimetype: z.string() }).optional(),
-  /** Quando true e sem `midia`, o servidor baixa a foto/PDF da Evolution pelo messageId. */
   temMidia: z.boolean().optional(),
 });
 
@@ -42,14 +42,8 @@ rotas.post('/api/agente/mensagem', exigirAgente, h(async (req, res) => {
   const m = mensagemSchema.parse(req.body);
   const telefone = m.remoteJid ? telefoneDoJid(m.remoteJid) : normalizarTelefone(m.telefone ?? '');
   if (!telefone) return res.json({ status: 'ignorada', respostas: [] }); // grupo, broadcast ou número inválido
-  let midia = m.midia ? { base64: m.midia.base64!, mimetype: m.midia.mimetype! } : undefined;
-  if (!midia && m.temMidia && m.messageId) {
-    midia = await baixarMidia(m.messageId).catch((e) => {
-      console.error('Falha ao baixar mídia', e);
-      return undefined;
-    });
-  }
-  res.json(await processarMensagem({ telefone, texto: m.texto, messageId: m.messageId, nome: m.nome, midia }));
+  const temAnexo = Boolean(m.midia || m.temMidia);
+  res.json(await processarMensagem({ telefone, texto: m.texto, messageId: m.messageId, nome: m.nome, temAnexo }));
 }));
 
 rotas.get('/api/agente/identificar', exigirAgente, h(async (req, res) => {

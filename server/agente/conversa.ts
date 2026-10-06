@@ -11,7 +11,8 @@ export interface MensagemRecebida {
   texto?: string;
   messageId?: string;
   nome?: string;                 // pushName do WhatsApp
-  midia?: { base64: string; mimetype: string };
+  /** A mensagem trouxe foto ou arquivo. Só o fato é registrado: o anexo não é lido nem guardado. */
+  temAnexo?: boolean;
 }
 
 export type MotivoAcesso = 'ok' | 'trial' | 'sem_cartao' | 'trial_expirado' | 'assinatura_inativa' | 'sem_perfil';
@@ -75,10 +76,18 @@ Regras:
 - Não fale de assuntos fora de orçamento de documentação imobiliária.`;
 }
 
+/** Conversas ficam guardadas por 30 dias (o agente só usa as últimas 6 horas como contexto). Ver /privacidade. */
+export const RETENCAO_CONVERSAS_DIAS = 30;
+
 async function registrar(telefone: string, userId: string | null, direcao: 'entrada' | 'saida', tipo: string, conteudo: string, messageId?: string) {
-  await supabaseAdmin().from('whatsapp_messages').insert({
+  const db = supabaseAdmin();
+  await db.from('whatsapp_messages').insert({
     whatsapp_e164: telefone, user_id: userId, direcao, tipo, conteudo: conteudo.slice(0, 4000), evolution_message_id: messageId ?? null,
   });
+  if (direcao === 'entrada') {
+    const limite = new Date(Date.now() - RETENCAO_CONVERSAS_DIAS * 86400_000).toISOString();
+    await db.from('whatsapp_messages').delete().eq('whatsapp_e164', telefone).lt('created_at', limite);
+  }
 }
 
 async function historicoRecente(telefone: string): Promise<Content[]> {
@@ -110,7 +119,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
 
   const assinante = await identificar(msg.telefone);
   if (!assinante) {
-    await registrar(msg.telefone, null, 'entrada', msg.midia ? 'midia' : 'texto', msg.texto ?? '', msg.messageId);
+    await registrar(msg.telefone, null, 'entrada', msg.temAnexo ? 'midia' : 'texto', msg.texto ?? '', msg.messageId);
     return { status: 'sem_cadastro', respostas: [{ tipo: 'texto', texto:
       `Olá! Eu sou o agente do *${config.marca}*: faço orçamento de escritura, ITBI e financiamento em segundos.\n\nEste número ainda não está cadastrado. Assine em ${config.appUrl}/cadastro e confirme este WhatsApp para começar.` }] };
   }
@@ -123,9 +132,9 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   const anexos: Resposta[] = [];
 
   // Arquivos não são lidos: o agente trabalha com os valores escritos na mensagem.
-  if (msg.midia) textoUsuario += '\n[Enviei um arquivo. Peça os valores por escrito: o agente não lê anexos.]';
+  if (msg.temAnexo) textoUsuario += '\n[Enviei um arquivo. Peça os valores por escrito: o agente não lê anexos.]';
 
-  await registrar(msg.telefone, assinante.userId, 'entrada', msg.midia ? 'midia' : 'texto', textoUsuario, msg.messageId);
+  await registrar(msg.telefone, assinante.userId, 'entrada', msg.temAnexo ? 'midia' : 'texto', textoUsuario, msg.messageId);
   if (!config.geminiKey) return { status: 'erro', respostas: [{ tipo: 'texto', texto: 'O agente está em manutenção. Use o site enquanto isso.' }] };
 
   const ctx: Contexto = { userId: assinante.userId, telefone: msg.telefone, configuracao: assinante.configuracao, anexos };
