@@ -14,8 +14,21 @@ const comum = {
   ...camposLocalidade,
 };
 
-const notaItbi = (m: Municipio, sfh: boolean) =>
-  `${sfh && m.itbi.sfh ? `Regra do SFH (${percentual(m.itbi.aliquota)} sobre a parte não financiada)` : percentual(m.itbi.aliquota)} · ${m.nome}`;
+/** Teto nacional do valor do imóvel no SFH. Acima dele o contrato é SFI: sem redução no ITBI nem nos 50% do registro. */
+export const TETO_SFH = 2250000;
+
+/** Linha do ITBI no financiamento. `pedeSfh` = modalidade do SFH; só vale se o imóvel couber no teto. */
+function linhaItbi(m: Municipio, base: number, fin: number, pedeSfh: boolean): Linha {
+  const sfh = pedeSfh && base <= TETO_SFH;
+  const regra = sfh && m.itbi.sfh ? `Regra do SFH (${percentual(m.itbi.aliquota)} sobre a parte não financiada)` : percentual(m.itbi.aliquota);
+  const foraDoTeto = pedeSfh && !sfh ? ' · imóvel acima do teto do SFH (R$ 2,25 mi)' : '';
+  return {
+    rotulo: sfh ? 'ITBI (SFH)' : 'ITBI',
+    valor: sfh ? itbiSfh(m, base, fin) : base * m.itbi.aliquota,
+    origem: m.itbiDoUsuario ? 'usuario' : 'municipio',
+    nota: `${regra} · ${m.nome}${foraDoTeto}`,
+  };
+}
 
 /**
  * Registro do contrato de financiamento: registro da compra (pelo valor do imóvel) e da alienação fiduciária
@@ -51,12 +64,8 @@ export function calcularCaixa(dados: EntradaCaixa): Resultado {
     : e.modalidade === 'FGTS' ? (base <= 350000 ? 1600 : 3200)
     : 1800 + fin * pct;
 
-  const itbi =
-    e.modalidade === 'SBPE' || e.modalidade === 'MCMV' ? itbiSfh(m, base, fin)
-    : e.modalidade === 'EGI' ? 0
-    : base * m.itbi.aliquota;
-
-  const sfh = e.modalidade === 'SBPE' || e.modalidade === 'MCMV';
+  const pedeSfh = e.modalidade === 'SBPE' || e.modalidade === 'MCMV';
+  const sfh = pedeSfh && base <= TETO_SFH;
   const registro =
     e.modalidade === 'EGI' ? registroFinanciamento(m, { alienacao: fin }, false)
     : e.modalidade === 'FGTS' ? registroFinanciamento(m, { compra: base }, false)
@@ -64,7 +73,9 @@ export function calcularCaixa(dados: EntradaCaixa): Resultado {
 
   const linhas: Linha[] = [
     { rotulo: 'Taxa Caixa', valor: taxa, origem: 'banco', nota: e.modalidade },
-    { rotulo: e.modalidade === 'SBPE' || e.modalidade === 'MCMV' ? 'ITBI (SFH)' : 'ITBI', valor: itbi, origem: m.itbiDoUsuario ? 'usuario' : 'municipio', nota: notaItbi(m, e.modalidade === 'SBPE' || e.modalidade === 'MCMV') },
+    e.modalidade === 'EGI'
+      ? { rotulo: 'ITBI', valor: 0, origem: m.itbiDoUsuario ? 'usuario' : 'municipio', nota: `Sem transmissão (garantia) · ${m.nome}` }
+      : linhaItbi(m, base, fin, pedeSfh),
     registro,
     { rotulo: 'Certidões', valor: e.certidoes, origem: 'usuario' },
     { rotulo: 'Honorários', valor: honorarios, origem: 'usuario' },
@@ -91,8 +102,8 @@ export function calcularBancoPrivado(dados: EntradaBancoPrivado): Resultado {
   const sbpe = e.modalidade === 'SBPE';
   const linhas: Linha[] = [
     { rotulo: 'Tarifa de contrato', valor: TARIFA_BANCO[e.banco], origem: 'banco', nota: e.banco },
-    { rotulo: sbpe ? 'ITBI (SFH)' : 'ITBI', valor: sbpe ? itbiSfh(m, base, fin) : base * m.itbi.aliquota, origem: m.itbiDoUsuario ? 'usuario' : 'municipio', nota: notaItbi(m, sbpe) },
-    registroFinanciamento(m, { compra: base, alienacao: fin }, sbpe && e.primeiroImovel),
+    linhaItbi(m, base, fin, sbpe),
+    registroFinanciamento(m, { compra: base, alienacao: fin }, sbpe && base <= TETO_SFH && e.primeiroImovel),
     { rotulo: 'Certidões', valor: e.certidoes, origem: 'usuario' },
     { rotulo: 'Honorários', valor: e.honorarios, origem: 'usuario' },
   ];

@@ -85,6 +85,20 @@ describe('cálculos de referência', () => {
     expect(r.linhas.find((l) => l.rotulo.startsWith('ITBI'))!.valor).toBe(8000);
   });
 
+  it('imóvel acima do teto do SFH (R$ 2,25 mi) perde a regra do SFH e os 50% do registro', () => {
+    const dentro = calcular('financiamento_caixa', { modalidade: 'SBPE', valorDeclarado: 2250000, valorFinanciado: 1500000, primeiroImovel: true });
+    const fora = calcular('financiamento_caixa', { modalidade: 'SBPE', valorDeclarado: 2250000.01, valorFinanciado: 1500000, primeiroImovel: true });
+    expect(dentro.linhas.find((l) => l.rotulo.startsWith('ITBI'))!.rotulo).toBe('ITBI (SFH)');
+    const itbi = fora.linhas.find((l) => l.rotulo.startsWith('ITBI'))!;
+    expect(itbi.rotulo).toBe('ITBI');
+    expect(itbi.valor).toBeCloseTo(45000, 1);
+    expect(itbi.nota).toMatch(/teto do SFH/);
+    const reg = (r: typeof fora) => r.linhas.find((l) => l.rotulo === 'Registro')!.valor;
+    expect(reg(fora)).toBeGreaterThan(reg(dentro));
+    const banco = calcular('banco_privado', { banco: 'itau', modalidade: 'SBPE', valorDeclarado: 3000000, valorFinanciado: 2000000 });
+    expect(banco.linhas.find((l) => l.rotulo.startsWith('ITBI'))!.valor).toBe(60000);
+  });
+
   it('registro igual ao recibo do 3º RI de Juiz de Fora (base R$ 279.670,78)', () => {
     const r = calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 279670.78});
     const reg = r.linhas.find((l) => l.rotulo === 'Registro')!;

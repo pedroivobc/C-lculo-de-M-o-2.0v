@@ -25,6 +25,9 @@ status `CONFERIDO_FONTE_PRIMARIA` ou `TRANSCRITO_CONFERIDO` e, de preferência, 
   Provável erro de cópia na planilha; confirmar com um recibo de escritura antes de mexer.
 - **ITBI de Juiz de Fora**: 2% conferido. Na parte financiada pelo SFH, a planilha aponta que a Lei 11.914/2009 criou um teto
   indexado (R$ 41.971,00 na origem) e que o limite de R$ 107.603,17 usado no motor **não foi validado para 2026**.
+- **Teto do SFH**: imóvel acima de R$ 2.250.000,00 não entra no SFH. O motor tira a regra do SFH no ITBI e os 50% do
+  1º imóvel no registro (`TETO_SFH` em `src/lib/calc/financiamento.ts`). Esse teto é do valor do imóvel; o limite da parte
+  financiada com 0,5% no ITBI de JF é outro número, municipal.
 - **Belo Horizonte**: ITBI de 3% conferido em fonte primária. Cadastrada no motor sem regra de SFH (3% sobre o valor inteiro).
 - **ISS dos cartórios**: Uberlândia, Contagem, Montes Claros e Betim têm 5% ativo na base NFS-e; JF e BH não têm registro
   ativo no recorte. O ISS é o do município do cartório, não o do imóvel.
