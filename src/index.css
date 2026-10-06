@@ -1,32 +1,74 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Instrument+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+/* Identidade Orçaí (ver página "Marca" do canvas) */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Playfair Display", serif;
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+
+  --color-tinta: #101828;
+  --color-texto: #3b4556;
+  --color-suave: #556070;
+  --color-acao: #2342d6;
+  --color-acao-escuro: #1a33a8;
+  --color-acao-claro: #e6ebff;
+  --color-minas: #c8202a;
+  --color-minas-claro: #fde8e9;
+  --color-minas-texto: #b0141d;
+  --color-marca-texto: #ffd24a;
+  --color-amarelo-claro: #fff4cc;
+  --color-amarelo-texto: #5c4400;
+  --color-ok: #0f8a5f;
+  --color-ok-claro: #e8f6f0;
+  --color-nevoa: #f2f4f7;
+  --color-cinza: #eaedf2;
+  --color-linha: #e4e7ec;
+  --color-borda: #c8ced8;
 }
 
 @layer base {
   body {
-    @apply bg-[#0A0E1A] text-white antialiased;
+    @apply bg-nevoa text-tinta font-sans antialiased;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-stretch: 112%;
+    letter-spacing: -0.02em;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-marca-texto);
+    outline-offset: 2px;
   }
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
+@layer components {
+  /* Títulos e números na Archivo larga */
+  .display {
+    font-family: var(--font-display);
+    font-stretch: 112%;
+  }
+  .numero {
+    font-family: var(--font-display);
+    font-stretch: 105%;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Total marcado a marca-texto */
+  .marca-texto {
+    background: linear-gradient(transparent 55%, var(--color-marca-texto) 55%);
+    padding: 0 4px;
+  }
+  /* Borda picotada do orçamento */
+  .picote {
+    height: 12px;
+    background:
+      linear-gradient(135deg, #fff 6px, transparent 0) 0 0 / 12px 12px repeat-x,
+      linear-gradient(-135deg, #fff 6px, transparent 0) 0 0 / 12px 12px repeat-x;
+  }
+  .rotulo-secao {
+    @apply text-xs font-bold uppercase tracking-[0.12em] text-minas;
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: #0A0E1A;
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
 }
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(212, 175, 55, 0.2);
-}
-

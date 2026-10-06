@@ -9,6 +9,8 @@ services:
       args:
         VITE_SUPABASE_URL: ${SUPABASE_URL}
         VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+        VITE_AGENTE_WHATSAPP: ${AGENTE_WHATSAPP}
+        VITE_EXIGIR_ASSINATURA: ${EXIGIR_ASSINATURA:-false}
     restart: unless-stopped
     environment:
       PORT: 3000

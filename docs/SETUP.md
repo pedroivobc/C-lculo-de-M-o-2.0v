@@ -73,10 +73,12 @@ Fluxo: *Evolution: mensagem recebida* → *Filtrar e extrair* (ignora grupos, me
 
 ## 5. Primeiro assinante (teste de ponta a ponta)
 
+No `infra/.env`, preencha `AGENTE_WHATSAPP` (número do chip do agente, com DDI) para o app mostrar o botão "Abrir conversa".
+
 Enquanto o pagamento (Asaas) não está integrado, ative à mão:
 
 1. Crie uma conta pelo site.
-2. Confirme o WhatsApp: `POST /api/whatsapp/codigo` e `POST /api/whatsapp/verificar` (as telas de cadastro do canvas chamam essas rotas). Para testar sem front, no SQL Editor:
+2. Confirme o WhatsApp na tela que aparece logo após o cadastro (o código chega pela Evolution). Para testar sem a Evolution conectada, no SQL Editor:
    ```sql
    update profiles set whatsapp_e164 = '+5532999990000', whatsapp_verified_at = now() where email = 'voce@exemplo.com';
    ```

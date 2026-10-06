@@ -6,6 +6,8 @@ COPY . .
 # Variáveis públicas do front entram no bundle na hora do build.
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
+ARG VITE_AGENTE_WHATSAPP
+ARG VITE_EXIGIR_ASSINATURA
 RUN npm run build
 
 FROM node:22-alpine

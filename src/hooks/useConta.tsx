@@ -1,0 +1,68 @@
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import type { User } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from './useAuth';
+
+export interface Perfil {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  whatsapp_e164: string | null;
+  whatsapp_verified_at: string | null;
+  municipio_padrao: string;
+  pdf_header: string | null;
+}
+
+export interface Assinatura {
+  plan: 'mensal' | 'anual';
+  status: 'pendente' | 'ativa' | 'atrasada' | 'cancelada';
+  current_period_end: string | null;
+}
+
+interface ContaValor {
+  user: User | null;
+  perfil: Perfil | null;
+  assinatura: Assinatura | null;
+  ativa: boolean;
+  carregando: boolean;
+  recarregar: () => Promise<void>;
+}
+
+const Contexto = createContext<ContaValor | null>(null);
+
+/** Usuário logado + perfil + assinatura, lidos uma vez e compartilhados pelo app (protegidos por RLS). */
+export function ContaProvider({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth();
+  const [perfil, setPerfil] = useState<Perfil | null>(null);
+  const [assinatura, setAssinatura] = useState<Assinatura | null>(null);
+  const [carregando, setCarregando] = useState(true);
+
+  const recarregar = useCallback(async () => {
+    if (!user) { setPerfil(null); setAssinatura(null); setCarregando(false); return; }
+    setCarregando(true);
+    const [p, a] = await Promise.all([
+      supabase.from('profiles').select('id, full_name, email, whatsapp_e164, whatsapp_verified_at, municipio_padrao, pdf_header').eq('id', user.id).maybeSingle(),
+      supabase.from('subscriptions').select('plan, status, current_period_end').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    setPerfil((p.data as Perfil) ?? null);
+    setAssinatura((a.data as Assinatura) ?? null);
+    setCarregando(false);
+  }, [user]);
+
+  useEffect(() => { if (!loading) recarregar(); }, [loading, recarregar]);
+
+  const ativa = !!assinatura && assinatura.status === 'ativa'
+    && (!assinatura.current_period_end || new Date(assinatura.current_period_end) > new Date());
+
+  return (
+    <Contexto.Provider value={{ user, perfil, assinatura, ativa, carregando: loading || carregando, recarregar }}>
+      {children}
+    </Contexto.Provider>
+  );
+}
+
+export function useConta() {
+  const v = useContext(Contexto);
+  if (!v) throw new Error('useConta precisa estar dentro de <ContaProvider>');
+  return v;
+}
