@@ -15,14 +15,19 @@ interface Opcao { rotulo: string; vai: string } // vai: id de menu ou 'fluxo:<id
 interface Menu { titulo: string; opcoes: Opcao[]; voltar?: string }
 
 type TipoPergunta = 'valor' | 'valorOuZero' | 'ano' | 'simnao';
-interface Pergunta { campo: string; titulo: string; texto: string; tipo: TipoPergunta; maximo?: { campo: string; erro: string } }
+interface Pergunta {
+  campo: string; titulo: string; texto: string; tipo: TipoPergunta;
+  maximo?: { campo: string; erro: string };
+  /** Aceita também a cota em % deste campo (ex.: 80% do valor do imóvel). */
+  cotaDe?: string;
+}
 interface Fluxo { titulo: string; calculo: TipoCalculo; fixos: Record<string, unknown>; perguntas: Pergunta[] }
 
 const BANCOS = { itau: 'Itaú', bradesco: 'Bradesco', santander: 'Santander' } as const;
 
 const IMOVEL: Pergunta = { campo: 'valorDeclarado', titulo: 'Valor do imóvel', texto: 'Qual é o valor do imóvel?', tipo: 'valor' };
 const FINANCIADO: Pergunta = {
-  campo: 'valorFinanciado', titulo: 'Valor financiado', texto: 'Quanto vai ser financiado?', tipo: 'valor',
+  campo: 'valorFinanciado', titulo: 'Valor financiado', texto: 'Quanto vai ser financiado?', tipo: 'valor', cotaDe: 'valorDeclarado',
   maximo: { campo: 'valorDeclarado', erro: 'O valor financiado não pode ser maior que o valor do imóvel.' },
 };
 const PRIMEIRO: Pergunta = { campo: 'primeiroImovel', titulo: 'Primeiro imóvel', texto: 'É o primeiro imóvel do comprador?', tipo: 'simnao' };
@@ -203,6 +208,22 @@ export function lerValor(texto: string): number | null {
   return Math.round(n * mult * 100) / 100;
 }
 
+/**
+ * Cota em % de uma base: "80%", "80 %", "80" ou "80,5" (até 100 sem o símbolo, já que ninguém financia R$ 80).
+ * Devolve null quando a resposta é um valor em reais.
+ */
+export function lerCota(texto: string, base: number): { pct: number; valor: number } | null {
+  const t = semAcento(texto).replace(/\s+/g, ' ').trim();
+  if (!base) return null;
+  const comSimbolo = t.match(/^(\d{1,3}(?:[.,]\d{1,2})?)\s*(%|por cento)$/);
+  const semSimbolo = t.match(/^(\d{1,3}(?:[.,]\d{1,2})?)$/);
+  const bruto = comSimbolo?.[1] ?? (semSimbolo && Number(semSimbolo[1].replace(',', '.')) <= 100 ? semSimbolo[1] : null);
+  if (!bruto) return null;
+  const pct = Number(bruto.replace(',', '.'));
+  if (!(pct > 0)) return null;
+  return { pct, valor: Math.round(base * pct) / 100 };
+}
+
 function lerSimNao(texto: string): boolean | null {
   const t = semAcento(texto).replace(/[️⃣]/g, '');
   if (['1', 'sim', 's', 'si', 'isso', 'e sim'].includes(t)) return true;
@@ -228,11 +249,14 @@ const telaMenu = (id: string, prefixo = '') => {
   return mensagemMenu(m.titulo, m.opcoes.map((o) => o.rotulo), !!m.voltar, prefixo);
 };
 
-function telaPergunta(f: Fluxo, i: number, prefixo = ''): MensagemMenu {
+function telaPergunta(f: Fluxo, i: number, prefixo = '', dados: Record<string, unknown> = {}): MensagemMenu {
   const p = f.perguntas[i];
   const passo = f.perguntas.length > 1 ? ` (${i + 1} de ${f.perguntas.length})` : '';
   if (p.tipo === 'simnao') return mensagemMenu(`*${p.titulo}*${passo}\n${p.texto}`, ['Sim', 'Não'], true, prefixo);
-  const exemplo = p.tipo === 'ano' ? '' : '\n_Pode digitar só os números: 350000 vira R$ 350.000,00_';
+  const base = p.cotaDe ? Number(dados[p.cotaDe]) : 0;
+  const exemplo = p.tipo === 'ano' ? ''
+    : base ? `\nDigite o valor ou a cota em %.\n_Ex.: ${Math.round(base * 0.8)} ou 80% (= ${brl(Math.round(base * 0.8 * 100) / 100)})_`
+    : '\n_Pode digitar só os números: 350000 vira R$ 350.000,00_';
   return { texto: `${prefixo}*${p.titulo}*${passo}\n${p.texto}${exemplo}\n\n${VOLTAR}`, opcoes: [{ id: '0', titulo: 'Voltar' }] };
 }
 
@@ -255,7 +279,7 @@ const saudacao = (nome?: string | null) => `Olá${nome ? `, ${nome.split(' ')[0]
 /** Re-mostra a tela atual (usado quando a resposta não foi entendida). */
 export function telaAtual(e: Estado, ctx: ContextoMenu, prefixo = ''): MensagemMenu {
   if (e.tela === 'menu') return telaMenu(e.id, prefixo);
-  if (e.tela === 'pergunta') return telaPergunta(FLUXOS[e.fluxo], e.i, prefixo);
+  if (e.tela === 'pergunta') return telaPergunta(FLUXOS[e.fluxo], e.i, prefixo, e.dados);
   return telaFormato(ctx.formatoPadrao, prefixo);
 }
 
@@ -314,30 +338,33 @@ export function passo(estado: Estado | null, texto: string, ctx: ContextoMenu): 
     const p = f.perguntas[estado.i];
     if (voltar && p.tipo !== 'simnao') {
       if (estado.i === 0) return irPara(estado.origem, estado.origem, ultimo);
-      return { estado: { ...estado, i: estado.i - 1 }, mensagens: [telaPergunta(f, estado.i - 1)] };
+      return { estado: { ...estado, i: estado.i - 1 }, mensagens: [telaPergunta(f, estado.i - 1, '', estado.dados)] };
     }
     let valor: unknown;
     if (p.tipo === 'simnao') {
-      if (t === '0' || t === 'voltar') return { estado: { ...estado, i: estado.i - 1 }, mensagens: [telaPergunta(f, estado.i - 1)] };
+      if (t === '0' || t === 'voltar') return { estado: { ...estado, i: estado.i - 1 }, mensagens: [telaPergunta(f, estado.i - 1, '', estado.dados)] };
       valor = lerSimNao(texto);
       if (valor === null) return naoEntendi();
     } else if (p.tipo === 'ano') {
       const ano = Number(t.match(/\b(19|20)\d{2}\b/)?.[0]);
-      if (!ano || ano < 1997 || ano > ANO_BASE_INCC) return { estado, mensagens: [telaPergunta(f, estado.i, `Digite o ano com 4 números, entre 1997 e ${ANO_BASE_INCC}.\n\n`)] };
+      if (!ano || ano < 1997 || ano > ANO_BASE_INCC) return { estado, mensagens: [telaPergunta(f, estado.i, `Digite o ano com 4 números, entre 1997 e ${ANO_BASE_INCC}.\n\n`, estado.dados)] };
       valor = ano;
     } else {
       const naoSabe = p.tipo === 'valorOuZero' && /^(nao sei|nao tenho|nao tem|sem|ainda nao)/.test(t);
-      const v = naoSabe ? 0 : lerValor(texto);
-      if (v === null || (p.tipo === 'valor' && v <= 0)) return { estado, mensagens: [telaPergunta(f, estado.i, 'Não entendi o valor 🙂 Digite só os números.\n\n')] };
-      if (v > 0 && v < 1000) return { estado, mensagens: [telaPergunta(f, estado.i, `${brl(v)} parece baixo. Digite o valor completo, ex.: 350000 para ${brl(350000)}.\n\n`)] };
-      if (p.maximo && v > Number(estado.dados[p.maximo.campo])) return { estado, mensagens: [telaPergunta(f, estado.i, `${p.maximo.erro}\n\n`)] };
+      const cota = p.cotaDe ? lerCota(texto, Number(estado.dados[p.cotaDe])) : null;
+      if (cota && cota.pct > 100) return { estado, mensagens: [telaPergunta(f, estado.i, 'A cota vai de 1% a 100%.\n\n', estado.dados)] };
+      const v = naoSabe ? 0 : cota ? cota.valor : lerValor(texto);
+      if (v === null || (p.tipo === 'valor' && v <= 0)) return { estado, mensagens: [telaPergunta(f, estado.i, 'Não entendi o valor 🙂 Digite só os números.\n\n', estado.dados)] };
+      if (v > 0 && v < 1000) return { estado, mensagens: [telaPergunta(f, estado.i, `${brl(v)} parece baixo. Digite o valor completo, ex.: 350000 para ${brl(350000)}.\n\n`, estado.dados)] };
+      if (p.maximo && v > Number(estado.dados[p.maximo.campo])) return { estado, mensagens: [telaPergunta(f, estado.i, `${p.maximo.erro}\n\n`, estado.dados)] };
       valor = v;
     }
     const dados = { ...estado.dados, [p.campo]: valor };
     // Mostra o que foi entendido, no formato em reais, antes da próxima tela.
-    const entendido = `✅ ${p.titulo}: *${comoTexto(p, valor)}*\n\n`;
+    const cotaInformada = p.cotaDe ? lerCota(texto, Number(estado.dados[p.cotaDe])) : null;
+    const entendido = `✅ ${p.titulo}: *${comoTexto(p, valor)}*${cotaInformada ? ` (${cotaInformada.pct.toLocaleString('pt-BR')}% de ${brl(Number(estado.dados[p.cotaDe!]))})` : ''}\n\n`;
     if (estado.i + 1 < f.perguntas.length) {
-      return { estado: { ...estado, i: estado.i + 1, dados }, mensagens: [telaPergunta(f, estado.i + 1, entendido)] };
+      return { estado: { ...estado, i: estado.i + 1, dados }, mensagens: [telaPergunta(f, estado.i + 1, entendido, dados)] };
     }
     return { estado: { tela: 'formato', fluxo: estado.fluxo, dados, origem: estado.origem, ultimo }, mensagens: [telaFormato(ctx.formatoPadrao, entendido)] };
   }
@@ -347,7 +374,7 @@ export function passo(estado: Estado | null, texto: string, ctx: ContextoMenu): 
     if (estado.reenvio || !estado.fluxo) return irPara('depois', 'inicio', ultimo);
     const f = FLUXOS[estado.fluxo];
     const i = f.perguntas.length - 1;
-    return { estado: { tela: 'pergunta', fluxo: estado.fluxo, i, dados: estado.dados ?? {}, origem: estado.origem ?? 'inicio', ultimo }, mensagens: [telaPergunta(f, i)] };
+    return { estado: { tela: 'pergunta', fluxo: estado.fluxo, i, dados: estado.dados ?? {}, origem: estado.origem ?? 'inicio', ultimo }, mensagens: [telaPergunta(f, i, '', estado.dados ?? {})] };
   }
   const n = lerOpcao(texto, FORMATOS.map((f) => f.rotulo));
   const formato = n ? FORMATOS[n - 1]?.id : undefined;

@@ -40,7 +40,7 @@ writeFileSync(join(saida, 'orcamento-modelo.txt'), orcamentoEmTexto(escritura, m
 writeFileSync(join(saida, 'conversa-modelo.md'), [
   '# Conversa no WhatsApp · simulação com o motor real', '',
   simular('Escritura de compra e venda simples, recebendo em mensagem escrita', ['Oi', '1', '1', '1', '350 mil', '3']),
-  simular('Financiamento Caixa SBPE, recebendo em imagem', ['Bom dia', '2', '1', '1', '400000', '320 mil', '1', '1']),
+  simular('Financiamento Caixa SBPE com cota de 80%, recebendo em imagem', ['Bom dia', '2', '1', '1', '400000', '80%', '1', '1']),
   simular('Quando a pessoa digita algo fora das opções', ['oi', 'quero orçar', '0', '1', '2', '1', '350']),
 ].join('\n'));
 console.log('ok', saida);

@@ -122,7 +122,7 @@ Quer fazer mais alguma coisa?
 _Responda com o número da opção._
 ```
 
-## Financiamento Caixa SBPE, recebendo em imagem
+## Financiamento Caixa SBPE com cota de 80%, recebendo em imagem
 
 **🧑 Corretor:** Bom dia
 
@@ -200,17 +200,18 @@ _Pode digitar só os números: 350000 vira R$ 350.000,00_
 
 *Valor financiado* (2 de 3)
 Quanto vai ser financiado?
-_Pode digitar só os números: 350000 vira R$ 350.000,00_
+Digite o valor ou a cota em %.
+_Ex.: 320000 ou 80% (= R$ 320.000,00)_
 
 0️⃣ Voltar ao menu anterior
 ```
 
-**🧑 Corretor:** 320 mil
+**🧑 Corretor:** 80%
 
 **🤖 Orçaí:**
 
 ```
-✅ Valor financiado: *R$ 320.000,00*
+✅ Valor financiado: *R$ 320.000,00* (80% de R$ 400.000,00)
 
 *Primeiro imóvel* (3 de 3)
 É o primeiro imóvel do comprador?

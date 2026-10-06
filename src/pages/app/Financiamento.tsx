@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { PaginaCalculadora, Grade } from '@/components/calc/PaginaCalculadora';
-import { Alternar, CampoMoeda, CampoNumero, Opcoes } from '@/components/ui/Campos';
+import { Alternar, CampoMoeda, CampoNumero, EntradaMoeda, Opcoes } from '@/components/ui/Campos';
+import { brl } from '@/lib/formato';
+import { cn } from '@/lib/utils';
 
 const R = (c: number) => c / 100;
 
@@ -12,12 +14,70 @@ function useValores() {
   return { declarado, setDeclarado, financiado, setFinanciado, primeiro, setPrimeiro, certidoes, setCertidoes };
 }
 
+const pctTexto = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+
+/**
+ * Valor financiado em reais ou como cota do valor declarado (80% de R$ 125.000,00 = R$ 100.000,00).
+ * O estado continua em centavos; na cota, o valor acompanha o valor declarado.
+ */
+export function CampoFinanciado({ declarado, financiado, onChange }: { declarado: number; financiado: number; onChange: (c: number) => void }) {
+  const id = useId();
+  const [modo, setModo] = useState<'valor' | 'cota'>('valor');
+  const [cota, setCota] = useState('');
+  const pct = Math.min(100, Number(cota.replace(',', '.')) || 0);
+
+  useEffect(() => {
+    if (modo === 'cota') onChange(Math.round((declarado * pct) / 100));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modo, pct, declarado]);
+
+  const trocar = (m: 'valor' | 'cota') => {
+    if (m === 'cota' && declarado && financiado) setCota(pctTexto(Math.round((financiado / declarado) * 10000) / 100));
+    setModo(m);
+  };
+  const acima = declarado > 0 && financiado > declarado;
+
+  return (
+    <div className="flex flex-col gap-1.5 font-semibold">
+      <span className="flex items-center justify-between gap-2">
+        <label htmlFor={id}>Valor financiado</label>
+        <span role="group" aria-label="Informar o financiamento em" className="flex rounded-full border border-linha p-0.5 text-xs">
+          {([['valor', 'R$'], ['cota', '%']] as const).map(([m, r]) => (
+            <button key={m} type="button" aria-pressed={modo === m} onClick={() => trocar(m)}
+              className={cn('min-h-7 min-w-9 rounded-full px-2.5 font-bold', modo === m ? 'bg-tinta text-white' : 'text-suave')}>{r}</button>
+          ))}
+        </span>
+      </span>
+      <span className="flex h-12 items-center gap-2 rounded-[10px] border border-borda bg-white px-3 focus-within:border-acao focus-within:ring-2 focus-within:ring-acao/20">
+        {modo === 'valor' ? (
+          <>
+            <span className="font-medium text-suave">R$</span>
+            <EntradaMoeda id={id} centavos={financiado} onChange={onChange} className="numero w-full min-w-0 bg-transparent font-bold outline-none" />
+          </>
+        ) : (
+          <>
+            <input id={id} inputMode="decimal" autoComplete="off" placeholder="80" value={cota}
+              onChange={(e) => setCota(e.target.value.replace(/[^\d,]/g, '').replace(/,(?=.*,)/g, ''))}
+              className="numero w-full min-w-0 bg-transparent font-bold outline-none" />
+            <span className="font-medium text-suave">%</span>
+          </>
+        )}
+      </span>
+      <span className={cn('text-xs font-medium', acima ? 'text-minas-texto' : 'text-suave')}>
+        {acima ? 'O financiado não pode passar do valor declarado.'
+          : modo === 'cota' ? (declarado ? `= ${brl(financiado / 100)} (${pctTexto(pct)}% de ${brl(declarado / 100)})` : 'Preencha o valor declarado para calcular a cota.')
+          : declarado && financiado ? `${pctTexto(Math.round((financiado / declarado) * 10000) / 100)}% do valor declarado` : 'Ou toque em % para informar a cota (ex.: 80%).'}
+      </span>
+    </div>
+  );
+}
+
 function CamposCompra({ s }: { s: ReturnType<typeof useValores> }) {
   return (
     <>
       <Grade>
         <CampoMoeda rotulo="Valor declarado" centavos={s.declarado} onChange={s.setDeclarado} />
-        <CampoMoeda rotulo="Valor financiado" centavos={s.financiado} onChange={s.setFinanciado} />
+        <CampoFinanciado declarado={s.declarado} financiado={s.financiado} onChange={s.setFinanciado} />
         <CampoMoeda rotulo="Certidões" centavos={s.certidoes} onChange={s.setCertidoes} />
       </Grade>
     </>

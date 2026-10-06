@@ -69,6 +69,20 @@ describe('menu do WhatsApp', () => {
     expect(conversa('oi', '1', '2', '1', '350000', 'não sei').mensagens[0].texto).toContain('✅ Avaliação da Fazenda: *ainda não tem*');
   });
 
+  it('financiado pode ser o valor ou a cota em % do imóvel', () => {
+    const pergunta = conversa('oi', '2', '1', '1', '125000');
+    expect(pergunta.mensagens[0].texto).toContain('Digite o valor ou a cota em %.');
+    expect(pergunta.mensagens[0].texto).toMatch(/Ex\.: 100000 ou 80% \(= R\$\s100\.000,00\)/);
+    for (const resposta of ['80%', '80 %', '80', '80 por cento']) {
+      const p = conversa('oi', '2', '1', '1', '125000', resposta);
+      expect(p.estado, resposta).toMatchObject({ dados: { valorFinanciado: 100000 } });
+      expect(p.mensagens[0].texto, resposta).toMatch(/^✅ Valor financiado: \*R\$\s100\.000,00\* \(80% de R\$\s125\.000,00\)/);
+    }
+    expect(conversa('oi', '2', '1', '1', '125000', '100000').estado).toMatchObject({ dados: { valorFinanciado: 100000 } });
+    expect(conversa('oi', '2', '1', '1', '125000', '87,5%').estado).toMatchObject({ dados: { valorFinanciado: 109375 } });
+    expect(conversa('oi', '2', '1', '1', '125000', '120%').mensagens[0].texto).toContain('A cota vai de 1% a 100%');
+  });
+
   it('não aceita financiado maior que o imóvel nem valor baixo demais', () => {
     expect(conversa('oi', '2', '1', '1', '300000', '400000').mensagens[0].texto).toContain('não pode ser maior');
     expect(conversa('oi', '1', '1', '1', '350').mensagens[0].texto).toContain('parece baixo');
