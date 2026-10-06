@@ -1,12 +1,14 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase, supabaseConfigurado } from '@/lib/supabase';
 import { api } from '@/lib/api';
 import { useConta } from '@/hooks/useConta';
 import { Lockup } from '@/components/marca/Logo';
 import { Aviso, Botao, Campo } from '@/components/ui/Campos';
-import { AGENTE_WHATSAPP, PLANOS, PRECO, type Nivel } from '@/lib/config';
+import { A_PARTIR_DE, AGENTE_WHATSAPP, lerPeriodo, PERIODOS, PLANOS, preco, type Nivel, type Periodo } from '@/lib/config';
+import { SeletorPeriodo } from '@/components/ui/SeletorPeriodo';
 import { telefoneBonito } from '@/lib/formato';
+import { cpfValido, mascararCpf, soDigitosCpf } from '@/lib/cpf';
 import { ConfiguracaoOrcamento } from '@/components/conta/ConfiguracaoOrcamento';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +24,7 @@ function Moldura({ etapa, children, largo = false }: { etapa?: 1 | 2 | 3 | 4; ch
           <p className="text-base leading-[26px] text-[#c7cedb]">Depois da assinatura, qualquer mensagem desse número cai direto na sua conta: o agente reconhece você, calcula e guarda tudo no seu histórico.</p>
         </div>
         <ol className="flex max-w-[480px] flex-col gap-3">
-          {['Crie a conta com seu WhatsApp', 'Confirme o número enviando um código ao agente', 'Configure seu orçamento: cidade, ITBI, logo e formato', `Escolha o plano: a partir de ${PRECO.mensal}/mês`].map((t, i) => (
+          {['Crie a conta com seu WhatsApp', 'Confirme o número enviando um código ao agente', 'Configure seu orçamento: cidade, ITBI, logo e formato', `Escolha o plano: a partir de ${A_PARTIR_DE}/mês`].map((t, i) => (
             <li key={t} className="flex items-center gap-3">
               <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-full font-extrabold', etapa && i + 1 <= etapa ? 'bg-marca-texto text-tinta' : 'bg-[#1f2b44]')}>{i + 1}</span>{t}
             </li>
@@ -80,6 +82,22 @@ export function Entrar() {
   );
 }
 
+const CHAVE_CPF = 'orcai:cpf';
+const guardarCpf = (c: string | null) => { try { if (c) sessionStorage.setItem(CHAVE_CPF, c); else sessionStorage.removeItem(CHAVE_CPF); } catch { /* sem storage */ } };
+const cpfGuardado = () => { try { return sessionStorage.getItem(CHAVE_CPF); } catch { return null; } };
+
+/** Grava no servidor o CPF digitado no cadastro. */
+async function aplicarCpfPendente(cpf = cpfGuardado()): Promise<{ ok: boolean; erro?: string }> {
+  if (!cpf) return { ok: false };
+  try {
+    await api('/api/conta/cpf', { corpo: { cpf } });
+    guardarCpf(null);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 const CHAVE_CUPOM = 'orcai:cupom';
 const guardarCupom = (c: string | null) => { try { if (c) localStorage.setItem(CHAVE_CUPOM, c); else localStorage.removeItem(CHAVE_CUPOM); } catch { /* sem storage */ } };
 const cupomGuardado = () => { try { return localStorage.getItem(CHAVE_CUPOM); } catch { return null; } };
@@ -119,7 +137,7 @@ function CampoCupom({ valor, onChange }: { valor: string; onChange: (v: string) 
 export function Cadastro() {
   const navegar = useNavigate();
   const [params] = useSearchParams();
-  const [d, setD] = useState({ nome: '', email: '', whatsapp: '', senha: '' });
+  const [d, setD] = useState({ nome: '', email: '', cpf: '', whatsapp: '', senha: '' });
   const [cupom, setCupom] = useState((params.get('cupom') ?? cupomGuardado() ?? '').toUpperCase());
   const [aceite, setAceite] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -128,15 +146,19 @@ export function Cadastro() {
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
+    if (!cpfValido(d.cpf)) return setErro('CPF inválido. Confira os números.');
     setEnviando(true); setErro(null);
     try {
       const { data, error } = await supabase.auth.signUp({ email: d.email, password: d.senha, options: { data: { full_name: d.nome } } });
       if (error) throw error;
       guardarCupom(cupom.trim() || null);
+      guardarCpf(soDigitosCpf(d.cpf));
       if (!data.session) {
         setErro('Conta criada. Confirme o e-mail que enviamos e depois entre para validar o WhatsApp.');
         return;
       }
+      // CPF repetido ou recusado: a tela de CPF explica e deixa corrigir.
+      if (!(await aplicarCpfPendente()).ok) return navegar(`/cpf${params.toString() ? `?${params}` : ''}`);
       await aplicarCupomPendente();
       await pedirConfirmacao(d.whatsapp);
       navegar(`/verificar${params.toString() ? `?${params}` : ''}`);
@@ -155,6 +177,9 @@ export function Cadastro() {
         <AvisoSemSupabase />
         <Campo rotulo="Nome completo" required autoComplete="name" value={d.nome} onChange={muda('nome')} />
         <Campo rotulo="E-mail" type="email" required autoComplete="email" value={d.email} onChange={muda('email')} />
+        <Campo rotulo="CPF" required inputMode="numeric" autoComplete="off" placeholder="000.000.000-00" value={mascararCpf(d.cpf)}
+          onChange={(e) => setD((s) => ({ ...s, cpf: soDigitosCpf(e.target.value) }))} aria-invalid={d.cpf.length === 11 && !cpfValido(d.cpf)}
+          dica={d.cpf.length === 11 && !cpfValido(d.cpf) ? 'CPF inválido. Confira os números.' : 'Um CPF por conta. Também vai na nota fiscal da assinatura.'} />
         <Campo rotulo="WhatsApp com DDD" type="tel" required autoComplete="tel" placeholder="(32) 99999-0000" value={d.whatsapp} onChange={muda('whatsapp')}
           dica="Na próxima tela você confirma o número mandando um código para o agente. É por ele que o agente reconhece você." />
         <Campo rotulo="Senha" type="password" required minLength={8} autoComplete="new-password" value={d.senha} onChange={muda('senha')} dica="Mínimo de 8 caracteres." />
@@ -189,6 +214,52 @@ async function pedirConfirmacao(whatsapp: string): Promise<Pedido> {
  * Confirmação do WhatsApp: o corretor envia ao agente a mensagem com o código.
  * A tela consulta o perfil a cada 3 s e avança quando o agente confirma o número.
  */
+/** Conta sem CPF (antiga, ou CPF recusado no cadastro): pede o CPF antes de seguir. */
+export function CompletarCpf() {
+  const navegar = useNavigate();
+  const [params] = useSearchParams();
+  const { perfil, recarregar } = useConta();
+  const [cpf, setCpf] = useState(cpfGuardado() ?? '');
+  const [erro, setErro] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+  const jaTentou = useRef(false);
+
+  async function enviar(e?: FormEvent) {
+    e?.preventDefault();
+    if (!cpfValido(cpf)) return setErro('CPF inválido. Confira os números.');
+    setOcupado(true); setErro(null);
+    const r = await aplicarCpfPendente(soDigitosCpf(cpf));
+    if (!r.ok) { setOcupado(false); return setErro(r.erro ?? 'Não foi possível salvar o CPF.'); }
+    await aplicarCupomPendente();
+    await recarregar();
+    setOcupado(false);
+    navegar(`${perfil?.whatsapp_verified_at ? '/app' : '/verificar'}${params.toString() ? `?${params}` : ''}`);
+  }
+
+  // Veio do cadastro com CPF recusado: mostra o motivo de cara.
+  useEffect(() => {
+    if (jaTentou.current || !cpfGuardado()) return;
+    jaTentou.current = true;
+    aplicarCpfPendente().then((r) => { if (r.ok) enviar(); else if (r.erro) setErro(r.erro); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <Moldura etapa={1}>
+      <form onSubmit={enviar} className="flex flex-col gap-5">
+        <div>
+          <h2 className="text-[28px] font-bold leading-[34px]">Informe seu CPF</h2>
+          <p className="text-suave">Cada CPF tem uma conta só. Ele também vai na nota fiscal da assinatura.</p>
+        </div>
+        <Campo rotulo="CPF" required inputMode="numeric" autoComplete="off" placeholder="000.000.000-00" value={mascararCpf(cpf)}
+          onChange={(e) => setCpf(soDigitosCpf(e.target.value))} />
+        {erro && <Aviso tom="vermelho">{erro}</Aviso>}
+        <Botao type="submit" disabled={ocupado || soDigitosCpf(cpf).length !== 11} className="min-h-[52px] text-base">{ocupado ? 'Salvando…' : 'Continuar'}</Botao>
+      </form>
+    </Moldura>
+  );
+}
+
 export function Verificar() {
   const navegar = useNavigate();
   const [params] = useSearchParams();
@@ -283,9 +354,10 @@ export function Configurar() {
 export function Assinar() {
   const [params] = useSearchParams();
   const [nivel, setNivel] = useState<Nivel>(params.get('nivel') === 'usuario' ? 'usuario' : 'pro');
-  const [anual, setAnual] = useState(params.get('plano') !== 'mensal');
+  const [periodo, setPeriodo] = useState<Periodo>(lerPeriodo(params.get('plano')));
   const { perfil } = useConta();
   const plano = PLANOS[nivel];
+  const valor = preco(nivel, periodo);
 
   return (
     <Moldura etapa={4}>
@@ -301,20 +373,15 @@ export function Assinar() {
               <span className="text-base font-bold">{PLANOS[n].nome}</span>
               {n === 'pro' && <span className="rounded-full bg-acao-claro px-2.5 py-0.5 text-xs font-bold text-acao">Sua logo e cores</span>}
             </span>
-            <span className="numero text-[26px] font-extrabold">{anual ? `${PLANOS[n].anual}/ano` : `${PLANOS[n].mensal}/mês`}</span>
+            <span className="numero text-[26px] font-extrabold">{preco(n, periodo).porMesTexto}/mês</span>
             <span className="text-suave">{PLANOS[n].resumo}</span>
           </button>
         ))}
       </div>
-      <div role="group" aria-label="Período" className="grid grid-cols-2 gap-1 rounded-xl bg-cinza p-1">
-        {[[true, 'Anual · 2 meses grátis'], [false, 'Mensal']].map(([v, r]) => (
-          <button key={String(v)} type="button" aria-pressed={anual === v} onClick={() => setAnual(v as boolean)}
-            className={cn('min-h-11 rounded-[9px] text-sm font-bold', anual === v ? 'bg-white text-tinta shadow-sm' : 'text-suave')}>{r as string}</button>
-        ))}
-      </div>
-      {anual && <p className="text-suave">Equivale a {plano.anualPorMes}/mês.</p>}
+      <SeletorPeriodo periodo={periodo} onChange={setPeriodo} className="text-sm" />
+      <p className="text-suave">Cobrança de <strong className="text-tinta">{valor.totalTexto}</strong> {PERIODOS[periodo].cobranca}{valor.descontoTexto ? ` (${valor.descontoTexto})` : ''}.</p>
       <Aviso tom="azul">
-        O pagamento online (Pix e cartão) entra na próxima etapa. Por enquanto a ativação é feita pela equipe: chame no WhatsApp e informe o plano {plano.nome} {anual ? 'anual' : 'mensal'}{perfil?.email ? ` e o e-mail ${perfil.email}` : ''}.
+        O pagamento online (Pix e cartão) entra na próxima etapa. Por enquanto a ativação é feita pela equipe: chame no WhatsApp e informe o plano {plano.nome} {PERIODOS[periodo].nome.toLowerCase()}{perfil?.email ? ` e o e-mail ${perfil.email}` : ''}.
       </Aviso>
       <Link to="/app" className="inline-flex min-h-[52px] items-center justify-center rounded-xl bg-acao text-base font-bold text-white no-underline">Ir para o app</Link>
     </Moldura>

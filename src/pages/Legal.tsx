@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Lockup } from '@/components/marca/Logo';
-import { AGENTE_WHATSAPP, EMPRESA, MARCA, PLANOS } from '@/lib/config';
+import { AGENTE_WHATSAPP, EMPRESA, MARCA, PLANOS, preco } from '@/lib/config';
 
 const ATUALIZADO_EM = '6 de outubro de 2026';
 
@@ -61,12 +61,13 @@ const Lista = ({ itens }: { itens: ReactNode[] }) => (
 
 /** Tabela dos dados tratados: o que é, para quê e por quanto tempo. */
 const DADOS: [string, string, string, string][] = [
-  ['Cadastro', 'Nome, e-mail, WhatsApp e senha. A senha fica cifrada pelo provedor de autenticação; nós não temos acesso a ela.', 'Criar e proteger a sua conta e reconhecer o seu número no agente do WhatsApp.', 'Enquanto a conta existir.'],
+  ['Cadastro', 'Nome, e-mail, CPF, WhatsApp e senha. A senha fica cifrada pelo provedor de autenticação; nós não temos acesso a ela.', 'Criar e proteger a sua conta, reconhecer o seu número no agente do WhatsApp, impedir contas repetidas (um CPF por conta, também para o teste grátis e o cupom de indicação) e emitir a nota fiscal da assinatura.', 'Enquanto a conta existir e, para a nota fiscal, pelo prazo da legislação fiscal.'],
   ['Configuração do orçamento', 'Cidade, alíquota do ITBI, certidões e honorários padrão, formato (PDF ou imagem) e, no plano Pró, logo, cor e cabeçalho. No Pró, o seu nome, WhatsApp e e-mail aparecem no orçamento para o cliente falar com você.', 'Montar os orçamentos do seu jeito.', 'Enquanto a conta existir.'],
   ['Orçamentos', 'Os valores que você informa (valor do imóvel, valor financiado, cidade, folhas), o resultado e o arquivo gerado. O endereço do imóvel só entra se você escolher colocá-lo no orçamento.', 'Mostrar o orçamento, guardar o seu histórico e permitir baixar de novo.', 'Até você apagar o orçamento ou encerrar a conta.'],
   ['Conversas com o agente', 'O texto das mensagens trocadas com o agente. Fotos e arquivos não são abertos, lidos nem guardados: registramos só que a mensagem tinha um anexo.', 'Responder com o contexto da conversa e investigar erros.', '30 dias.'],
   ['Verificação do WhatsApp', 'Um código de uso único, guardado só como resumo criptográfico (hash).', 'Confirmar que o número é seu.', 'Até a verificação ou a expiração do código.'],
   ['Pagamento', 'Quando a cobrança online estiver ativa: o número do cartão vai direto para o gateway de pagamento. Guardamos só o código (token) que o gateway devolve, a bandeira, os 4 últimos dígitos e a validade.', 'Cobrar a assinatura.', 'Enquanto a assinatura existir e pelo prazo exigido pela lei fiscal.'],
+  ['Indicação', 'Quem indicou você (pelo cupom) e, para quem indica, o primeiro nome de quem usou o cupom e se já assinou.', 'Dar os dias extras de teste e o mês grátis de quem indicou.', 'Enquanto as contas existirem.'],
   ['Pedido de nova cidade', 'A cidade e, se você quiser, um WhatsApp.', 'Avisar quando a cidade abrir.', 'Até a cidade abrir ou você pedir a exclusão.'],
 ];
 
@@ -154,13 +155,12 @@ export function Privacidade() {
 }
 
 export function Termos() {
-  const { usuario: e, pro: p } = PLANOS;
   return (
     <Pagina
       titulo="Termos de uso"
       resumo={<>
         <strong>Em resumo:</strong> o {MARCA} calcula <strong>estimativas</strong> de custos de documentação imobiliária. Não é cartório,
-        prefeitura nem assessoria jurídica: confirme os valores antes do ato. A assinatura é mensal ou anual e pode ser cancelada quando você quiser.
+        prefeitura nem assessoria jurídica: confirme os valores antes do ato. A assinatura é trimestral, semestral ou anual e pode ser cancelada quando você quiser.
       </>}
     >
       <Secao n={1} titulo="Aceite">
@@ -190,10 +190,10 @@ export function Termos() {
 
       <Secao n={5} titulo="Planos, teste e pagamento">
         <Lista itens={[
-          `Essencial: ${e.mensal} por mês ou ${e.anual} por ano. Pró: ${p.mensal} por mês ou ${p.anual} por ano. Os preços vigentes ficam na página de planos.`,
+          `Cobrança trimestral (preço cheio), semestral (10% de desconto) ou anual (20% de desconto). ${PLANOS.usuario.nome}: ${preco('usuario', 'trimestral').totalTexto} por trimestre, ${preco('usuario', 'semestral').totalTexto} por semestre ou ${preco('usuario', 'anual').totalTexto} por ano. ${PLANOS.pro.nome}: ${preco('pro', 'trimestral').totalTexto}, ${preco('pro', 'semestral').totalTexto} ou ${preco('pro', 'anual').totalTexto}. Os preços vigentes ficam na página de planos.`,
           'Novas contas têm 3 dias de teste grátis, ou 5 dias com o cupom de indicação de um assinante. Terminado o teste, o acesso fica bloqueado até você assinar um plano.',
           'A assinatura é renovada automaticamente no fim de cada período, até você cancelar.',
-          'Você pode cancelar quando quiser. O acesso continua até o fim do período já pago, e não há cobrança no período seguinte.',
+          'Você pode cancelar quando quiser. O acesso continua até o fim do período já pago (trimestre, semestre ou ano), e não há cobrança no período seguinte.',
           'Na primeira contratação, você pode desistir em até 7 dias e receber de volta o valor pago (art. 49 do Código de Defesa do Consumidor).',
           'Mudanças de preço são avisadas com pelo menos 30 dias de antecedência e valem a partir da renovação seguinte.',
         ]} />

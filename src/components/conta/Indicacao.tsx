@@ -5,6 +5,7 @@ import { DIAS_TESTE, DIAS_TESTE_INDICACAO, MARCA } from '@/lib/config';
 import { Aviso, Botao, Cartao } from '@/components/ui/Campos';
 
 interface Resumo {
+  recompensa?: { liberados: number; usados: number; aguardandoAnual: number };
   codigo: string | null;
   link: string | null;
   indicados: { nome: string; em: string; situacao: 'em_teste' | 'teste_encerrado' | 'assinante' }[];
@@ -43,7 +44,17 @@ export function Indicacao() {
   return (
     <Cartao titulo="Indique um colega">
       <div className="flex flex-col gap-3">
-        <p className="text-suave">Quem se cadastra com o seu cupom ganha <strong className="text-tinta">{DIAS_TESTE_INDICACAO} dias grátis</strong> em vez de {DIAS_TESTE}. No WhatsApp do agente, escreva <strong className="text-tinta">cupom</strong> para receber a mensagem pronta.</p>
+        <p className="text-suave">Quem se cadastra com o seu cupom ganha <strong className="text-tinta">{DIAS_TESTE_INDICACAO} dias grátis</strong> em vez de {DIAS_TESTE}. E você ganha <strong className="text-tinta">1 mês grátis</strong> para cada indicado que assinar o <strong className="text-tinta">plano anual</strong>. No WhatsApp do agente, escreva <strong className="text-tinta">cupom</strong> para receber a mensagem pronta.</p>
+        {r?.recompensa && (r.recompensa.liberados > 0 || r.recompensa.aguardandoAnual > 0 || r.recompensa.usados > 0) && (
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {([['liberados', 'mês grátis a usar', 'meses grátis a usar'], ['aguardandoAnual', 'aguardando anual', 'aguardando anual'], ['usados', 'já usado', 'já usados']] as const).map(([k, um, varios]) => (
+              <div key={k} className="rounded-xl bg-nevoa px-2 py-2.5">
+                <span className="numero block text-xl font-black text-tinta">{r.recompensa![k]}</span>
+                <span className="text-xs text-suave">{r.recompensa![k] === 1 ? um : varios}</span>
+              </div>
+            ))}
+          </div>
+        )}
         {!r ? <span className="text-suave">Carregando…</span> : !r.codigo ? (
           <Botao onClick={gerar} disabled={ocupado}><Gift className="size-5" aria-hidden="true" />{ocupado ? 'Gerando…' : 'Gerar meu cupom'}</Botao>
         ) : (

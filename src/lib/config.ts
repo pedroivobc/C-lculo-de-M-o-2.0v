@@ -10,16 +10,7 @@ export const AGENTE_WHATSAPP = (import.meta.env.VITE_AGENTE_WHATSAPP ?? '').repl
  */
 export const EXIGIR_ASSINATURA = import.meta.env.VITE_EXIGIR_ASSINATURA === 'true';
 
-export type Nivel = 'usuario' | 'pro';
-
-/** Preços de vitrine. O anual vale 10 mensalidades (2 meses grátis). */
-export const PLANOS: Record<Nivel, { nome: string; mensal: string; anual: string; anualPorMes: string; resumo: string }> = {
-  usuario: { nome: 'Essencial', mensal: 'R$ 29,90', anual: 'R$ 299,00', anualPorMes: 'R$ 24,92', resumo: 'Orçamento em PDF com a marca Orçaí' },
-  pro: { nome: 'Pró', mensal: 'R$ 39,90', anual: 'R$ 399,00', anualPorMes: 'R$ 33,25', resumo: 'Orçamento em PDF com a sua logo e as suas cores' },
-};
-
-/** Preço de entrada (Essencial), usado nas chamadas "a partir de". */
-export const PRECO = PLANOS.usuario;
+export { A_PARTIR_DE, ORDEM_PERIODOS, PERIODOS, PLANOS, lerPeriodo, preco, type Nivel, type Periodo } from './planos';
 
 /** Teste grátis: 3 dias; com cupom de indicação, 5. Depois, o acesso bloqueia até assinar. */
 export const DIAS_TESTE = 3;

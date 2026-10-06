@@ -26,8 +26,8 @@ Nos dois casos:
 | Perfil | Como vira | O que pode |
 |---|---|---|
 | `admin` | à mão, no SQL Editor | tudo; não precisa de cartão nem assinatura |
-| `pro` | assinatura ativa com `nivel = 'pro'` (Pró: R$ 39,90/mês · R$ 399/ano) | usar o sistema; orçamento com a própria logo e cor |
-| `usuario` | assinatura ativa com `nivel = 'usuario'` (Essencial: R$ 29,90/mês · R$ 299/ano) | usar o sistema; orçamento com a marca Orçaí |
+| `pro` | assinatura ativa com `nivel = 'pro'` (Pró: R$ 39,90/mês; trimestral, semestral ou anual) | usar o sistema; orçamento com a própria logo e cor |
+| `usuario` | assinatura ativa com `nivel = 'usuario'` (Essencial: R$ 29,90/mês; trimestral, semestral ou anual) | usar o sistema; orçamento com a marca Orçaí |
 | `trial` | todo cadastro novo | 3 dias a partir da validação do cartão; orçamento como no Pró (logo e cor) |
 
 ### Configuração do orçamento (etapa 3 do cadastro)

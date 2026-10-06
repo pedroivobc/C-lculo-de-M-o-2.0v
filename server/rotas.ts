@@ -7,6 +7,7 @@ import { exigirAgente, exigirUsuario } from './auth';
 import { supabaseAdmin, salvarArquivo, urlAssinada } from './supabase';
 import { normalizarTelefone, telefoneDoJid, variantesTelefone } from './telefone';
 import { criarCodigo, mensagemDeConfirmacao } from './verificacao';
+import { cpfValido, soDigitosCpf } from '../src/lib/cpf';
 import { codigoDoUsuario, linkDeIndicacao, resumoDaIndicacao, usarCodigo, validarCodigo } from './indicacao';
 import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, salvarCalculo } from './historico';
 import { comLocalidade, configuracaoDoUsuario, correcaoLiberada } from './estilo';
@@ -66,6 +67,25 @@ rotas.post('/api/whatsapp/codigo', limiteCodigo, exigirUsuario, h(async (req, re
   if (emUso) return res.status(409).json({ erro: 'Este WhatsApp já está ligado a outra conta.' });
   const codigo = await criarCodigo(req.userId!, telefone);
   res.json({ whatsapp: telefone, codigo, mensagem: mensagemDeConfirmacao(codigo) });
+}));
+
+// ---------------- CPF (um por conta) ----------------
+
+/** Grava o CPF da conta. Único no sistema: a mesma pessoa não abre outra conta para repetir teste ou cupom. */
+rotas.post('/api/conta/cpf', limiteCodigo, exigirUsuario, h(async (req, res) => {
+  const cpf = soDigitosCpf(z.object({ cpf: z.string() }).parse(req.body).cpf);
+  if (!cpfValido(cpf)) return res.status(400).json({ erro: 'CPF inválido. Confira os números.' });
+  const db = supabaseAdmin();
+  const { data: eu } = await db.from('profiles').select('cpf').eq('id', req.userId!).single();
+  if (eu?.cpf) {
+    if (eu.cpf === cpf) return res.json({ ok: true });
+    return res.status(409).json({ erro: 'O CPF desta conta já foi cadastrado e não pode ser trocado. Fale com o suporte.' });
+  }
+  const { data: outro } = await db.from('profiles').select('id').eq('cpf', cpf).neq('id', req.userId!).maybeSingle();
+  if (outro) return res.status(409).json({ erro: 'Este CPF já tem uma conta. Entre com ela ou fale com o suporte.' });
+  const { error } = await db.from('profiles').update({ cpf }).eq('id', req.userId!);
+  if (error) return res.status(error.code === '23505' ? 409 : 500).json({ erro: error.code === '23505' ? 'Este CPF já tem uma conta.' : error.message });
+  res.json({ ok: true });
 }));
 
 // ---------------- Cupom de indicação ----------------

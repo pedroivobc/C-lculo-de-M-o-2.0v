@@ -5,7 +5,7 @@ import { ContaProvider, useConta } from '@/hooks/useConta';
 import { EXIGIR_ASSINATURA } from '@/lib/config';
 import { AppLayout } from '@/components/layout/AppLayout';
 import Landing from '@/pages/Landing';
-import { Assinar, Cadastro, Configurar, Entrar, Verificar } from '@/pages/Acesso';
+import { Assinar, Cadastro, CompletarCpf, Configurar, Entrar, Verificar } from '@/pages/Acesso';
 import { Privacidade, Termos } from '@/pages/Legal';
 
 // Telas do app carregadas sob demanda (a landing fica leve).
@@ -33,6 +33,8 @@ function Protegido({ children, exigirWhatsapp = false }: { children: ReactNode; 
   const local = useLocation();
   if (carregando) return <Carregando />;
   if (!user) return <Navigate to="/entrar" replace state={{ de: local.pathname }} />;
+  // CPF único por conta: sem ele, nada além da tela de CPF.
+  if (perfil && !perfil.cpf && local.pathname !== '/cpf') return <Navigate to={`/cpf${local.search}`} replace />;
   if (exigirWhatsapp && perfil && !perfil.whatsapp_verified_at) return <Navigate to="/verificar" replace />;
   if (exigirWhatsapp && perfil && !perfil.configurado_em) return <Navigate to="/configurar" replace />;
   if (exigirWhatsapp && EXIGIR_ASSINATURA && !ativa) return <Navigate to="/assinar" replace />;
@@ -50,6 +52,7 @@ export default function App() {
             <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/entrar" element={<Entrar />} />
             <Route path="/cadastro" element={<Cadastro />} />
+            <Route path="/cpf" element={<Protegido><CompletarCpf /></Protegido>} />
             <Route path="/verificar" element={<Protegido><Verificar /></Protegido>} />
             <Route path="/configurar" element={<Protegido><Configurar /></Protegido>} />
             <Route path="/assinar" element={<Protegido><Assinar /></Protegido>} />

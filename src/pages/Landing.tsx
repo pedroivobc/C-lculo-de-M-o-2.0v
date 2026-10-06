@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { Check, Plus } from 'lucide-react';
 import { calcular, type Resultado } from '@/lib/calc';
 import { api } from '@/lib/api';
-import { PLANOS, PRECO } from '@/lib/config';
+import { A_PARTIR_DE, PERIODOS, PLANOS, preco, type Periodo } from '@/lib/config';
+import { SeletorPeriodo } from '@/components/ui/SeletorPeriodo';
 import { Lockup } from '@/components/marca/Logo';
 import { Orcamento } from '@/components/ui/Orcamento';
 import { Aviso, BotaoLink, EntradaMoeda } from '@/components/ui/Campos';
@@ -31,7 +32,7 @@ const DUVIDAS = [
   ['Os valores são oficiais?', 'São estimativas feitas com a tabela de emolumentos de MG e as regras de ITBI de Juiz de Fora do ano corrente. Os valores finais são os do cartório e da prefeitura no dia do ato.'],
   ['Meu imóvel é em outra cidade de MG. Serve?', 'Sim. Juiz de Fora já tem a regra de ITBI cadastrada; nas outras cidades de MG você informa a alíquota no cadastro. Peça a sua cidade no formulário acima para ela ganhar a regra completa.'],
   ['Como o agente sabe que sou eu?', 'Pelo número que você confirma no cadastro com um código. Só esse número tem acesso aos seus orçamentos.'],
-  ['Posso cancelar quando quiser?', 'Sim. No mensal, você não é cobrado no mês seguinte. O seu histórico continua disponível para exportar.'],
+  ['Posso cancelar quando quiser?', 'Sim. Você usa até o fim do período pago (trimestre, semestre ou ano) e não é cobrado no seguinte. O seu histórico continua disponível para exportar.'],
 ];
 
 function PedirCidade() {
@@ -68,7 +69,7 @@ function PedirCidade() {
 export default function Landing() {
   const [centavos, setCentavos] = useState(35000000);
   const [ato, setAto] = useState<Ato>('escritura');
-  const [anual, setAnual] = useState(true);
+  const [periodo, setPeriodo] = useState<Periodo>('anual');
   const resultado = useMemo(() => simular(ato, centavos / 100), [ato, centavos]);
 
   return (
@@ -110,7 +111,7 @@ export default function Landing() {
               Digite o valor do imóvel e veja quanto o cliente vai gastar com ITBI, cartório e registro. Pelo site ou mandando uma mensagem no WhatsApp.
             </p>
             <div className="flex flex-wrap gap-3">
-              <BotaoLink to="/cadastro" className="min-h-14 px-6 text-[17px]">A partir de {PRECO.mensal}/mês</BotaoLink>
+              <BotaoLink to="/cadastro" className="min-h-14 px-6 text-[17px]">A partir de {A_PARTIR_DE}/mês</BotaoLink>
               <a href="#whatsapp" className="inline-flex min-h-14 items-center rounded-xl border-[1.5px] border-borda bg-white px-6 text-[17px] font-bold text-tinta no-underline">Ver no WhatsApp</a>
             </div>
             <span className="text-sm text-suave">Pix ou cartão · cancele quando quiser · emolumentos pela tabela de MG</span>
@@ -199,16 +200,12 @@ export default function Landing() {
               <h2 className="text-[30px] font-[850] leading-9 sm:text-[38px] sm:leading-[44px]">Dois planos. Tudo incluído.</h2>
               <p className="text-[17px] leading-[27px] text-texto">Os dois têm todas as calculadoras, o agente no WhatsApp, o histórico e a exportação. O Pró coloca a sua marca no orçamento.</p>
             </div>
-            <div role="group" aria-label="Período" className="grid w-full max-w-[400px] grid-cols-2 gap-1 rounded-xl bg-cinza p-1 text-[15px]">
-              {[[false, 'Mensal'], [true, 'Anual · 2 meses grátis']].map(([v, r]) => (
-                <button key={String(v)} type="button" aria-pressed={anual === v} onClick={() => setAnual(v as boolean)}
-                  className={cn('min-h-11 rounded-[9px] font-bold', anual === v ? 'bg-white text-tinta shadow-sm' : 'text-suave')}>{r as string}</button>
-              ))}
-            </div>
+            <SeletorPeriodo periodo={periodo} onChange={setPeriodo} className="w-full max-w-[460px] text-[15px]" />
           </div>
           <div className="grid gap-6 md:grid-cols-2">
             {(['usuario', 'pro'] as const).map((nivel) => {
               const p = PLANOS[nivel];
+              const v = preco(nivel, periodo);
               const pro = nivel === 'pro';
               return (
                 <div key={nivel} className={cn('mr-2 flex flex-col gap-5 rounded-3xl border-2 bg-white p-6 sm:p-8', pro ? 'border-tinta shadow-[8px_8px_0_#101828]' : 'border-linha')}>
@@ -217,16 +214,16 @@ export default function Landing() {
                     {pro && <span className="rounded-full bg-acao px-3 py-1 text-xs font-bold text-white">Com a sua marca</span>}
                   </div>
                   <div className="flex flex-wrap items-baseline gap-2">
-                    <span className="numero text-[52px] font-black leading-[56px]">{anual ? p.anual.replace(',00', '') : p.mensal}</span>
-                    <span className="text-[17px] text-suave">{anual ? 'por ano' : 'por mês'}</span>
+                    <span className="numero text-[52px] font-black leading-[56px]">{v.porMesTexto}</span>
+                    <span className="text-[17px] text-suave">por mês</span>
                   </div>
-                  <span className="self-start rounded-lg bg-amarelo-claro px-2.5 py-1 font-bold text-amarelo-texto">{anual ? `Sai a ${p.anualPorMes} por mês` : pro ? 'Sua marca em cada orçamento' : 'Menos que um café por semana'}</span>
+                  <span className="self-start rounded-lg bg-amarelo-claro px-2.5 py-1 font-bold text-amarelo-texto">{v.totalTexto} {PERIODOS[periodo].cobranca}{v.descontoTexto ? ` · ${v.descontoTexto}` : ''}</span>
                   <ul className="flex flex-col gap-2 text-texto">
                     {['Todas as calculadoras e o agente no WhatsApp', 'Histórico e exportação em planilha', p.resumo, ...(pro ? ['Escolha da cor do orçamento'] : [])].map((t) => (
                       <li key={t} className="flex gap-2"><Check className="mt-0.5 size-5 shrink-0 text-ok" aria-hidden="true" />{t}</li>
                     ))}
                   </ul>
-                  <BotaoLink to={`/cadastro?nivel=${nivel}&plano=${anual ? 'anual' : 'mensal'}`} variante={pro ? 'primario' : 'secundario'} className="mt-auto min-h-14 text-[17px]">Começar com o {p.nome}</BotaoLink>
+                  <BotaoLink to={`/cadastro?nivel=${nivel}&plano=${periodo}`} variante={pro ? 'primario' : 'secundario'} className="mt-auto min-h-14 text-[17px]">Começar com o {p.nome}</BotaoLink>
                 </div>
               );
             })}
@@ -252,7 +249,7 @@ export default function Landing() {
         <section className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-6 rounded-[28px] bg-acao p-8 text-white sm:p-12">
             <h2 className="flex-1 basis-96 text-[28px] font-[850] leading-[34px] sm:text-[34px] sm:leading-10">Seu próximo orçamento sai em 10 segundos.</h2>
-            <BotaoLink to="/cadastro" variante="claro" className="min-h-14 px-6 text-[17px]">A partir de {PRECO.mensal}/mês</BotaoLink>
+            <BotaoLink to="/cadastro" variante="claro" className="min-h-14 px-6 text-[17px]">A partir de {A_PARTIR_DE}/mês</BotaoLink>
           </div>
         </section>
       </main>

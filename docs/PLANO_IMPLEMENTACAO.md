@@ -17,8 +17,8 @@ Design de referência (web e mobile, todas as telas): canvas **Orçaí Imob** no
 
 - **Site/app** (web e mobile responsivo): landing, cadastro com WhatsApp, assinatura, calculadoras, histórico com exportação, agente, conta.
 - **Assinatura** (anual = 10 mensalidades, "2 meses grátis"), Pix ou cartão:
-  - **Essencial** (`nivel = 'usuario'`): R$ 29,90/mês ou R$ 299,00/ano (R$ 24,92/mês). Orçamento com a marca Orçaí.
-  - **Pró** (`nivel = 'pro'`): R$ 39,90/mês ou R$ 399,00/ano (R$ 33,25/mês). Orçamento com a logo e as cores do assinante.
+  - **Essencial** (`nivel = 'usuario'`): R$ 29,90/mês, cobrado por trimestre (R$ 89,70), semestre (R$ 161,46, 10% off) ou ano (R$ 287,04, 20% off). Orçamento com a marca Orçaí.
+  - **Pró** (`nivel = 'pro'`): R$ 39,90/mês, cobrado por trimestre (R$ 119,70), semestre (R$ 215,46, 10% off) ou ano (R$ 383,04, 20% off). Orçamento com a logo e as cores do assinante.
   - Preços de vitrine em `src/lib/config.ts` (`PLANOS`); os valores cobrados ficam no gateway.
 - **Agente no WhatsApp**: número próprio conectado na Evolution API, orquestrado pelo n8n. O cliente assinante manda mensagem do número cadastrado, o agente identifica a conta, calcula **chamando a nossa API** (nunca "de cabeça"), salva o cálculo no histórico, devolve o resumo + PDF e exporta quando pedido.
 
@@ -141,7 +141,7 @@ Separar em `server/routes/*.ts`. Três tipos de autenticação:
 | Rota | Quem chama | O que faz |
 |---|---|---|
 | `POST /api/whatsapp/codigo` | usuário | Gera código de 6 dígitos (hash, 30 min) e devolve ao site, que abre o WhatsApp com a mensagem pronta. O corretor envia ao agente; `server/verificacao.ts` confere (máx. 5 tentativas) e grava `whatsapp_e164` + `verified_at`. O agente nunca chama primeiro. |
-| `POST /api/assinatura` | usuário | Cria cliente + assinatura no Asaas (Essencial R$ 29,90/mês ou R$ 299/ano; Pró R$ 39,90/mês ou R$ 399/ano), devolve Pix copia-e-cola/QR ou processa cartão |
+| `POST /api/assinatura` | usuário | Cria cliente + assinatura no Asaas (planos e períodos de `src/lib/planos.ts`: trimestral, semestral (10% off) ou anual (20% off)), devolve Pix copia-e-cola/QR ou processa cartão |
 | `POST /api/webhooks/asaas` | gateway | Atualiza `subscriptions`; ao ativar, envia boas-vindas no WhatsApp |
 | `POST /api/calculos/:tipo` | usuário **e** agente | Roda a lib de cálculo, salva em `calculations` (origem site/whatsapp), devolve memória + total + `seq` |
 | `POST /api/iptu/extrair` | usuário **e** agente | Recebe PDF/foto (base64), chama Gemini no servidor, devolve dados + valor venal |
@@ -282,8 +282,7 @@ AGENT_WHATSAPP_NUMBER=+55...
 # Pagamento
 ASAAS_API_KEY=
 ASAAS_WEBHOOK_TOKEN=
-PRICE_MENSAL_CENTS=2990
-PRICE_ANUAL_CENTS=29900
+# Preços em src/lib/planos.ts (base mensal + desconto por período)
 
 APP_URL=https://...
 ```
