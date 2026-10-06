@@ -4,6 +4,7 @@ import { Alternar, CampoMoeda, CampoNumero, EntradaMoeda, Opcoes } from '@/compo
 import { brl } from '@/lib/formato';
 import { cn } from '@/lib/utils';
 import { BotaoCustos, useCustos } from '@/hooks/useCustos';
+import { FOLHAS_CONTRATO } from '@/lib/calc';
 
 const R = (c: number) => c / 100;
 
@@ -11,7 +12,8 @@ function useValores() {
   const [declarado, setDeclarado] = useState(0);
   const [financiado, setFinanciado] = useState(0);
   const [primeiro, setPrimeiro] = useState(false);
-  return { declarado, setDeclarado, financiado, setFinanciado, primeiro, setPrimeiro };
+  const [folhas, setFolhas] = useState(FOLHAS_CONTRATO);
+  return { declarado, setDeclarado, financiado, setFinanciado, primeiro, setPrimeiro, folhas, setFolhas };
 }
 
 const pctTexto = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
@@ -78,6 +80,7 @@ function CamposCompra({ s }: { s: ReturnType<typeof useValores> }) {
       <Grade>
         <CampoMoeda rotulo="Valor declarado" centavos={s.declarado} onChange={s.setDeclarado} />
         <CampoFinanciado declarado={s.declarado} financiado={s.financiado} onChange={s.setFinanciado} />
+        <CampoNumero rotulo="Folhas do contrato" valor={s.folhas} onChange={(n) => s.setFolhas(Math.round(n))} />
       </Grade>
     </>
   );
@@ -95,10 +98,10 @@ export function FinanciamentoCaixa() {
   return (
     <PaginaCalculadora
       tipo="financiamento_caixa"
-      entrada={{ modalidade, valorDeclarado: R(s.declarado), valorFinanciado: R(s.financiado), primeiroImovel: s.primeiro, taxaPercent: taxa, certidoes: R(c.certidoes), honorarios: R(c.honorarios) }}
+      entrada={{ modalidade, valorDeclarado: R(s.declarado), valorFinanciado: R(s.financiado), primeiroImovel: s.primeiro, folhasContrato: s.folhas || FOLHAS_CONTRATO, taxaPercent: taxa, certidoes: R(c.certidoes), honorarios: R(c.honorarios) }}
       rotulo="Financiamento Caixa"
       titulo="Custos do financiamento pela Caixa"
-      descricao="Taxa da Caixa, ITBI (com a regra do SFH quando couber), prenotação e registro do contrato."
+      descricao="Taxa da Caixa, ITBI (com a regra do SFH quando couber), prenotação, registro e arquivamento do contrato."
       tituloOrcamento={`Caixa ${modalidade}`}
       opcoes={<Opcoes rotulo="Modalidade" valor={modalidade} onChange={setModalidade}
         opcoes={[{ valor: 'SBPE', rotulo: 'SBPE' }, { valor: 'MCMV', rotulo: 'MCMV' }, { valor: 'SFI', rotulo: 'SFI' }, { valor: 'EGI', rotulo: 'EGI' }, { valor: 'FGTS', rotulo: 'FGTS total' }]} />}
@@ -110,7 +113,7 @@ export function FinanciamentoCaixa() {
         <CampoMoeda rotulo="Honorários" centavos={c.honorarios} onChange={c.setHonorarios} />
       </Grade>
       <BotaoCustos c={c} />
-      {sfh && <Alternar rotulo="Primeiro imóvel do comprador" dica="Registro com redução de 50% (média das lavraturas)" ligado={s.primeiro} onChange={s.setPrimeiro} />}
+      {sfh && <Alternar rotulo="Primeiro imóvel do comprador" dica="50% de redução nos atos do Registro de Imóveis (SFH)" ligado={s.primeiro} onChange={s.setPrimeiro} />}
     </PaginaCalculadora>
   );
 }
@@ -127,10 +130,10 @@ export function BancoPrivado() {
   return (
     <PaginaCalculadora
       tipo="banco_privado"
-      entrada={{ banco, modalidade, valorDeclarado: R(s.declarado), valorFinanciado: R(s.financiado), primeiroImovel: s.primeiro, certidoes: R(c.certidoes), honorarios: R(c.honorarios) }}
+      entrada={{ banco, modalidade, valorDeclarado: R(s.declarado), valorFinanciado: R(s.financiado), primeiroImovel: s.primeiro, folhasContrato: s.folhas || FOLHAS_CONTRATO, certidoes: R(c.certidoes), honorarios: R(c.honorarios) }}
       rotulo="Banco privado"
       titulo="Custos do financiamento em banco privado"
-      descricao="Tarifa de contrato do banco, ITBI, prenotação e registro da alienação fiduciária."
+      descricao="Tarifa de contrato do banco, ITBI, prenotação, registro e arquivamento do contrato."
       tituloOrcamento={`${NOME_BANCO[banco]} ${modalidade}`}
       opcoes={
         <div className="flex flex-col gap-3">
@@ -145,7 +148,7 @@ export function BancoPrivado() {
         <CampoMoeda rotulo="Honorários" centavos={c.honorarios} onChange={c.setHonorarios} />
       </Grade>
       <BotaoCustos c={c} />
-      {modalidade === 'SBPE' && <Alternar rotulo="Primeiro imóvel do comprador" dica="Desmarcado: o registro soma as duas lavraturas" ligado={s.primeiro} onChange={s.setPrimeiro} />}
+      {modalidade === 'SBPE' && <Alternar rotulo="Primeiro imóvel do comprador" dica="50% de redução nos atos do Registro de Imóveis (SFH)" ligado={s.primeiro} onChange={s.setPrimeiro} />}
     </PaginaCalculadora>
   );
 }

@@ -24,7 +24,7 @@ function simular(ato: Ato, valor: number): Resultado | null {
 
 const NOTA: Record<Ato, string> = {
   escritura: 'Compra e venda simples, 25 folhas.',
-  caixa: 'SBPE, 80% financiado, primeiro imóvel, taxa de 1,5%.',
+  caixa: 'SBPE, 80% financiado, primeiro imóvel, taxa de 1,5%, contrato de 16 folhas.',
   doacao: 'Doação simples, 25 folhas.',
 };
 

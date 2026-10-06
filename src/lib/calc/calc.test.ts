@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calcular } from './index';
+import { calcular, linhaRegistro } from './index';
 
 // Casos de referência. Registro conferido com o relatório final do 3º RI de Juiz de Fora (protocolo 229.352).
 describe('cálculos de referência', () => {
@@ -15,14 +15,14 @@ describe('cálculos de referência', () => {
       modalidade: 'SBPE', valorDeclarado: 350000, valorFinanciado: 280000,
       primeiroImovel: true, honorarios: 1000,
     });
-    expect(r.total).toBe(17823.87);
+    expect(r.total).toBe(17862.20); // com o arquivamento de 16 folhas do contrato
   });
 
   it('banco privado Itaú SBPE', () => {
     const r = calcular('banco_privado', {
       banco: 'itau', modalidade: 'SBPE', valorDeclarado: 500000, valorFinanciado: 400000,
     });
-    expect(r.total).toBe(22367.45);
+    expect(r.total).toBe(22590.49); // com o arquivamento de 16 folhas do contrato
   });
 
   it('doação simples (tela de Doação)', () => {
@@ -110,6 +110,45 @@ describe('cálculos de referência', () => {
       ['Averbação de dados pessoais', 37.65],
     ]);
     expect(reg.valor).toBe(5110.00);
+  });
+
+  // Recibos finais do 1º RGI de Juiz de Fora. Os recibos não trazem o ISS, por isso ISS 0 aqui.
+  // O cartório arredonda a TFJ da folha de arquivamento para baixo (1,605 → 1,60): até 1 centavo por folha.
+  it('financiamento MCMV, 1º imóvel, igual ao recibo do 1º RGI (protocolo 264.014)', () => {
+    const reg = linhaRegistro(
+      [{ rotulo: 'Ato de registro · compra e venda', base: 251700 }, { rotulo: 'Ato de registro · alienação fiduciária', base: 100000 }],
+      { iss: 0, folhas: 14, reducao: 0.5 },
+    );
+    expect(reg.detalhes!.map((d) => [d.rotulo, d.valor])).toEqual([
+      ['Ato de registro · compra e venda', 2386.04],
+      ['Ato de registro · alienação fiduciária', 1464.03],
+      ['Prenotação', 31.92],
+      ['Arquivamento do contrato', 94.08], // recibo: 93,94
+      ['Certidão de inteiro teor', 20.54],
+      ['Averbação de inscrição municipal', 18.14],
+      ['Averbação de dados pessoais', 36.27], // cobrada sem a redução
+    ]);
+    expect(reg.valor).toBeCloseTo(4050.88, 0);
+  });
+
+  it('financiamento SBPE, 1º imóvel: atos iguais ao recibo do 1º RGI (protocolo 263.001)', () => {
+    const reg = linhaRegistro(
+      [{ rotulo: 'Compra e venda', base: 290000 }, { rotulo: 'Alienação fiduciária', base: 203000 }],
+      { iss: 0, folhas: 16, reducao: 0.5 },
+    );
+    const valor = (r: string) => reg.detalhes!.find((d) => d.rotulo === r)!.valor;
+    expect(valor('Compra e venda')).toBe(2451.77);
+    expect(valor('Alienação fiduciária')).toBe(2119.16);
+    expect(valor('Prenotação')).toBe(31.92);
+    expect(valor('Certidão de inteiro teor')).toBe(20.54);
+    expect(valor('Arquivamento do contrato')).toBeCloseTo(107.36, 0);
+  });
+
+  it('financiamento traz o arquivamento do contrato no registro (folhas ajustáveis)', () => {
+    const r = calcular('financiamento_caixa', { modalidade: 'SBPE', valorDeclarado: 350000, valorFinanciado: 280000, folhasContrato: 14 });
+    const arq = r.linhas.find((l) => l.rotulo === 'Registro')!.detalhes!.find((d) => d.rotulo === 'Arquivamento do contrato')!;
+    expect(arq.nota).toContain('14 folhas');
+    expect(arq.valor).toBe(195.16); // 14 × (10,22 + 3,21 + ISS 0,51)
   });
 
   it('escritura igual ao orçamento do cartório de notas (base R$ 472.489,30, 25 folhas)', () => {
