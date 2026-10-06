@@ -7,7 +7,7 @@ import { calcularValorVenal, entradaValorVenal } from './valorVenal';
 import type { Resultado, TipoCalculo } from './tipos';
 
 export * from './tipos';
-export { MUNICIPIOS, MUNICIPIO_PADRAO, obterMunicipio } from './municipios';
+export { MUNICIPIOS, MUNICIPIO_PADRAO, MUNICIPIO_OUTRA, obterMunicipio, percentual } from './municipios';
 export { ROTULO_SUBTIPO_ESCRITURA } from './escritura';
 
 /** Um lugar só para o site, a API e o agente do WhatsApp chamarem as mesmas fórmulas. */

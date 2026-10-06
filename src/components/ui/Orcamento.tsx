@@ -13,7 +13,8 @@ const ORIGEM: Record<Origem, { rotulo: (m: string) => string; classe: string }> 
 
 export function EtiquetaOrigem({ origem, municipio, curta = false }: { origem: Origem; municipio?: string; curta?: boolean }) {
   const nome = MUNICIPIOS[municipio ?? '']?.nome ?? 'Município';
-  const texto = curta && origem === 'municipio' ? 'JF' : ORIGEM[origem].rotulo(nome);
+  const sigla = nome.split(/\s+/).filter((p) => p.length > 2).map((p) => p[0]).join('').toUpperCase();
+  const texto = curta && origem === 'municipio' ? sigla || 'MUN.' : ORIGEM[origem].rotulo(nome);
   return (
     <span className={cn('shrink-0 rounded-[5px] px-1.5 py-0.5 text-[10px] font-extrabold leading-[14px] tracking-[0.04em]', ORIGEM[origem].classe)}>
       {texto}
@@ -33,7 +34,7 @@ export function Orcamento({ titulo, resultado, rotuloTotal = 'Total estimado', c
   compacto?: boolean;
   children?: ReactNode;
 }) {
-  const municipio = resultado?.municipio && MUNICIPIOS[resultado.municipio] ? MUNICIPIOS[resultado.municipio] : null;
+  const nomeCidade = resultado?.municipioNome ?? (resultado?.municipio ? MUNICIPIOS[resultado.municipio]?.nome : undefined);
   return (
     <div className="relative">
       <div className={cn('rounded-t-md border border-b-0 border-linha bg-white shadow-[0_12px_32px_rgba(16,24,40,.10)]', compacto ? 'px-4 pt-4 pb-3' : 'px-6 pt-6 pb-4')}>
@@ -78,7 +79,7 @@ export function Orcamento({ titulo, resultado, rotuloTotal = 'Total estimado', c
           )}
           style={{ fontStretch: '125%' }}
         >
-          {(municipio?.nome ?? 'Minas Gerais').toUpperCase()}<br />MG · {new Date().getFullYear()}
+          {(nomeCidade ?? 'Minas Gerais').toUpperCase()}<br />MG · {new Date().getFullYear()}
         </div>
       )}
       {children && <div className="mt-4 flex flex-wrap gap-2">{children}</div>}

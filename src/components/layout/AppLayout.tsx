@@ -4,6 +4,11 @@ import { Lockup } from '@/components/marca/Logo';
 import { useConta } from '@/hooks/useConta';
 import { EXIGIR_ASSINATURA } from '@/lib/config';
 import { cn } from '@/lib/utils';
+import { MUNICIPIOS, MUNICIPIO_OUTRA, MUNICIPIO_PADRAO } from '@/lib/calc';
+
+function CidadeCurta() {
+  return <>{useCidade().nome}</>;
+}
 
 export const CALCULADORAS = [
   { para: '/app/valor-venal', rotulo: 'Valor venal', nota: 'Espelho do IPTU' },
@@ -31,18 +36,29 @@ const ABAS = [
 const itemMenu = ({ isActive }: { isActive: boolean }) =>
   cn('block rounded-[10px] px-3 py-2.5 font-semibold no-underline transition-colors', isActive ? 'bg-tinta font-bold text-white' : 'text-texto hover:bg-nevoa');
 
+/** Cidade do assinante (definida no cadastro); troca em Conta. */
+function useCidade() {
+  const { perfil } = useConta();
+  const nome = perfil?.municipio_padrao === MUNICIPIO_OUTRA ? perfil.cidade_nome ?? 'Sua cidade' : MUNICIPIOS[perfil?.municipio_padrao ?? MUNICIPIO_PADRAO]?.nome ?? 'Juiz de Fora';
+  const pct = perfil?.itbi_percentual != null ? Number(perfil.itbi_percentual)
+    : (MUNICIPIOS[perfil?.municipio_padrao ?? MUNICIPIO_PADRAO]?.itbi.aliquota ?? 0) * 100;
+  return { nome, itbi: `${String(pct).replace('.', ',')}%` };
+}
+
 function SeletorMunicipio({ className }: { className?: string }) {
+  const { nome, itbi } = useCidade();
   return (
-    <label className={cn('flex flex-col gap-1.5 text-xs font-bold text-suave', className)}>
+    <div className={cn('flex flex-col gap-1.5 text-xs font-bold text-suave', className)}>
       Município
-      <span className="flex min-h-11 items-center gap-2 rounded-[10px] border border-borda bg-white px-3">
+      <Link to="/app/conta" className="flex min-h-11 items-center gap-2 rounded-[10px] border border-borda bg-white px-3 no-underline hover:border-tinta" aria-label={`Município: ${nome}, ITBI ${itbi}. Alterar em Conta`}>
         <span aria-hidden="true" className="h-0 w-0 shrink-0 border-x-[6px] border-b-[10px] border-x-transparent border-b-minas" />
-        <select className="w-full bg-transparent text-sm font-bold text-tinta outline-none" defaultValue="mg-juiz-de-fora">
-          <option value="mg-juiz-de-fora">Juiz de Fora · MG</option>
-          <option disabled>Outras cidades de MG em breve</option>
-        </select>
-      </span>
-    </label>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-sm font-bold text-tinta">{nome} · MG</span>
+          <span className="text-[11px] font-semibold text-suave">ITBI {itbi}</span>
+        </span>
+        <span className="text-xs font-bold text-acao">Alterar</span>
+      </Link>
+    </div>
   );
 }
 
@@ -75,7 +91,7 @@ export function AppLayout() {
         <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-linha bg-white/95 px-4 py-2.5 backdrop-blur lg:hidden">
           <Link to="/app" className="no-underline"><Lockup tamanho={18} /></Link>
           <span className="flex items-center gap-1.5 rounded-full bg-nevoa px-3 py-1.5 text-xs font-bold">
-            <span aria-hidden="true" className="h-0 w-0 border-x-[5px] border-b-[8px] border-x-transparent border-b-minas" />Juiz de Fora
+            <span aria-hidden="true" className="h-0 w-0 border-x-[5px] border-b-[8px] border-x-transparent border-b-minas" /><CidadeCurta />
           </span>
         </header>
 

@@ -9,7 +9,8 @@ import { supabaseAdmin, salvarArquivo, urlAssinada } from './supabase';
 import { normalizarTelefone, telefoneDoJid } from './telefone';
 import { baixarMidia, enviarTexto } from './evolution';
 import { lerEspelhoIptu } from './iptu';
-import { buscarPorSeq, intervaloDoMes, linkDoPdf, listarCalculos, salvarCalculo } from './historico';
+import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, salvarCalculo } from './historico';
+import { comLocalidade, configuracaoDoUsuario } from './estilo';
 import { gerarCsv } from './exportar';
 import { identificar, processarMensagem } from './agente/conversa';
 
@@ -102,7 +103,10 @@ rotas.post('/api/whatsapp/verificar', exigirUsuario, h(async (req, res) => {
 rotas.post('/api/calculos/:tipo', exigirUsuario, h(async (req, res) => {
   const tipo = req.params.tipo as TipoCalculo;
   if (!CALCULADORAS[tipo]) return res.status(404).json({ erro: 'Tipo de cálculo inexistente' });
-  const { descricao, salvar = true, ...entrada } = req.body ?? {};
+  const { descricao, salvar = true, ...informado } = req.body ?? {};
+  // Cidade e alíquota do ITBI do assinante entram quando a tela não manda outra.
+  const usaLocalidade = tipo !== 'correcao' && tipo !== 'valor_venal';
+  const entrada = usaLocalidade ? comLocalidade(informado, (await configuracaoDoUsuario(req.userId!)).localidade) : informado;
   const resultado = calcular(tipo, entrada);
   if (!salvar) return res.json({ resultado });
   const salvo = await salvarCalculo({ userId: req.userId!, resultado, entrada, origem: 'site', descricao });
@@ -116,11 +120,14 @@ rotas.get('/api/calculos', exigirUsuario, h(async (req, res) => {
   }));
 }));
 
-rotas.get('/api/calculos/:seq/pdf', exigirUsuario, h(async (req, res) => {
+/** Link temporário do orçamento. Formato: ?formato=pdf|jpeg; sem ele, o escolhido na conta. `/pdf` força PDF. */
+rotas.get(['/api/calculos/:seq/arquivo', '/api/calculos/:seq/pdf'], exigirUsuario, h(async (req, res) => {
   const salvo = await buscarPorSeq(req.userId!, Number(req.params.seq));
   if (!salvo) return res.status(404).json({ erro: 'Cálculo não encontrado' });
-  const { data: perfil } = await supabaseAdmin().from('profiles').select('pdf_header').eq('id', req.userId!).maybeSingle();
-  res.json(await linkDoPdf(salvo, perfil?.pdf_header));
+  const { estilo } = await configuracaoDoUsuario(req.userId!);
+  const pedido = req.path.endsWith('/pdf') ? 'pdf' : req.query.formato;
+  const formato = pedido === 'pdf' || pedido === 'jpeg' ? pedido : estilo.formato;
+  res.json(await arquivoDoOrcamento(salvo, estilo, formato));
 }));
 
 rotas.get('/api/exportar', exigirUsuario, h(async (req, res) => {
@@ -142,7 +149,9 @@ rotas.post('/api/iptu/extrair', exigirUsuario, h(async (req, res) => {
 
 const limitePedido = rateLimit({ windowMs: 60 * 60_000, limit: 10 });
 rotas.post('/api/cidades/pedido', limitePedido, h(async (req, res) => {
-  const { cidade, whatsapp } = z.object({ cidade: z.string().min(2).max(80), whatsapp: z.string().optional() }).parse(req.body);
-  await supabaseAdmin().from('pedidos_cidade').insert({ cidade: cidade.trim(), uf: 'MG', whatsapp_e164: whatsapp ? normalizarTelefone(whatsapp) : null });
+  const { cidade, uf, whatsapp } = z.object({
+    cidade: z.string().min(2).max(80), uf: z.string().regex(/^[A-Za-z]{2}$/).default('MG'), whatsapp: z.string().optional(),
+  }).parse(req.body);
+  await supabaseAdmin().from('pedidos_cidade').insert({ cidade: cidade.trim(), uf: uf.toUpperCase(), whatsapp_e164: whatsapp ? normalizarTelefone(whatsapp) : null });
   res.json({ ok: true });
 }));

@@ -11,6 +11,13 @@ export interface Perfil {
   whatsapp_verified_at: string | null;
   municipio_padrao: string;
   pdf_header: string | null;
+  uf: string;
+  cidade_nome: string | null;
+  itbi_percentual: number | null;
+  pdf_logo_path: string | null;
+  cor_primaria: string | null;
+  formato_orcamento: 'pdf' | 'jpeg';
+  configurado_em: string | null;
 }
 
 export interface Assinatura {
@@ -42,7 +49,7 @@ export function ContaProvider({ children }: { children: ReactNode }) {
     if (!user) { setPerfil(null); setAssinatura(null); setCarregando(false); return; }
     setCarregando(true);
     const [p, a] = await Promise.all([
-      supabase.from('profiles').select('id, full_name, email, whatsapp_e164, whatsapp_verified_at, municipio_padrao, pdf_header').eq('id', user.id).maybeSingle(),
+      supabase.from('profiles').select('id, full_name, email, whatsapp_e164, whatsapp_verified_at, municipio_padrao, pdf_header, uf, cidade_nome, itbi_percentual, pdf_logo_path, cor_primaria, formato_orcamento, configurado_em').eq('id', user.id).maybeSingle(),
       supabase.from('subscriptions').select('plan, nivel, status, current_period_end').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     ]);
     setPerfil((p.data as Perfil) ?? null);

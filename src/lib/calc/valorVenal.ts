@@ -30,7 +30,7 @@ export function normalizarIsotima(codigo?: string | null): string {
 /** Espelha o cálculo de src/components/ValorVenal.tsx. */
 export function calcularValorVenal(dados: EntradaValorVenal): Resultado {
   const e = entradaValorVenal.parse(dados);
-  const m = obterMunicipio(e.municipio);
+  const m = obterMunicipio(e.municipio, { itbiPercentual: 0 });
   const t = m.valorVenal;
   if (!t) throw new Error(`Valor venal ainda não disponível para ${m.nome}`);
 
@@ -49,6 +49,7 @@ export function calcularValorVenal(dados: EntradaValorVenal): Resultado {
     tipo: 'valor_venal',
     subtipo: e.tipo ?? 'imovel',
     municipio: m.id,
+    municipioNome: m.nome,
     bases: [],
     linhas: [
       { rotulo: 'Terreno corrigido', valor: terreno, origem: 'municipio', nota: `${areaTerreno.toFixed(2)} m² × R$ ${m2Terreno.toFixed(2)}` },

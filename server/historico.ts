@@ -1,6 +1,8 @@
 import type { Resultado } from '../src/lib/calc';
 import { supabaseAdmin, salvarArquivo, urlAssinada } from './supabase';
 import { gerarPdfOrcamento } from './pdf';
+import { gerarJpegOrcamento } from './imagem';
+import type { Estilo, Formato } from './estilo';
 
 export interface CalculoSalvo {
   id: string;
@@ -56,16 +58,21 @@ export async function listarCalculos(userId: string, filtro: { de?: string; ate?
   return (data ?? []) as CalculoSalvo[];
 }
 
-/** Gera o PDF uma vez, guarda no Storage e devolve um link temporário. */
-export async function linkDoPdf(calculo: CalculoSalvo, cabecalho?: string | null) {
-  let caminho = calculo.pdf_path;
-  const nome = `orcamento-${String(calculo.seq).padStart(4, '0')}.pdf`;
-  if (!caminho) {
-    const pdf = gerarPdfOrcamento(calculo.resultado, { numero: numeroCalculo(calculo.seq), data: new Date(calculo.created_at), cabecalho });
-    caminho = await salvarArquivo(`${calculo.user_id}/${nome}`, pdf, 'application/pdf');
+/**
+ * Gera o orçamento no formato pedido (PDF ou JPEG), guarda no Storage e devolve um link temporário.
+ * Gera de novo a cada pedido: assim o arquivo sempre sai com a logo, a cor e o plano atuais.
+ */
+export async function arquivoDoOrcamento(calculo: CalculoSalvo, estilo: Estilo, formato: Formato = estilo.formato) {
+  const base = `orcamento-${String(calculo.seq).padStart(4, '0')}`;
+  const meta = { numero: numeroCalculo(calculo.seq), data: new Date(calculo.created_at) };
+  const [conteudo, nomeArquivo, mimetype] = formato === 'jpeg'
+    ? [await gerarJpegOrcamento(calculo.resultado, meta, estilo), `${base}.jpg`, 'image/jpeg']
+    : [await gerarPdfOrcamento(calculo.resultado, meta, estilo), `${base}.pdf`, 'application/pdf'];
+  const caminho = await salvarArquivo(`${calculo.user_id}/${nomeArquivo}`, conteudo, mimetype);
+  if (formato === 'pdf' && calculo.pdf_path !== caminho) {
     await supabaseAdmin().from('calculations').update({ pdf_path: caminho }).eq('id', calculo.id);
   }
-  return { url: await urlAssinada(caminho, 600, nome), nomeArquivo: nome };
+  return { url: await urlAssinada(caminho, 600, nomeArquivo), nomeArquivo, mimetype };
 }
 
 /** Intervalo [de, ate) de um mês 'AAAA-MM'. */

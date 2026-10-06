@@ -8,12 +8,12 @@ O projeto antigo foi pausado por inatividade. Dois caminhos:
 
 **A. Restaurar o projeto pausado** (se ainda aparecer no painel)
 1. Entre em supabase.com/dashboard, abra o projeto e clique em **Restore project**. Projetos gratuitos pausados podem ser restaurados por um período limitado; depois disso o painel oferece só o download do backup.
-2. Depois de restaurado, abra **SQL Editor** e rode, nesta ordem, `supabase/migrations/20261005000000_schema_inicial.sql` e `supabase/migrations/20261006000000_perfis_e_acesso.sql`.
+2. Depois de restaurado, abra **SQL Editor** e rode, nesta ordem, `supabase/migrations/20261005000000_schema_inicial.sql`, `supabase/migrations/20261006000000_perfis_e_acesso.sql` e `supabase/migrations/20261007000000_configuracao_orcamento.sql`.
    - Se as tabelas antigas (`profiles`, `calculations`…) ainda existirem com o formato antigo, a migração vai falhar nelas. Como o projeto era de testes, o mais simples é apagar as tabelas antigas antes (`drop table if exists public.calculations, public.api_keys, public.invites, public.orders, public.profiles cascade;`). Se houver dados que você quer manter, exporte antes.
 
 **B. Criar um projeto novo** (recomendado se o antigo não volta ou só tinha testes)
 1. New project → região **South America (São Paulo)**.
-2. **SQL Editor** → cole e rode, nesta ordem, `supabase/migrations/20261005000000_schema_inicial.sql` e `supabase/migrations/20261006000000_perfis_e_acesso.sql`.
+2. **SQL Editor** → cole e rode, nesta ordem, `supabase/migrations/20261005000000_schema_inicial.sql`, `supabase/migrations/20261006000000_perfis_e_acesso.sql` e `supabase/migrations/20261007000000_configuracao_orcamento.sql`.
 
 Nos dois casos:
 3. **Authentication → Providers → Email**: habilite. Em **URL Configuration**, coloque o domínio do app em *Site URL*.
@@ -26,9 +26,17 @@ Nos dois casos:
 | Perfil | Como vira | O que pode |
 |---|---|---|
 | `admin` | à mão, no SQL Editor | tudo; não precisa de cartão nem assinatura |
-| `pro` | assinatura ativa com `nivel = 'pro'` (Pró: R$ 19,90/mês · R$ 199/ano) | usar o sistema; orçamento com a própria logo e cores |
+| `pro` | assinatura ativa com `nivel = 'pro'` (Pró: R$ 19,90/mês · R$ 199/ano) | usar o sistema; orçamento com a própria logo e cor |
 | `usuario` | assinatura ativa com `nivel = 'usuario'` (Essencial: R$ 9,90/mês · R$ 99/ano) | usar o sistema; orçamento com a marca Orçaí |
-| `trial` | todo cadastro novo | 3 dias a partir da validação do cartão |
+| `trial` | todo cadastro novo | 3 dias a partir da validação do cartão; orçamento como no Pró (logo e cor) |
+
+### Configuração do orçamento (etapa 3 do cadastro)
+
+Depois de confirmar o WhatsApp, a pessoa define: **estado** (hoje só MG; os outros registram interesse), **cidade** (Juiz de Fora, com a regra da prefeitura, ou "Outra cidade de MG" com nome e **alíquota do ITBI**), **nome no topo**, **logo** (PNG/JPG/WEBP até 2 MB, bucket `logos`), **cor** e **formato** (PDF ou imagem JPEG). Tudo fica em `profiles` (`uf`, `municipio_padrao`, `cidade_nome`, `itbi_percentual`, `pdf_header`, `pdf_logo_path`, `cor_primaria`, `formato_orcamento`, `configurado_em`) e pode ser mudado em **Conta**.
+
+Todos podem guardar logo e cor; quem decide se aparecem é o plano (`situacao_acesso.personaliza_orcamento`: pro, trial e admin). No Essencial, o orçamento sai com a marca Orçaí e a configuração fica guardada para quando a pessoa passar para o Pró.
+
+O agente e o site usam a cidade e a alíquota do perfil em todo cálculo de ITBI e mandam o orçamento no formato escolhido. Pelo WhatsApp, a imagem chega como foto na conversa (o n8n troca `mediatype` para `image` quando o arquivo é JPEG).
 
 Todos menos o admin precisam de um cartão validado no gateway (tabela `cartoes`, só com o token do gateway — nunca o número), mesmo pagando no Pix. A regra fica numa função só, `situacao_acesso(uid)`, usada pelo banco (RLS), pela API e pelo agente. O papel acompanha a assinatura sozinho (trigger).
 
@@ -103,14 +111,14 @@ Enquanto o pagamento (Asaas) não está integrado, ative à mão:
    insert into cartoes (user_id, gateway, gateway_customer_id, gateway_cartao_token, bandeira, ultimos4, validade_mes, validade_ano, verificado_em)
    select id, 'asaas', 'teste', 'teste-' || id, 'visa', '4242', 12, 2030, now() from profiles where email = 'voce@exemplo.com';
    ```
-   Só com isso a conta já entra no teste de 3 dias. Para testar como assinante:
+   Só com isso a conta já entra no teste de 3 dias. Para pular a etapa "Seu orçamento" num teste por SQL: `update profiles set configurado_em = now() where email = 'voce@exemplo.com';` Para testar como assinante:
    ```sql
    insert into subscriptions (user_id, plan, nivel, status, forma_pagamento, current_period_end)
    select id, 'anual', 'usuario', 'ativa', 'pix', now() + interval '1 year' from profiles where email = 'voce@exemplo.com';
    ```
 4. Do WhatsApp cadastrado, mande ao número do agente: *"escritura de 320 mil, venal 350 mil"*.
 
-> Esperado: resposta com **Total: R$ 19.044,99**, o número do cálculo e o PDF anexado. O cálculo aparece em `calculations` com `origem = 'whatsapp'`.
+> Esperado: resposta com **Total: R$ 19.044,99**, o número do cálculo e o orçamento anexado (PDF ou imagem, conforme a conta). O cálculo aparece em `calculations` com `origem = 'whatsapp'`.
 
 Outros testes: foto do espelho do IPTU; *"exportar 2026-10"*; mensagem de um número não cadastrado (deve receber o link de cadastro).
 
@@ -123,6 +131,7 @@ Outros testes: foto do espelho do IPTU; *"exportar 2026-10"*; mensagem de um nú
 | `POST /api/whatsapp/codigo` · `/verificar` | site (login) | Confirmação do WhatsApp por código |
 | `POST /api/calculos/:tipo` | site | `escritura`, `doacao`, `financiamento_caixa`, `banco_privado`, `correcao`, `valor_venal` |
 | `GET /api/calculos?mes=AAAA-MM` | site | Histórico |
+| `GET /api/calculos/:numero/arquivo?formato=pdf\|jpeg` | site | Link temporário do orçamento (sem `formato`, o da conta) |
 | `GET /api/calculos/:numero/pdf` | site | Link temporário do PDF |
 | `GET /api/exportar?mes=AAAA-MM` | site | Planilha CSV (abre no Excel) |
 | `POST /api/iptu/extrair` | site | Leitura do espelho do IPTU (Gemini, no servidor) |

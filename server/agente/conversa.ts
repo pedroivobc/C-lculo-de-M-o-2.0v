@@ -6,6 +6,8 @@ import { variantesTelefone } from '../telefone';
 import { lerEspelhoIptu } from '../iptu';
 import { salvarCalculo, numeroCalculo } from '../historico';
 import { DECLARACOES, executar, type Contexto, type Resposta } from './ferramentas';
+import { configuracaoDoUsuario, type Configuracao } from '../estilo';
+import { MUNICIPIO_OUTRA } from '../../src/lib/calc';
 
 export interface MensagemRecebida {
   telefone: string;              // E.164
@@ -20,8 +22,7 @@ export type MotivoAcesso = 'ok' | 'trial' | 'sem_cartao' | 'trial_expirado' | 'a
 export interface Assinante {
   userId: string;
   nome: string | null;
-  municipio: string;
-  cabecalhoPdf: string | null;
+  configuracao: Configuracao;
   papel: 'admin' | 'pro' | 'usuario' | 'trial';
   /** Regra única do banco (situacao_acesso): cartão validado + trial no prazo ou assinatura ativa; admin sempre. */
   ativo: boolean;
@@ -31,7 +32,7 @@ export interface Assinante {
 export async function identificar(telefone: string): Promise<Assinante | null> {
   const db = supabaseAdmin();
   const { data: perfil } = await db.from('profiles')
-    .select('id, full_name, municipio_padrao, pdf_header')
+    .select('id, full_name')
     .in('whatsapp_e164', variantesTelefone(telefone))
     .not('whatsapp_verified_at', 'is', null)
     .limit(1).maybeSingle();
@@ -39,7 +40,7 @@ export async function identificar(telefone: string): Promise<Assinante | null> {
   const { data: situacao, error } = await db.rpc('situacao_acesso', { uid: perfil.id }).maybeSingle<{ papel: Assinante['papel']; liberado: boolean; motivo: MotivoAcesso }>();
   if (error) throw new Error(`Falha ao consultar o acesso: ${error.message}`);
   return {
-    userId: perfil.id, nome: perfil.full_name, municipio: perfil.municipio_padrao, cabecalhoPdf: perfil.pdf_header,
+    userId: perfil.id, nome: perfil.full_name, configuracao: await configuracaoDoUsuario(perfil.id),
     papel: situacao?.papel ?? 'trial', ativo: !!situacao?.liberado, motivo: situacao?.motivo ?? 'sem_perfil',
   };
 }
@@ -54,19 +55,24 @@ const MENSAGEM_BLOQUEIO: Record<MotivoAcesso, (url: string) => string> = {
 };
 
 function instrucoes(a: Assinante) {
-  const cidade = MUNICIPIOS[a.municipio]?.nome ?? a.municipio;
+  const l = a.configuracao.localidade;
+  const outra = l.municipio === MUNICIPIO_OUTRA;
+  const cidade = outra ? `${l.cidade ?? 'cidade de MG'} (ITBI de ${l.itbiPercentual}% informado pelo assinante)`
+    : `${MUNICIPIOS[l.municipio]?.nome ?? l.municipio}${l.itbiPercentual !== undefined ? ` (ITBI de ${l.itbiPercentual}% informado pelo assinante)` : ''}`;
   const atendidos = Object.values(MUNICIPIOS).map((m) => `${m.nome} (${m.uf})`).join(', ');
+  const formato = a.configuracao.estilo.formato === 'jpeg' ? 'imagem (JPEG)' : 'PDF';
   return `Você é o agente do ${config.marca} no WhatsApp. Ajuda corretores, despachantes e assessorias a orçar custos de documentação de imóveis.
 Hoje é ${new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}. Assinante: ${a.nome ?? 'sem nome'}. Município padrão: ${cidade}.
-Municípios atendidos: ${atendidos}. Os emolumentos de cartório seguem a tabela de MG.
+Municípios com regra da prefeitura cadastrada: ${atendidos}. Os emolumentos de cartório seguem a tabela de MG.
+Os cálculos usam a cidade do assinante automaticamente; não pergunte a cidade se ele não falar de outra.
 
 Regras:
 - Nunca calcule valores por conta própria. Todo número vem de uma ferramenta.
 - Se faltar um dado obrigatório (ex.: valor venal, valor financiado, modalidade), pergunte só o que falta, em uma frase.
 - "Base" é sempre o maior entre o valor declarado e o venal; a ferramenta faz isso. Se o usuário der só um valor, use-o nos dois campos e avise.
 - Valores como "350 mil" ou "1,2 mi" viram números (350000, 1200000).
-- Se o imóvel for em cidade não atendida, diga que ainda não atende essa cidade e chame pedir_cidade.
-- Resposta curta, em português, no estilo do WhatsApp: total em *negrito* primeiro, depois os itens principais, e o número do cálculo (#0000). O PDF já vai anexado: não cole links.
+- Se o imóvel for em outra cidade de MG sem regra cadastrada, peça a alíquota do ITBI dessa cidade e passe municipio "mg-outra", cidade e itbiPercentual na ferramenta. Fora de MG, diga que ainda não atende o estado e chame pedir_cidade.
+- Resposta curta, em português, no estilo do WhatsApp: total em *negrito* primeiro, depois os itens principais, e o número do cálculo (#0000). O orçamento já vai anexado em ${formato}: não cole links. Se ele pedir no outro formato, use reenviar_calculo com formato.
 - Termine orçamentos lembrando que são estimativas a confirmar com o cartório e a prefeitura, em poucas palavras.
 - Não fale de assuntos fora de orçamento de documentação imobiliária.`;
 }
@@ -127,7 +133,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
           areaIsotima: d.terreno.areaIsotima, tipo: d.edificacao?.tipo, padrao: d.edificacao?.padrao,
           terrenoValorVenal: d.terreno.valorVenal, terrenoValorM2: d.terreno.valorM2,
           edificacaoValorVenal: d.edificacao?.valorVenal ?? 0, edificacaoValorM2: d.edificacao?.valorM2 ?? 0,
-          municipio: assinante.municipio,
+          municipio: 'mg-juiz-de-fora',
         });
         const salvo = await salvarCalculo({ userId: assinante.userId, resultado, entrada: d, origem: 'whatsapp', descricao: d.endereco ?? undefined });
         textoUsuario += `\n[Enviei o espelho do IPTU. Dados lidos: inscrição ${d.inscricao ?? '?'}, ${d.endereco ?? 'endereço não lido'}, ` +
@@ -144,7 +150,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   await registrar(msg.telefone, assinante.userId, 'entrada', msg.midia ? 'midia' : 'texto', textoUsuario, msg.messageId);
   if (!config.geminiKey) return { status: 'erro', respostas: [{ tipo: 'texto', texto: 'O agente está em manutenção. Use o site enquanto isso.' }] };
 
-  const ctx: Contexto = { userId: assinante.userId, telefone: msg.telefone, municipio: assinante.municipio, cabecalhoPdf: assinante.cabecalhoPdf, anexos };
+  const ctx: Contexto = { userId: assinante.userId, telefone: msg.telefone, configuracao: assinante.configuracao, anexos };
   const ai = new GoogleGenAI({ apiKey: config.geminiKey });
   // O histórico já inclui a mensagem que acabamos de registrar.
   const contents: Content[] = await historicoRecente(msg.telefone);

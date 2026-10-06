@@ -50,4 +50,30 @@ describe('cálculos de referência', () => {
     expect(() => calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 1, valorVenal: 1, municipio: 'mg-barbacena' }))
       .toThrow(/ainda não atendido/);
   });
+
+  it('outra cidade de MG usa a alíquota informada pelo assinante', () => {
+    const jf = calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 320000, valorVenal: 350000 });
+    const r = calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 320000, valorVenal: 350000, municipio: 'mg-outra', cidade: 'Barbacena', itbiPercentual: 3 });
+    const itbi = r.linhas.find((l) => l.rotulo === 'ITBI')!;
+    expect(itbi.valor).toBe(10500);
+    expect(itbi.origem).toBe('usuario');
+    expect(r.municipioNome).toBe('Barbacena');
+    expect(r.total).toBe(Math.round((jf.total + 3500) * 100) / 100);
+  });
+
+  it('outra cidade sem alíquota pede a alíquota', () => {
+    expect(() => calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 1, valorVenal: 1, municipio: 'mg-outra' }))
+      .toThrow(/alíquota/);
+  });
+
+  it('alíquota igual à da prefeitura não muda a origem', () => {
+    const r = calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 320000, valorVenal: 350000, itbiPercentual: 2 });
+    expect(r.total).toBe(19044.99);
+    expect(r.linhas.find((l) => l.rotulo === 'ITBI')!.origem).toBe('municipio');
+  });
+
+  it('SFH sem regra da cidade cai na alíquota cheia', () => {
+    const r = calcular('financiamento_caixa', { modalidade: 'SBPE', valorDeclarado: 400000, valorVenal: 400000, valorFinanciado: 300000, municipio: 'mg-outra', itbiPercentual: 2 });
+    expect(r.linhas.find((l) => l.rotulo.startsWith('ITBI'))!.valor).toBe(8000);
+  });
 });

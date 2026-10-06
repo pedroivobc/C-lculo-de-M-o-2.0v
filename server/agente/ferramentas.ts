@@ -1,6 +1,7 @@
 import type { FunctionDeclaration } from '@google/genai';
 import { brl, calcular, type Resultado, type TipoCalculo } from '../../src/lib/calc';
-import { buscarPorSeq, intervaloDoMes, linkDoPdf, listarCalculos, numeroCalculo, salvarCalculo } from '../historico';
+import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, numeroCalculo, salvarCalculo } from '../historico';
+import { comLocalidade, type Configuracao } from '../estilo';
 import { gerarCsv } from '../exportar';
 import { salvarArquivo, supabaseAdmin, urlAssinada } from '../supabase';
 
@@ -8,12 +9,13 @@ import { salvarArquivo, supabaseAdmin, urlAssinada } from '../supabase';
 export type Resposta =
   | { tipo: 'texto'; texto: string }
   | { tipo: 'documento'; url: string; nomeArquivo: string; mimetype: string; legenda?: string };
+// Imagens (JPEG) também vão como 'documento' na resposta; o n8n escolhe mediatype 'image' pelo mimetype.
 
 export interface Contexto {
   userId: string;
   telefone: string;
-  municipio: string;
-  cabecalhoPdf?: string | null;
+  /** Estilo do orçamento e localidade padrão do assinante. */
+  configuracao: Configuracao;
   anexos: Resposta[];
 }
 
@@ -22,6 +24,9 @@ const custos = {
   certidoes: { ...num, description: 'Certidões em reais. Omitir para usar o padrão.' },
   honorarios: { ...num, description: 'Honorários em reais. Omitir para usar o padrão.' },
   descricao: { type: 'string', description: 'Endereço ou nome do cliente, se o usuário informar.' },
+  municipio: { type: 'string', enum: ['mg-juiz-de-fora', 'mg-outra'], description: 'Omitir para usar a cidade do assinante. "mg-outra" = cidade de MG sem regra cadastrada (exige cidade e itbiPercentual).' },
+  cidade: { type: 'string', description: 'Nome da cidade quando municipio = "mg-outra".' },
+  itbiPercentual: { type: 'number', description: 'Alíquota do ITBI em % (ex.: 2.5). Só quando o usuário informar.' },
 };
 
 export const DECLARACOES: FunctionDeclaration[] = [
@@ -97,8 +102,8 @@ export const DECLARACOES: FunctionDeclaration[] = [
   },
   {
     name: 'reenviar_calculo',
-    description: 'Reenvia o PDF de um cálculo do histórico pelo número (ex.: 142 para #0142).',
-    parametersJsonSchema: { type: 'object', properties: { numero: { type: 'integer' } }, required: ['numero'] },
+    description: 'Reenvia o orçamento de um cálculo do histórico pelo número (ex.: 142 para #0142). Por padrão no formato escolhido pelo assinante; use formato se ele pedir PDF ou imagem.',
+    parametersJsonSchema: { type: 'object', properties: { numero: { type: 'integer' }, formato: { type: 'string', enum: ['pdf', 'jpeg'] } }, required: ['numero'] },
   },
   {
     name: 'exportar_periodo',
@@ -128,26 +133,31 @@ const resumo = (r: Resultado, seq: number) => ({
   detalhes: r.detalhes,
 });
 
+/** Anexa o orçamento no formato escolhido pelo assinante (PDF ou imagem JPEG). */
+async function anexar(ctx: Contexto, salvo: Parameters<typeof arquivoDoOrcamento>[0], formato?: 'pdf' | 'jpeg') {
+  const arquivo = await arquivoDoOrcamento(salvo, ctx.configuracao.estilo, formato);
+  ctx.anexos.push({ tipo: 'documento', ...arquivo, legenda: `Orçamento ${numeroCalculo(salvo.seq)}` });
+}
+
 /** Executa uma ferramenta e devolve o resultado que volta para o modelo. Arquivos vão para ctx.anexos. */
 export async function executar(nome: string, args: Record<string, unknown>, ctx: Contexto): Promise<Record<string, unknown>> {
   try {
     const tipo = TIPO_POR_FERRAMENTA[nome];
     if (tipo) {
       const { descricao, ...entrada } = args as Record<string, unknown> & { descricao?: string };
-      const dados = tipo === 'correcao' ? entrada : { municipio: ctx.municipio, ...entrada };
+      const dados = tipo === 'correcao' ? entrada : comLocalidade(entrada, ctx.configuracao.localidade);
       const resultado = calcular(tipo, dados);
       const salvo = await salvarCalculo({ userId: ctx.userId, resultado, entrada: dados, origem: 'whatsapp', descricao });
-      const pdf = await linkDoPdf(salvo, ctx.cabecalhoPdf);
-      ctx.anexos.push({ tipo: 'documento', mimetype: 'application/pdf', ...pdf, legenda: `Orçamento ${numeroCalculo(salvo.seq)}` });
-      return { ok: true, ...resumo(resultado, salvo.seq), pdf: 'enviado' };
+      await anexar(ctx, salvo);
+      return { ok: true, ...resumo(resultado, salvo.seq), arquivo: 'enviado' };
     }
 
     if (nome === 'reenviar_calculo') {
       const salvo = await buscarPorSeq(ctx.userId, Number(args.numero));
       if (!salvo) return { ok: false, erro: `Não encontrei o cálculo ${numeroCalculo(Number(args.numero))} na sua conta.` };
-      const pdf = await linkDoPdf(salvo, ctx.cabecalhoPdf);
-      ctx.anexos.push({ tipo: 'documento', mimetype: 'application/pdf', ...pdf, legenda: `Orçamento ${numeroCalculo(salvo.seq)}` });
-      return { ok: true, ...resumo(salvo.resultado, salvo.seq), pdf: 'enviado' };
+      const formato = args.formato === 'pdf' || args.formato === 'jpeg' ? args.formato : undefined;
+      await anexar(ctx, salvo, formato);
+      return { ok: true, ...resumo(salvo.resultado, salvo.seq), arquivo: 'enviado' };
     }
 
     if (nome === 'exportar_periodo') {

@@ -7,10 +7,11 @@ import { Lockup } from '@/components/marca/Logo';
 import { Aviso, Botao, Campo } from '@/components/ui/Campos';
 import { PLANOS, PRECO, type Nivel } from '@/lib/config';
 import { telefoneBonito } from '@/lib/formato';
+import { ConfiguracaoOrcamento } from '@/components/conta/ConfiguracaoOrcamento';
 import { cn } from '@/lib/utils';
 
 /** Moldura das telas de acesso: painel da marca à esquerda (some no celular), formulário à direita. */
-function Moldura({ etapa, children }: { etapa?: 1 | 2 | 3; children: ReactNode }) {
+function Moldura({ etapa, children, largo = false }: { etapa?: 1 | 2 | 3 | 4; children: ReactNode; largo?: boolean }) {
   return (
     <div className="flex min-h-screen flex-wrap">
       <section className="hidden flex-1 basis-[440px] flex-col gap-8 bg-tinta p-12 text-white lg:flex">
@@ -21,7 +22,7 @@ function Moldura({ etapa, children }: { etapa?: 1 | 2 | 3; children: ReactNode }
           <p className="text-base leading-[26px] text-[#c7cedb]">Depois da assinatura, qualquer mensagem desse número cai direto na sua conta: o agente reconhece você, calcula e guarda tudo no seu histórico.</p>
         </div>
         <ol className="flex max-w-[480px] flex-col gap-3">
-          {['Crie a conta com seu WhatsApp', 'Confirme o número com o código', `Escolha o plano: a partir de ${PRECO.mensal}/mês`].map((t, i) => (
+          {['Crie a conta com seu WhatsApp', 'Confirme o número com o código', 'Configure seu orçamento: cidade, ITBI, logo e formato', `Escolha o plano: a partir de ${PRECO.mensal}/mês`].map((t, i) => (
             <li key={t} className="flex items-center gap-3">
               <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-full font-extrabold', etapa && i + 1 <= etapa ? 'bg-marca-texto text-tinta' : 'bg-[#1f2b44]')}>{i + 1}</span>{t}
             </li>
@@ -31,10 +32,10 @@ function Moldura({ etapa, children }: { etapa?: 1 | 2 | 3; children: ReactNode }
       <main className="flex flex-1 basis-[480px] flex-col">
         <header className="flex items-center justify-between px-5 py-4 lg:hidden">
           <Link to="/" className="no-underline"><Lockup tamanho={20} /></Link>
-          {etapa && <span className="text-sm font-semibold text-suave">Etapa {etapa} de 3</span>}
+          {etapa && <span className="text-sm font-semibold text-suave">Etapa {etapa} de 4</span>}
         </header>
         <div className="flex flex-1 items-center justify-center px-5 py-8 sm:px-6 sm:py-12">
-          <div className="flex w-full max-w-[420px] flex-col gap-5">{children}</div>
+          <div className={cn('flex w-full flex-col gap-5', largo ? 'max-w-[560px]' : 'max-w-[420px]')}>{children}</div>
         </div>
       </main>
     </div>
@@ -165,7 +166,7 @@ export function Verificar() {
       await api('/api/whatsapp/verificar', { corpo: { codigo } });
       sessionStorage.removeItem('orcai:whatsapp');
       await recarregar();
-      navegar(`/assinar${params.toString() ? `?${params}` : ''}`);
+      navegar(`/configurar${params.toString() ? `?${params}` : ''}`);
     } catch (e) { setErro(e instanceof Error ? e.message : String(e)); }
     finally { setOcupado(false); }
   }
@@ -201,6 +202,21 @@ export function Verificar() {
   );
 }
 
+export function Configurar() {
+  const [params] = useSearchParams();
+  const navegar = useNavigate();
+  const seguir = () => navegar(`/assinar${params.toString() ? `?${params}` : ''}`);
+  return (
+    <Moldura etapa={3} largo>
+      <div>
+        <h2 className="text-[28px] font-bold leading-[34px]">Seu orçamento</h2>
+        <p className="text-suave">Onde você atua, a sua marca e o formato que o cliente recebe. Dá para mudar depois em Conta.</p>
+      </div>
+      <ConfiguracaoOrcamento textoSalvar="Salvar e continuar" aoSalvar={seguir} />
+    </Moldura>
+  );
+}
+
 export function Assinar() {
   const [params] = useSearchParams();
   const [nivel, setNivel] = useState<Nivel>(params.get('nivel') === 'usuario' ? 'usuario' : 'pro');
@@ -209,7 +225,7 @@ export function Assinar() {
   const plano = PLANOS[nivel];
 
   return (
-    <Moldura etapa={3}>
+    <Moldura etapa={4}>
       <div>
         <h2 className="text-[28px] font-bold leading-[34px]">Escolha seu plano</h2>
         <p className="text-suave">Os dois têm calculadoras, agente no WhatsApp, leitura do IPTU e exportação.</p>

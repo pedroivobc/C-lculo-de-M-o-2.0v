@@ -36,10 +36,11 @@ export function useCalculos(mes: string) {
   return { dados, erro };
 }
 
-export async function abrirPdf(seq: number) {
+/** Abre o orçamento salvo no formato escolhido na conta (PDF ou imagem), ou no formato pedido. */
+export async function abrirOrcamento(seq: number, formato?: 'pdf' | 'jpeg') {
   const aba = window.open('', '_blank');
   try {
-    const { url } = await api<{ url: string }>(`/api/calculos/${seq}/pdf`);
+    const { url } = await api<{ url: string }>(`/api/calculos/${seq}/arquivo${formato ? `?formato=${formato}` : ''}`);
     if (aba) aba.location.href = url; else window.location.href = url;
   } catch (e) {
     aba?.close();

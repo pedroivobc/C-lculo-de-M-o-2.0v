@@ -5,7 +5,7 @@ import { ContaProvider, useConta } from '@/hooks/useConta';
 import { EXIGIR_ASSINATURA } from '@/lib/config';
 import { AppLayout } from '@/components/layout/AppLayout';
 import Landing from '@/pages/Landing';
-import { Assinar, Cadastro, Entrar, Verificar } from '@/pages/Acesso';
+import { Assinar, Cadastro, Configurar, Entrar, Verificar } from '@/pages/Acesso';
 
 // Telas do app carregadas sob demanda (a landing fica leve).
 const Inicio = lazy(() => import('@/pages/app/Inicio'));
@@ -35,6 +35,7 @@ function Protegido({ children, exigirWhatsapp = false }: { children: ReactNode; 
   if (carregando) return <Carregando />;
   if (!user) return <Navigate to="/entrar" replace state={{ de: local.pathname }} />;
   if (exigirWhatsapp && perfil && !perfil.whatsapp_verified_at) return <Navigate to="/verificar" replace />;
+  if (exigirWhatsapp && perfil && !perfil.configurado_em) return <Navigate to="/configurar" replace />;
   if (exigirWhatsapp && EXIGIR_ASSINATURA && !ativa) return <Navigate to="/assinar" replace />;
   return <>{children}</>;
 }
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="/entrar" element={<Entrar />} />
             <Route path="/cadastro" element={<Cadastro />} />
             <Route path="/verificar" element={<Protegido><Verificar /></Protegido>} />
+            <Route path="/configurar" element={<Protegido><Configurar /></Protegido>} />
             <Route path="/assinar" element={<Protegido><Assinar /></Protegido>} />
             <Route path="/app" element={<Protegido exigirWhatsapp><AppLayout /></Protegido>}>
               <Route index element={<Inicio />} />

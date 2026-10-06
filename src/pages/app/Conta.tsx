@@ -5,22 +5,21 @@ import { useConta } from '@/hooks/useConta';
 import { Aviso, Botao, BotaoLink, Campo, Cartao } from '@/components/ui/Campos';
 import { telefoneBonito } from '@/lib/formato';
 import { PLANOS } from '@/lib/config';
+import { ConfiguracaoOrcamento } from '@/components/conta/ConfiguracaoOrcamento';
 
 export default function Conta() {
   const { perfil, assinatura, ativa, recarregar } = useConta();
   const navegar = useNavigate();
   const [nome, setNome] = useState('');
-  const [cabecalho, setCabecalho] = useState('');
   const [aviso, setAviso] = useState<{ tom: 'verde' | 'vermelho'; texto: string } | null>(null);
 
   useEffect(() => {
     setNome(perfil?.full_name ?? '');
-    setCabecalho(perfil?.pdf_header ?? '');
   }, [perfil]);
 
   async function salvar() {
     if (!perfil) return;
-    const { error } = await supabase.from('profiles').update({ full_name: nome.trim() || null, pdf_header: cabecalho.trim() || null }).eq('id', perfil.id);
+    const { error } = await supabase.from('profiles').update({ full_name: nome.trim() || null }).eq('id', perfil.id);
     setAviso(error ? { tom: 'vermelho', texto: error.message } : { tom: 'verde', texto: 'Alterações salvas.' });
     if (!error) recarregar();
   }
@@ -52,10 +51,12 @@ export default function Conta() {
                 </span>
                 <BotaoLink to="/verificar" variante="secundario">{perfil?.whatsapp_verified_at ? 'Trocar número' : 'Confirmar'}</BotaoLink>
               </div>
-              <Campo rotulo="Nome no cabeçalho do PDF" value={cabecalho} onChange={(e) => setCabecalho(e.target.value)} placeholder="Ex.: Pedro Ivo · Assessoria Imobiliária" dica="Aparece no topo dos orçamentos que você manda ao cliente. Em branco, sai o nome Orçaí Imob." />
               <Botao onClick={salvar} className="self-start">Salvar alterações</Botao>
               {aviso && <Aviso tom={aviso.tom}>{aviso.texto}</Aviso>}
             </div>
+          </Cartao>
+          <Cartao titulo="Seus orçamentos">
+            <ConfiguracaoOrcamento />
           </Cartao>
         </div>
 

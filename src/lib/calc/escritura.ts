@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { obterMunicipio, MUNICIPIO_PADRAO } from './municipios';
+import { obterMunicipio, camposLocalidade, percentual } from './municipios';
 import { MG, aliquotaItcd } from './uf';
 import { Linha, Resultado, somar } from './tipos';
 
@@ -9,7 +9,7 @@ const custosDoUsuario = {
   folhas: z.coerce.number().int().positive().default(25),
   certidoes: valor.default(400),
   honorarios: valor.default(700),
-  municipio: z.string().default(MUNICIPIO_PADRAO),
+  ...camposLocalidade,
 };
 
 export const entradaEscritura = z.discriminatedUnion('subtipo', [
@@ -38,14 +38,14 @@ export const ROTULO_SUBTIPO_ESCRITURA: Record<EntradaEscritura['subtipo'], strin
 /** Espelha src/components/Escrituras.tsx. */
 export function calcularEscritura(dados: EntradaEscritura): Resultado {
   const e = entradaEscritura.parse(dados);
-  const m = obterMunicipio(e.municipio);
+  const m = obterMunicipio(e.municipio, e);
   const lav = MG.lavratura;
   const reg = MG.registroEscritura;
   const linhas: Linha[] = [];
   let bases: number[] = [];
 
   const itbi = (base: number, ato?: string) =>
-    linhas.push({ rotulo: ato ? `ITBI · ${ato}` : 'ITBI', valor: base * m.itbi.aliquota, origem: 'municipio', nota: `${m.itbi.aliquota * 100}% · ${m.nome}` });
+    linhas.push({ rotulo: ato ? `ITBI · ${ato}` : 'ITBI', valor: base * m.itbi.aliquota, origem: m.itbiDoUsuario ? 'usuario' : 'municipio', nota: `${percentual(m.itbi.aliquota)} · ${m.nome}${m.itbiDoUsuario ? ' (alíquota informada)' : ''}` });
   const lavratura = (base: number, ato?: string) =>
     linhas.push({ rotulo: ato ? `Lavratura · ${ato}` : 'Lavratura', valor: lav(base), origem: 'uf', nota: 'Tabela de emolumentos de MG' });
   const registro = (valorReg: number, ato?: string, nota?: string) =>
@@ -92,7 +92,7 @@ export function calcularEscritura(dados: EntradaEscritura): Resultado {
   linhas.push({ rotulo: 'Certidões', valor: e.certidoes, origem: 'usuario' });
   linhas.push({ rotulo: 'Honorários', valor: e.honorarios, origem: 'usuario' });
 
-  return { tipo: 'escritura', subtipo: e.subtipo, municipio: m.id, bases, linhas, total: somar(linhas) };
+  return { tipo: 'escritura', subtipo: e.subtipo, municipio: m.id, municipioNome: m.nome, bases, linhas, total: somar(linhas) };
 }
 
 /** Atos de doação compartilhados por Escrituras e Doação (que só diferem nos valores de registro). */

@@ -6,6 +6,24 @@ import { api } from '@/lib/api';
 import { brl, numeroCalculo } from '@/lib/formato';
 import { Orcamento } from '@/components/ui/Orcamento';
 import { Aviso, Botao, Cartao } from '@/components/ui/Campos';
+import { useConta } from '@/hooks/useConta';
+
+type Formato = 'pdf' | 'jpeg';
+const NOME_FORMATO: Record<Formato, string> = { pdf: 'PDF', jpeg: 'imagem' };
+
+/** Cidade e alíquota do ITBI do perfil entram em todos os cálculos com ITBI (as telas não pedem de novo). */
+function useEntradaComLocalidade(tipo: TipoCalculo, entrada: unknown) {
+  const { perfil } = useConta();
+  return useMemo(() => {
+    if (!perfil || tipo === 'correcao' || tipo === 'valor_venal' || typeof entrada !== 'object' || !entrada) return entrada;
+    return {
+      municipio: perfil.municipio_padrao,
+      ...(perfil.cidade_nome ? { cidade: perfil.cidade_nome } : {}),
+      ...(perfil.itbi_percentual != null ? { itbiPercentual: Number(perfil.itbi_percentual) } : {}),
+      ...entrada,
+    };
+  }, [perfil, tipo, JSON.stringify(entrada)]);
+}
 
 /** Calcula no navegador com as mesmas fórmulas do servidor. Entrada inválida/incompleta → null. */
 export function useResultado(tipo: TipoCalculo, entrada: unknown): Resultado | null {
@@ -19,10 +37,10 @@ export function useResultado(tipo: TipoCalculo, entrada: unknown): Resultado | n
   }, [tipo, JSON.stringify(entrada)]);
 }
 
-/** Salvar no histórico e baixar o PDF (pelo servidor, que guarda o arquivo). */
+/** Salvar no histórico e baixar o orçamento em PDF ou imagem (pelo servidor, que guarda o arquivo). */
 function useAcoes(tipo: TipoCalculo, entrada: unknown) {
   const [salvo, setSalvo] = useState<{ numero: number; chave: string } | null>(null);
-  const [ocupado, setOcupado] = useState<'salvar' | 'pdf' | null>(null);
+  const [ocupado, setOcupado] = useState<'salvar' | 'arquivo' | null>(null);
   const [mensagem, setMensagem] = useState<{ tom: 'verde' | 'vermelho'; texto: string } | null>(null);
   const chave = JSON.stringify(entrada);
   const atual = salvo?.chave === chave ? salvo.numero : null;
@@ -47,15 +65,15 @@ function useAcoes(tipo: TipoCalculo, entrada: unknown) {
         setMensagem({ tom: 'vermelho', texto: e instanceof Error ? e.message : String(e) });
       } finally { setOcupado(null); }
     },
-    async onPdf() {
+    async onArquivo(formato: Formato) {
       // Abre a aba antes do await para o navegador não bloquear o pop-up.
       const aba = window.open('', '_blank');
-      setOcupado('pdf'); setMensagem(null);
+      setOcupado('arquivo'); setMensagem(null);
       try {
         const n = await salvar();
-        const { url } = await api<{ url: string }>(`/api/calculos/${n}/pdf`);
+        const { url } = await api<{ url: string }>(`/api/calculos/${n}/arquivo?formato=${formato}`);
         if (aba) aba.location.href = url; else window.location.href = url;
-        setMensagem({ tom: 'verde', texto: `PDF do orçamento ${numeroCalculo(n)} gerado.` });
+        setMensagem({ tom: 'verde', texto: `Orçamento ${numeroCalculo(n)} gerado em ${NOME_FORMATO[formato]}.` });
       } catch (e) {
         aba?.close();
         setMensagem({ tom: 'vermelho', texto: e instanceof Error ? e.message : String(e) });
@@ -77,8 +95,13 @@ export function PaginaCalculadora({ tipo, entrada, rotulo, titulo, descricao, ti
   avisoFormulario?: ReactNode;
   children: ReactNode;
 }) {
-  const resultado = useResultado(tipo, entrada);
-  const acoes = useAcoes(tipo, entrada);
+  const comLocalidade = useEntradaComLocalidade(tipo, entrada);
+  const resultado = useResultado(tipo, comLocalidade);
+  const acoes = useAcoes(tipo, comLocalidade);
+  const { perfil } = useConta();
+  const formato: Formato = perfil?.formato_orcamento ?? 'pdf';
+  const outro: Formato = formato === 'pdf' ? 'jpeg' : 'pdf';
+  const textoGerar = acoes.ocupado === 'arquivo' ? 'Gerando…' : `Gerar ${NOME_FORMATO[formato]}`;
 
   return (
     <div className="flex flex-col gap-6 pb-32 lg:pb-0">
@@ -104,13 +127,15 @@ export function PaginaCalculadora({ tipo, entrada, rotulo, titulo, descricao, ti
         <div id="orcamento" className="flex scroll-mt-20 flex-col gap-3 lg:sticky lg:top-6">
           <Orcamento titulo={tituloOrcamento} resultado={resultado} rotuloTotal={rotuloTotal} />
           <div className="hidden flex-wrap gap-2 lg:flex">
-            <Botao className="flex-1" onClick={acoes.onPdf} disabled={!resultado || !!acoes.ocupado}>
-              <FileDown className="size-5" aria-hidden="true" />{acoes.ocupado === 'pdf' ? 'Gerando PDF…' : 'Gerar PDF'}
+            <Botao className="flex-1" onClick={() => acoes.onArquivo(formato)} disabled={!resultado || !!acoes.ocupado}>
+              <FileDown className="size-5" aria-hidden="true" />{textoGerar}
             </Botao>
             <Botao variante="secundario" onClick={acoes.onSalvar} disabled={!resultado || !!acoes.ocupado || !!acoes.numero}>
               <Save className="size-5" aria-hidden="true" />{acoes.numero ? `Salvo · ${numeroCalculo(acoes.numero)}` : acoes.ocupado === 'salvar' ? 'Salvando…' : 'Salvar no histórico'}
             </Botao>
           </div>
+          <button type="button" onClick={() => acoes.onArquivo(outro)} disabled={!resultado || !!acoes.ocupado}
+            className="min-h-10 self-start text-sm font-bold text-acao disabled:text-suave">Baixar em {NOME_FORMATO[outro]}</button>
           {acoes.mensagem && <Aviso tom={acoes.mensagem.tom}>{acoes.mensagem.texto}</Aviso>}
         </div>
       </div>
@@ -124,7 +149,7 @@ export function PaginaCalculadora({ tipo, entrada, rotulo, titulo, descricao, ti
         <Botao variante="secundario" onClick={acoes.onSalvar} disabled={!resultado || !!acoes.ocupado || !!acoes.numero}>
           {acoes.numero ? numeroCalculo(acoes.numero) : 'Salvar'}
         </Botao>
-        <Botao onClick={acoes.onPdf} disabled={!resultado || !!acoes.ocupado}>Gerar PDF</Botao>
+        <Botao onClick={() => acoes.onArquivo(formato)} disabled={!resultado || !!acoes.ocupado}>{textoGerar}</Botao>
       </div>
     </div>
   );

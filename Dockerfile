@@ -13,6 +13,8 @@ RUN npm run build
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+# Fontes para o orçamento em imagem (JPEG), renderizado pelo sharp a partir de SVG.
+RUN apk add --no-cache fontconfig ttf-dejavu
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist

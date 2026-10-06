@@ -20,6 +20,8 @@ export interface Resultado {
   tipo: TipoCalculo;
   subtipo: string;
   municipio: string;
+  /** Nome para exibir (inclui a cidade informada pelo assinante em 'mg-outra'). */
+  municipioNome?: string;
   /** Base(s) de cálculo usadas, na ordem dos atos. */
   bases: number[];
   linhas: Linha[];

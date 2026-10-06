@@ -108,7 +108,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $('Filtrar e extrair').first().json.numero, mediatype: 'document', mimetype: $json.mimetype, media: $json.url, fileName: $json.nomeArquivo, caption: $json.legenda ?? '' }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: $('Filtrar e extrair').first().json.numero, mediatype: String($json.mimetype).startsWith('image/') ? 'image' : 'document', mimetype: $json.mimetype, media: $json.url, fileName: $json.nomeArquivo, caption: $json.legenda ?? '' }) }}",
         "options": {}
       },
       "id": "0b7c6a10-0007-4c2e-9a01-000000000007",

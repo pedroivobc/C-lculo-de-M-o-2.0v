@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Download, FileDown } from 'lucide-react';
 import { api } from '@/lib/api';
 import { brl, dataHora, numeroCalculo } from '@/lib/formato';
-import { NOME_TIPO, abrirPdf, mesAtual, useCalculos } from '@/hooks/useCalculos';
+import { NOME_TIPO, abrirOrcamento, mesAtual, useCalculos } from '@/hooks/useCalculos';
 import { Aviso, Botao } from '@/components/ui/Campos';
 import { cn } from '@/lib/utils';
 
@@ -72,7 +72,7 @@ export default function Historico() {
                 <th scope="col" className="p-2 font-semibold">Orçamento</th>
                 <th scope="col" className="p-2 font-semibold">Origem</th>
                 <th scope="col" className="p-2 text-right font-semibold">Total</th>
-                <th scope="col" className="py-3 pl-2 text-right font-semibold">PDF</th>
+                <th scope="col" className="py-3 pl-2 text-right font-semibold">Orçamento</th>
               </tr>
             </thead>
             <tbody>
@@ -84,7 +84,7 @@ export default function Historico() {
                   <td className="p-2"><span className={cn('rounded-full px-2.5 py-0.5 text-xs font-bold', c.origem === 'whatsapp' ? 'bg-acao-claro text-acao' : 'bg-cinza text-suave')}>{c.origem === 'whatsapp' ? 'WhatsApp' : 'Site'}</span></td>
                   <td className="numero p-2 text-right font-bold">{brl(Number(c.total))}</td>
                   <td className="py-3.5 pl-2 text-right">
-                    <button type="button" onClick={() => abrirPdf(c.seq).catch((e) => setErro(e.message))} className="inline-flex min-h-10 items-center gap-1 font-bold text-acao" aria-label={`Baixar PDF do orçamento ${numeroCalculo(c.seq)}`}>
+                    <button type="button" onClick={() => abrirOrcamento(c.seq).catch((e) => setErro(e.message))} className="inline-flex min-h-10 items-center gap-1 font-bold text-acao" aria-label={`Baixar o orçamento ${numeroCalculo(c.seq)}`}>
                       <FileDown className="size-4" aria-hidden="true" />Baixar
                     </button>
                   </td>
