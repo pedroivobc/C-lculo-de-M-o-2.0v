@@ -94,7 +94,7 @@ export default function App() {
 
       {/* Mobile Header */}
       <header className={`lg:hidden flex items-center justify-between p-4 border-b border-white/10 ${theme === 'dark' ? 'bg-[#050505]/80' : 'bg-white/80'} backdrop-blur-md sticky top-0 z-30`}>
-        <h1 className="text-xl font-serif text-[#D4AF37] font-bold">Cálculo na Mão</h1>
+        <h1 className="text-xl font-serif text-[#D4AF37] font-bold">Orçaí Imob</h1>
         <button 
           onClick={() => setIsSidebarOpen(true)}
           className="p-2 hover:bg-white/5 rounded-lg transition-colors"

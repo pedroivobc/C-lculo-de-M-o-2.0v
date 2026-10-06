@@ -59,7 +59,7 @@ export function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen, theme = 'd
       )}>
         <div className="p-6">
           <h1 className="text-2xl font-serif text-[#D4AF37] font-bold tracking-tight">
-            Cálculo na Mão
+            Orçaí Imob
           </h1>
           <p className={cn(
             "text-xs mt-1 uppercase tracking-widest",

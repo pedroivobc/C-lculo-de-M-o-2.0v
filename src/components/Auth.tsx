@@ -44,7 +44,7 @@ export function Auth() {
         className="w-full max-w-md space-y-8 bg-white/[0.03] border border-white/10 p-8 rounded-3xl backdrop-blur-xl relative z-10"
       >
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-serif text-white tracking-tight">Cálculo na Mão</h1>
+          <h1 className="text-4xl font-serif text-white tracking-tight">Orçaí Imob</h1>
           <p className="text-white/40 text-sm uppercase tracking-[0.2em]">Premium Real Estate System</p>
         </div>
 

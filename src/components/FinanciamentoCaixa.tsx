@@ -463,7 +463,7 @@ _Valores estimados. Sujeitos a alteração._`;
         <div className="flex justify-between items-start border-b-2 border-black pb-8">
           <div>
             <h1 className="text-4xl font-serif font-bold">Orçamento de Financiamento</h1>
-            <p className="text-gray-500 uppercase tracking-widest text-sm mt-2">Cálculo na Mão - Assessoria Imobiliária</p>
+            <p className="text-gray-500 uppercase tracking-widest text-sm mt-2">Orçaí Imob - Assessoria Imobiliária</p>
           </div>
           <div className="text-right">
             <p className="font-bold">{new Date().toLocaleDateString('pt-BR')}</p>

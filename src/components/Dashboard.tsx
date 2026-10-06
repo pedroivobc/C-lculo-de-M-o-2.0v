@@ -18,7 +18,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
       <header>
-        <h2 className="text-3xl font-serif text-white mb-2">Bem-vindo ao Cálculo na Mão</h2>
+        <h2 className="text-3xl font-serif text-white mb-2">Bem-vindo ao Orçaí Imob</h2>
         <p className="text-white/60">Sistema premium de assessoria imobiliária Juiz de Fora.</p>
       </header>
 

@@ -1,4 +1,6 @@
-# Cálculo na Mão
+# Orçaí Imob
+
+Primeira vertical da marca **Orçaí** (orçaí + etiqueta do segmento). Símbolo em `public/marca/`.
 
 Orçamento de escritura, ITBI, financiamento e doação para imóveis em Juiz de Fora (MG), pelo site ou por um agente no WhatsApp.
 
