@@ -6,7 +6,7 @@ import { telefoneBonito } from '@/lib/formato';
 import { AGENTE_WHATSAPP } from '@/lib/config';
 
 const EXEMPLOS = [
-  ['"Escritura de 320 mil, venal 350 mil"', 'Calcula ITBI, lavratura e registro e manda o PDF.'],
+  ['"Escritura de 350 mil"', 'Calcula ITBI, escritura e registro e manda o orçamento.'],
   ['"Caixa SBPE, financiando 280 mil, primeiro imóvel"', 'Taxa da Caixa, ITBI pelo SFH e registro.'],
   ['"Exportar 2026-10"', 'Manda a planilha com todos os orçamentos do mês.'],
   ['"Me manda de novo o 142"', 'Reenvia o PDF de um orçamento do histórico.'],

@@ -8,7 +8,6 @@ const booleano = z.preprocess((v) => (typeof v === 'string' ? ['true', 'sim', '1
 
 const comum = {
   valorDeclarado: valor,
-  valorVenal: valor,
   valorFinanciado: valor,
   primeiroImovel: booleano.default(false),
   certidoes: valor.default(260.07),
@@ -42,7 +41,7 @@ export type EntradaCaixa = z.infer<typeof entradaCaixa>;
 export function calcularCaixa(dados: EntradaCaixa): Resultado {
   const e = entradaCaixa.parse(dados);
   const m = obterMunicipio(e.municipio, e);
-  const base = Math.max(e.valorDeclarado, e.valorVenal);
+  const base = e.valorDeclarado;
   const fin = e.valorFinanciado;
   const pct = e.taxaPercent / 100;
   const honorarios = e.honorarios ?? (e.modalidade === 'FGTS' ? 1200 : 700);
@@ -87,7 +86,7 @@ export type EntradaBancoPrivado = z.infer<typeof entradaBancoPrivado>;
 export function calcularBancoPrivado(dados: EntradaBancoPrivado): Resultado {
   const e = entradaBancoPrivado.parse(dados);
   const m = obterMunicipio(e.municipio, e);
-  const base = Math.max(e.valorDeclarado, e.valorVenal);
+  const base = e.valorDeclarado;
   const fin = e.valorFinanciado;
   const sbpe = e.modalidade === 'SBPE';
   const linhas: Linha[] = [

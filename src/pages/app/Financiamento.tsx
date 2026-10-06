@@ -6,11 +6,10 @@ const R = (c: number) => c / 100;
 
 function useValores() {
   const [declarado, setDeclarado] = useState(0);
-  const [venal, setVenal] = useState(0);
   const [financiado, setFinanciado] = useState(0);
   const [primeiro, setPrimeiro] = useState(false);
   const [certidoes, setCertidoes] = useState(26007);
-  return { declarado, setDeclarado, venal, setVenal, financiado, setFinanciado, primeiro, setPrimeiro, certidoes, setCertidoes };
+  return { declarado, setDeclarado, financiado, setFinanciado, primeiro, setPrimeiro, certidoes, setCertidoes };
 }
 
 function CamposCompra({ s }: { s: ReturnType<typeof useValores> }) {
@@ -18,7 +17,6 @@ function CamposCompra({ s }: { s: ReturnType<typeof useValores> }) {
     <>
       <Grade>
         <CampoMoeda rotulo="Valor declarado" centavos={s.declarado} onChange={s.setDeclarado} />
-        <CampoMoeda rotulo="Valor venal corrigido" centavos={s.venal} onChange={s.setVenal} />
         <CampoMoeda rotulo="Valor financiado" centavos={s.financiado} onChange={s.setFinanciado} />
         <CampoMoeda rotulo="Certidões" centavos={s.certidoes} onChange={s.setCertidoes} />
       </Grade>
@@ -39,7 +37,7 @@ export function FinanciamentoCaixa() {
   return (
     <PaginaCalculadora
       tipo="financiamento_caixa"
-      entrada={{ modalidade, valorDeclarado: R(s.declarado), valorVenal: R(s.venal), valorFinanciado: R(s.financiado), primeiroImovel: s.primeiro, taxaPercent: taxa, certidoes: R(s.certidoes), honorarios: R(honorarios ?? honorariosPadrao) }}
+      entrada={{ modalidade, valorDeclarado: R(s.declarado), valorFinanciado: R(s.financiado), primeiroImovel: s.primeiro, taxaPercent: taxa, certidoes: R(s.certidoes), honorarios: R(honorarios ?? honorariosPadrao) }}
       rotulo="Financiamento Caixa"
       titulo="Custos do financiamento pela Caixa"
       descricao="Taxa da Caixa, ITBI (com a regra do SFH quando couber), prenotação e registro do contrato."
@@ -69,7 +67,7 @@ export function BancoPrivado() {
   return (
     <PaginaCalculadora
       tipo="banco_privado"
-      entrada={{ banco, modalidade, valorDeclarado: R(s.declarado), valorVenal: R(s.venal), valorFinanciado: R(s.financiado), primeiroImovel: s.primeiro, certidoes: R(s.certidoes), honorarios: R(honorarios) }}
+      entrada={{ banco, modalidade, valorDeclarado: R(s.declarado), valorFinanciado: R(s.financiado), primeiroImovel: s.primeiro, certidoes: R(s.certidoes), honorarios: R(honorarios) }}
       rotulo="Banco privado"
       titulo="Custos do financiamento em banco privado"
       descricao="Tarifa de contrato do banco, ITBI, prenotação e registro da alienação fiduciária."

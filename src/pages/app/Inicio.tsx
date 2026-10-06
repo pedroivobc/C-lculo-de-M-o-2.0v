@@ -72,7 +72,7 @@ export default function Inicio() {
         <aside className="flex flex-col gap-3.5 rounded-2xl bg-tinta p-6 text-white">
           <span className="self-start rounded-full bg-[#1f2b44] px-2.5 py-1 text-xs font-bold text-[#5be3a5]">Agente no WhatsApp</span>
           <h2 className="text-lg font-bold">Orce pelo WhatsApp</h2>
-          <p className="text-[#c7cedb]">Mande do seu número cadastrado: "escritura de 320 mil, venal 350 mil".</p>
+          <p className="text-[#c7cedb]">Mande do seu número cadastrado: "escritura de 350 mil".</p>
           {AGENTE_WHATSAPP ? (
             <a href={`https://wa.me/${AGENTE_WHATSAPP}`} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white font-bold text-tinta no-underline">
               <MessageCircle className="size-5" aria-hidden="true" />Abrir conversa

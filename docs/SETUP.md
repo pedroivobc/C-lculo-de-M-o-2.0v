@@ -116,7 +116,7 @@ Enquanto o pagamento (Asaas) não está integrado, ative à mão:
    insert into subscriptions (user_id, plan, nivel, status, forma_pagamento, current_period_end)
    select id, 'anual', 'usuario', 'ativa', 'pix', now() + interval '1 year' from profiles where email = 'voce@exemplo.com';
    ```
-4. Do WhatsApp cadastrado, mande ao número do agente: *"escritura de 320 mil, venal 350 mil"*.
+4. Do WhatsApp cadastrado, mande ao número do agente: *"escritura de 350 mil"*.
 
 > Esperado: resposta com **Total: R$ 18.743,68**, o número do cálculo e o orçamento anexado (PDF ou imagem, conforme a conta). O cálculo aparece em `calculations` com `origem = 'whatsapp'`.
 

@@ -14,9 +14,9 @@ export default function Escrituras() {
 
   const comum = { folhas, certidoes: R(v.certidoes ?? 0), honorarios: R(v.honorarios ?? 0) };
   const entrada =
-    subtipo === 'compra_venda_simples' ? { subtipo, valorDeclarado: R(v.valorDeclarado ?? 0), valorVenal: R(v.valorVenal ?? 0), ...comum }
-    : subtipo === 'interveniencia' ? { subtipo, valorDeclarado1: R(v.valorDeclarado1 ?? 0), valorVenal1: R(v.valorVenal1 ?? 0), valorDeclarado2: R(v.valorDeclarado2 ?? 0), valorVenal2: R(v.valorVenal2 ?? 0), ...comum }
-    : subtipo === 'compra_vinculo' ? { subtipo, valorDeclaradoCompra: R(v.valorDeclaradoCompra ?? 0), valorVenalCompra: R(v.valorVenalCompra ?? 0), valorVinculo: R(v.valorVinculo ?? 0), ...comum }
+    subtipo === 'compra_venda_simples' ? { subtipo, valorDeclarado: R(v.valorDeclarado ?? 0), ...comum }
+    : subtipo === 'interveniencia' ? { subtipo, valorDeclarado1: R(v.valorDeclarado1 ?? 0), valorDeclarado2: R(v.valorDeclarado2 ?? 0), ...comum }
+    : subtipo === 'compra_vinculo' ? { subtipo, valorDeclaradoCompra: R(v.valorDeclaradoCompra ?? 0), valorVinculo: R(v.valorVinculo ?? 0), ...comum }
     : { subtipo, valorAtribuido: R(v.valorAtribuido ?? 0), avaliacaoFazenda: R(v.avaliacaoFazenda ?? 0), ...comum };
 
   return (
@@ -25,7 +25,7 @@ export default function Escrituras() {
       entrada={entrada}
       rotulo="Escrituras"
       titulo="Calcular custos da escritura"
-      descricao="A base é sempre o maior valor entre o declarado e o venal corrigido."
+      descricao="A base de cálculo é o valor declarado do imóvel."
       tituloOrcamento={ROTULO_SUBTIPO_ESCRITURA[subtipo].toLowerCase()}
       opcoes={<Opcoes rotulo="Tipo de escritura" valor={subtipo} onChange={setSubtipo}
         opcoes={(Object.keys(ROTULO_SUBTIPO_ESCRITURA) as Subtipo[]).map((s) => ({ valor: s, rotulo: ROTULO_SUBTIPO_ESCRITURA[s] }))} />}
@@ -33,25 +33,21 @@ export default function Escrituras() {
       {subtipo === 'compra_venda_simples' && (
         <Grade>
           <CampoMoeda rotulo="Valor declarado" {...campo('valorDeclarado')} />
-          <CampoMoeda rotulo="Valor venal corrigido" {...campo('valorVenal')} />
         </Grade>
       )}
       {subtipo === 'interveniencia' && (
         <>
           <Grade>
             <CampoMoeda rotulo="1º ato · valor declarado" {...campo('valorDeclarado1')} />
-            <CampoMoeda rotulo="1º ato · valor venal" {...campo('valorVenal1')} />
           </Grade>
           <Grade>
             <CampoMoeda rotulo="2º ato · valor declarado" {...campo('valorDeclarado2')} />
-            <CampoMoeda rotulo="2º ato · valor venal" {...campo('valorVenal2')} />
           </Grade>
         </>
       )}
       {subtipo === 'compra_vinculo' && (
         <Grade>
           <CampoMoeda rotulo="Compra · valor declarado" {...campo('valorDeclaradoCompra')} />
-          <CampoMoeda rotulo="Compra · valor venal" {...campo('valorVenalCompra')} />
           <CampoMoeda rotulo="Valor do vínculo" {...campo('valorVinculo')} />
         </Grade>
       )}

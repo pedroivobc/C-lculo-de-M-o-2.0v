@@ -14,13 +14,13 @@ const custosDoUsuario = {
 };
 
 export const entradaEscritura = z.discriminatedUnion('subtipo', [
-  z.object({ subtipo: z.literal('compra_venda_simples'), valorDeclarado: valor, valorVenal: valor, ...custosDoUsuario }),
+  z.object({ subtipo: z.literal('compra_venda_simples'), valorDeclarado: valor, ...custosDoUsuario }),
   z.object({
     subtipo: z.literal('interveniencia'),
-    valorDeclarado1: valor, valorVenal1: valor, valorDeclarado2: valor, valorVenal2: valor,
+    valorDeclarado1: valor, valorDeclarado2: valor,
     ...custosDoUsuario,
   }),
-  z.object({ subtipo: z.literal('compra_vinculo'), valorDeclaradoCompra: valor, valorVenalCompra: valor, valorVinculo: valor, ...custosDoUsuario }),
+  z.object({ subtipo: z.literal('compra_vinculo'), valorDeclaradoCompra: valor, valorVinculo: valor, ...custosDoUsuario }),
   z.object({ subtipo: z.literal('doacao_simples'), valorAtribuido: valor, avaliacaoFazenda: valor, ...custosDoUsuario }),
   z.object({ subtipo: z.literal('doacao_usufruto'), valorAtribuido: valor, avaliacaoFazenda: valor, ...custosDoUsuario }),
   z.object({ subtipo: z.literal('renuncia_usufruto'), valorAtribuido: valor, avaliacaoFazenda: valor, ...custosDoUsuario }),
@@ -64,7 +64,7 @@ export function calcularEscritura(dados: EntradaEscritura): Resultado {
 
   switch (e.subtipo) {
     case 'compra_venda_simples': {
-      const base = Math.max(e.valorDeclarado, e.valorVenal);
+      const base = e.valorDeclarado;
       bases = [base];
       itbi(base);
       linhas.push(linhaEscritura([{ rotulo: 'Lavratura', base }], e.folhas));
@@ -72,8 +72,8 @@ export function calcularEscritura(dados: EntradaEscritura): Resultado {
       break;
     }
     case 'interveniencia': {
-      const b1 = Math.max(e.valorDeclarado1, e.valorVenal1);
-      const b2 = Math.max(e.valorDeclarado2, e.valorVenal2);
+      const b1 = e.valorDeclarado1;
+      const b2 = e.valorDeclarado2;
       bases = [b1, b2];
       itbi(b1, '1º ato'); itbi(b2, '2º ato');
       linhas.push(linhaEscritura([{ rotulo: 'Lavratura · 1º ato', base: b1 }, { rotulo: 'Lavratura · 2º ato', base: b2 }], e.folhas));
@@ -81,7 +81,7 @@ export function calcularEscritura(dados: EntradaEscritura): Resultado {
       break;
     }
     case 'compra_vinculo': {
-      const bc = Math.max(e.valorDeclaradoCompra, e.valorVenalCompra);
+      const bc = e.valorDeclaradoCompra;
       const bv = e.valorVinculo;
       bases = [bc, bv];
       itbi(bc, 'compra');

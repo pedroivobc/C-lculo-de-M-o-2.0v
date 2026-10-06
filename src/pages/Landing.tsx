@@ -16,9 +16,9 @@ type Ato = 'escritura' | 'caixa' | 'doacao';
 function simular(ato: Ato, valor: number): Resultado | null {
   if (!valor) return null;
   try {
-    if (ato === 'caixa') return calcular('financiamento_caixa', { modalidade: 'SBPE', valorDeclarado: valor, valorVenal: valor, valorFinanciado: valor * 0.8, primeiroImovel: true });
+    if (ato === 'caixa') return calcular('financiamento_caixa', { modalidade: 'SBPE', valorDeclarado: valor, valorFinanciado: valor * 0.8, primeiroImovel: true });
     if (ato === 'doacao') return calcular('doacao', { subtipo: 'doacao_simples', valorAtribuido: valor, avaliacaoFazenda: valor });
-    return calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: valor, valorVenal: valor });
+    return calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: valor });
   } catch { return null; }
 }
 
@@ -136,7 +136,7 @@ export default function Landing() {
                   className="numero w-full min-w-0 bg-transparent text-[26px] font-extrabold text-tinta outline-none sm:text-[28px]"
                 />
               </span>
-              <span id="dica-valor" className="text-[13px] font-medium text-[#d5ddff]">Use o maior entre o valor declarado e o venal.</span>
+              <span id="dica-valor" className="text-[13px] font-medium text-[#d5ddff]">Use o valor declarado do imóvel.</span>
             </label>
             <div role="group" aria-label="Tipo de ato" className="flex flex-wrap gap-2">
               {([['escritura', 'Escritura'], ['caixa', 'Financiamento Caixa'], ['doacao', 'Doação']] as const).map(([v, r]) => (
@@ -179,7 +179,7 @@ export default function Landing() {
               </ul>
             </div>
             <div className="flex min-w-0 flex-1 basis-80 flex-col gap-2.5 rounded-[20px] bg-[#1b2438] p-4">
-              <div className="max-w-[82%] self-end rounded-2xl rounded-br-[4px] bg-acao px-3.5 py-2.5">Escritura de um apê de 320 mil, venal 350</div>
+              <div className="max-w-[82%] self-end rounded-2xl rounded-br-[4px] bg-acao px-3.5 py-2.5">Escritura de um apê de 350 mil</div>
               <div className="flex max-w-[88%] flex-col gap-1.5 self-start rounded-2xl rounded-bl-[4px] bg-white px-3.5 py-3 text-tinta">
                 <span>Compra e venda · base <strong>R$ 350.000,00</strong></span>
                 <span className="numero whitespace-pre-line text-texto">{'ITBI: R$ 7.000,00\nEscritura: R$ 5.398,00\nRegistro: R$ 5.245,68\nCertidões e honorários: R$ 1.100,00'}</span>

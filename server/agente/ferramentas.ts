@@ -37,9 +37,9 @@ export const DECLARACOES: FunctionDeclaration[] = [
       type: 'object',
       properties: {
         subtipo: { type: 'string', enum: ['compra_venda_simples', 'interveniencia', 'compra_vinculo', 'doacao_simples', 'doacao_usufruto', 'renuncia_usufruto'] },
-        valorDeclarado: num, valorVenal: num,
-        valorDeclarado1: num, valorVenal1: num, valorDeclarado2: num, valorVenal2: num,
-        valorDeclaradoCompra: num, valorVenalCompra: num, valorVinculo: num,
+        valorDeclarado: num,
+        valorDeclarado1: num, valorDeclarado2: num,
+        valorDeclaradoCompra: num, valorVinculo: num,
         valorAtribuido: num, avaliacaoFazenda: num,
         folhas: { type: 'integer', description: 'Folhas da escritura (padrão 25).' },
         ...custos,
@@ -54,12 +54,12 @@ export const DECLARACOES: FunctionDeclaration[] = [
       type: 'object',
       properties: {
         modalidade: { type: 'string', enum: ['SBPE', 'MCMV', 'SFI', 'EGI', 'FGTS'] },
-        valorDeclarado: num, valorVenal: num, valorFinanciado: num,
+        valorDeclarado: num, valorFinanciado: num,
         primeiroImovel: { type: 'boolean' },
         taxaPercent: { ...num, description: 'Taxa Caixa em %, padrão 1,5' },
         ...custos,
       },
-      required: ['modalidade', 'valorDeclarado', 'valorVenal', 'valorFinanciado'],
+      required: ['modalidade', 'valorDeclarado', 'valorFinanciado'],
     },
   },
   {
@@ -70,11 +70,11 @@ export const DECLARACOES: FunctionDeclaration[] = [
       properties: {
         banco: { type: 'string', enum: ['itau', 'bradesco', 'santander'] },
         modalidade: { type: 'string', enum: ['SBPE', 'SFI'] },
-        valorDeclarado: num, valorVenal: num, valorFinanciado: num,
+        valorDeclarado: num, valorFinanciado: num,
         primeiroImovel: { type: 'boolean' },
         ...custos,
       },
-      required: ['banco', 'modalidade', 'valorDeclarado', 'valorVenal', 'valorFinanciado'],
+      required: ['banco', 'modalidade', 'valorDeclarado', 'valorFinanciado'],
     },
   },
   {

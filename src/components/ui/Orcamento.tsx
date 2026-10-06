@@ -1,31 +1,12 @@
 import { useState, type ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
-import type { Linha, Origem, Resultado } from '@/lib/calc';
+import type { Linha, Resultado } from '@/lib/calc';
 import { brl } from '@/lib/formato';
 import { MUNICIPIOS } from '@/lib/calc';
 import { cn } from '@/lib/utils';
 
-const ORIGEM: Record<Origem, { rotulo: (m: string) => string; classe: string }> = {
-  municipio: { rotulo: (m) => m.toUpperCase(), classe: 'bg-minas-claro text-minas-texto' },
-  uf: { rotulo: () => 'MG', classe: 'bg-acao-claro text-acao-escuro' },
-  banco: { rotulo: () => 'BANCO', classe: 'bg-cinza text-texto' },
-  usuario: { rotulo: () => 'VOCÊ', classe: 'bg-amarelo-claro text-amarelo-texto' },
-};
-
-export function EtiquetaOrigem({ origem, municipio, curta = false }: { origem: Origem; municipio?: string; curta?: boolean }) {
-  const nome = MUNICIPIOS[municipio ?? '']?.nome ?? 'Município';
-  const sigla = nome.split(/\s+/).filter((p) => p.length > 2).map((p) => p[0]).join('').toUpperCase();
-  const texto = curta && origem === 'municipio' ? sigla || 'MUN.' : ORIGEM[origem].rotulo(nome);
-  return (
-    <span className={cn('shrink-0 rounded-[5px] px-1.5 py-0.5 text-[10px] font-extrabold leading-[14px] tracking-[0.04em]', ORIGEM[origem].classe)}>
-      {texto}
-    </span>
-  );
-}
-
 /**
  * O orçamento picotado: peça-assinatura da identidade.
- * Cada linha mostra de onde vem o valor (município, MG, banco ou você).
  */
 export function Orcamento({ titulo, resultado, rotuloTotal = 'Total estimado', carimbo = true, compacto = false, children }: {
   titulo: string;
@@ -60,7 +41,6 @@ export function Orcamento({ titulo, resultado, rotuloTotal = 'Total estimado', c
               <li key={i} className="border-b border-[#eef0f4] py-2.5">
                 <div className="flex items-center justify-between gap-3">
                   <span className="flex min-w-0 items-center gap-2">
-                    <EtiquetaOrigem origem={l.origem} municipio={resultado.municipio} curta={compacto} />
                     <span className="flex flex-col">
                       <span>{l.rotulo}</span>
                       {l.nota && !compacto && !(detalhar && l.detalhes) && <span className="text-xs text-suave">{l.nota}</span>}
