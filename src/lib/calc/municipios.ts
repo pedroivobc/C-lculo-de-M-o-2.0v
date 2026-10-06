@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { parametros } from './parametros';
 
 /**
  * Regras que pertencem à prefeitura. Para abrir uma cidade nova de MG,
@@ -26,7 +27,11 @@ export const MUNICIPIOS: Record<string, Municipio> = {
     uf: 'MG',
     itbi: {
       aliquota: 0.02,
-      sfh: { limiar: 107603.17, fixoNoLimiar: 538.02, aliquotaFinanciado: 0.005 },
+      // Base do desconto do SFH: tabela vigente (./parametros.ts), atualizada pelo admin todo ano.
+      get sfh() {
+        const { limiarSfh, aliquotaFinanciado } = parametros().itbiJf;
+        return { limiar: limiarSfh, fixoNoLimiar: Math.round(limiarSfh * aliquotaFinanciado * 100) / 100, aliquotaFinanciado };
+      },
     },
     issCartorio: 0.05,
   },

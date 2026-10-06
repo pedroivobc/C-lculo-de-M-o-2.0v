@@ -3,7 +3,8 @@ import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { calcular, CALCULADORAS, comCustos, type TipoCalculo } from '../src/lib/calc';
 import { config } from './config';
-import { exigirAgente, exigirUsuario } from './auth';
+import { exigirAdmin, exigirAgente, exigirUsuario } from './auth';
+import { compararTabelas, ehErroPlanilha, gerarPlanilha, lerPlanilha, listarVersoes, parametrosParaJson, publicarTabela, removerVersao, TIPOS, tipoValido, versoesVigentes } from './tabelas';
 import { supabaseAdmin, salvarArquivo, urlAssinada } from './supabase';
 import { normalizarTelefone, telefoneDoJid, variantesTelefone } from './telefone';
 import { criarCodigo, mensagemDeConfirmacao } from './verificacao';
@@ -67,6 +68,67 @@ rotas.post('/api/whatsapp/codigo', limiteCodigo, exigirUsuario, h(async (req, re
   if (emUso) return res.status(409).json({ erro: 'Este WhatsApp já está ligado a outra conta.' });
   const codigo = await criarCodigo(req.userId!, telefone);
   res.json({ whatsapp: telefone, codigo, mensagem: mensagemDeConfirmacao(codigo) });
+}));
+
+// ---------------- Tabelas anuais (admin) ----------------
+
+/** Tabelas em vigor, para o site calcular igual ao servidor. */
+rotas.get('/api/parametros', (_req, res) => {
+  res.set('Cache-Control', 'public, max-age=300');
+  res.json({ parametros: parametrosParaJson(), versoes: versoesVigentes() });
+});
+
+rotas.get('/api/admin/tabelas', exigirUsuario, exigirAdmin, h(async (_req, res) => {
+  res.json({ tipos: TIPOS, vigentes: versoesVigentes(), versoes: await listarVersoes() });
+}));
+
+/** Planilha da tabela em vigor, para editar e enviar como a do ano seguinte. */
+rotas.get('/api/admin/tabelas/:tipo/planilha', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  const tipo = String(req.params.tipo);
+  if (!tipoValido(tipo)) return res.status(404).json({ erro: 'Tabela desconhecida.' });
+  const nome = `${TIPOS[tipo].arquivo}-${versoesVigentes()[tipo].ano}.xlsx`;
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="${nome}"`);
+  res.send(await gerarPlanilha(tipo));
+}));
+
+const envioTabela = z.object({
+  arquivo: z.string().min(10).max(4_000_000), // .xlsx em base64
+  ano: z.coerce.number().int().min(2026).max(2100),
+  vigenciaInicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+/** Lê e valida a planilha e mostra o que muda, sem publicar. */
+rotas.post('/api/admin/tabelas/:tipo/previa', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  const tipo = String(req.params.tipo);
+  if (!tipoValido(tipo)) return res.status(404).json({ erro: 'Tabela desconhecida.' });
+  const e = envioTabela.parse(req.body);
+  try {
+    const dados = await lerPlanilha(tipo, Buffer.from(e.arquivo, 'base64'), e.ano);
+    res.json({ ok: true, ...compararTabelas(tipo, dados) });
+  } catch (err) {
+    if (ehErroPlanilha(err)) return res.status(400).json({ erro: err.message });
+    throw err;
+  }
+}));
+
+rotas.post('/api/admin/tabelas/:tipo/publicar', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  const tipo = String(req.params.tipo);
+  if (!tipoValido(tipo)) return res.status(404).json({ erro: 'Tabela desconhecida.' });
+  const e = envioTabela.parse(req.body);
+  try {
+    const dados = await lerPlanilha(tipo, Buffer.from(e.arquivo, 'base64'), e.ano);
+    await publicarTabela(tipo, e.ano, e.vigenciaInicio, dados, req.userId!);
+    res.json({ ok: true, vigentes: versoesVigentes(), versoes: await listarVersoes() });
+  } catch (err) {
+    if (ehErroPlanilha(err)) return res.status(400).json({ erro: err.message });
+    throw err;
+  }
+}));
+
+rotas.delete('/api/admin/tabelas/versao/:id', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  await removerVersao(String(req.params.id));
+  res.json({ ok: true, vigentes: versoesVigentes(), versoes: await listarVersoes() });
 }));
 
 // ---------------- CPF (um por conta) ----------------

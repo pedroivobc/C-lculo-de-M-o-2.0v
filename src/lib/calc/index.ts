@@ -9,7 +9,8 @@ export * from './tipos';
 export { MUNICIPIOS, MUNICIPIO_PADRAO, MUNICIPIO_OUTRA, obterMunicipio, percentual } from './municipios';
 export { ROTULO_SUBTIPO_ESCRITURA } from './escritura';
 export * from './custos';
-export { atoDeRegistro, linhaRegistro, valorDoAto, ATOS_FIXOS } from './registro';
+export { atoDeRegistro, linhaRegistro, valorDoAto } from './registro';
+export * from './parametros';
 
 /** Um lugar só para o site, a API e o agente do WhatsApp chamarem as mesmas fórmulas. */
 export const CALCULADORAS: Record<TipoCalculo, { entrada: z.ZodTypeAny; calcular: (e: any) => Resultado }> = {

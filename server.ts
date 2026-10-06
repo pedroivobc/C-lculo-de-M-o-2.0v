@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { config } from "./server/config";
 import { rotas } from "./server/rotas";
+import { manterTabelasAtualizadas } from "./server/tabelas";
 
 async function startServer() {
   const app = express();
@@ -26,6 +27,9 @@ async function startServer() {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+
+  // Tabelas anuais publicadas pelo admin (emolumentos, INCC, ITBI de JF): carrega e acompanha a vigência.
+  if (config.supabaseUrl && config.supabaseServiceKey) manterTabelasAtualizadas();
 
   app.listen(config.port, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${config.port}`);

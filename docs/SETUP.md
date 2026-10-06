@@ -154,3 +154,16 @@ npm install
 npm run dev            # http://localhost:3000
 npm test               # cálculos de referência e telefone
 ```
+
+## Todo ano: atualizar as tabelas
+
+Emolumentos de MG (TJMG), INCC da correção contratual e a base do desconto de ITBI de Juiz de Fora mudam todo ano.
+Nada disso exige mexer no código: entre com a conta de administrador e abra **Tabelas anuais** no menu.
+
+1. **Baixar planilha** da tabela em vigor (.xlsx; abre no Excel ou no Google Planilhas).
+2. Troque os valores pelos do ano novo. Emolumentos: emolumento bruto e TFJ de cada faixa e dos atos fixos. INCC: acrescente a linha do ano. ITBI de JF: o limite do SFH.
+3. Envie a planilha informando o **ano** e a **data em que passa a valer** (ex.: 01/01/2027). Pode ser enviada antes: fica agendada.
+4. O sistema confere a planilha (faixas em ordem, valores válidos, ano do INCC) e mostra a **prévia** com a variação de cada item; variações abaixo de -1% ou acima de 25% aparecem em vermelho.
+5. **Publicar.** Na data escolhida, o site, a API e o WhatsApp passam a calcular com a tabela nova (o servidor relê a cada 15 minutos). Uma versão publicada por engano pode ser removida; os cálculos voltam para a anterior.
+
+As versões ficam em `tabelas_anuais` (migration `20261013000000_tabelas_anuais.sql`). Sem nenhuma versão publicada, valem as tabelas de 2026 de `src/lib/calc/parametros.ts`.

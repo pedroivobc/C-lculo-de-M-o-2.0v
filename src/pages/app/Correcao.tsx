@@ -1,14 +1,12 @@
 import { useId, useState } from 'react';
 import { PaginaCalculadora, useResultado } from '@/components/calc/PaginaCalculadora';
 import { CampoMoeda } from '@/components/ui/Campos';
-import { INCC, ANO_BASE_INCC } from '@/lib/calc/correcao';
+import { anoBaseIncc, indicesIncc } from '@/lib/calc/correcao';
 import { Link } from 'react-router-dom';
 import { useConta } from '@/hooks/useConta';
 import { MUNICIPIO_CORRECAO } from '@/components/layout/AppLayout';
 import { Cartao } from '@/components/ui/Campos';
 
-const ANOS = Object.keys(INCC).map(Number).sort((a, b) => b - a);
-const MAX = INCC[ANO_BASE_INCC];
 
 export default function Correcao() {
   const { perfil } = useConta();
@@ -23,6 +21,11 @@ export default function Correcao() {
 }
 
 function CalculadoraCorrecao() {
+  // Tabela vigente (o admin publica o INCC de cada ano).
+  const INCC = indicesIncc();
+  const ANO_BASE_INCC = anoBaseIncc();
+  const ANOS = Object.keys(INCC).map(Number).sort((a, b) => b - a);
+  const MAX = INCC[ANO_BASE_INCC];
   const [valor, setValor] = useState(0);
   const [ano, setAno] = useState(2015);
   const id = useId();

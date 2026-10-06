@@ -14,6 +14,7 @@ const Escrituras = lazy(() => import('@/pages/app/Escrituras'));
 const FinanciamentoCaixa = lazy(() => import('@/pages/app/Financiamento').then((m) => ({ default: m.FinanciamentoCaixa })));
 const BancoPrivado = lazy(() => import('@/pages/app/Financiamento').then((m) => ({ default: m.BancoPrivado })));
 const Correcao = lazy(() => import('@/pages/app/Correcao'));
+const AdminTabelas = lazy(() => import('@/pages/app/AdminTabelas'));
 const Doacao = lazy(() => import('@/pages/app/Doacao'));
 const Historico = lazy(() => import('@/pages/app/Historico'));
 const Agente = lazy(() => import('@/pages/app/Agente'));
@@ -62,6 +63,7 @@ export default function App() {
               <Route path="financiamento-caixa" element={<FinanciamentoCaixa />} />
               <Route path="banco-privado" element={<BancoPrivado />} />
               <Route path="correcao" element={<Correcao />} />
+              <Route path="admin/tabelas" element={<AdminTabelas />} />
               <Route path="doacao" element={<Doacao />} />
               <Route path="historico" element={<Historico />} />
               <Route path="agente" element={<Agente />} />

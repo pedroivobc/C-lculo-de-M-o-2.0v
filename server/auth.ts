@@ -26,3 +26,10 @@ export function exigirAgente(req: Request, res: Response, next: NextFunction) {
   }
   next();
 }
+
+/** Rotas do administrador: usuário logado com papel 'admin' (usar depois de exigirUsuario). */
+export async function exigirAdmin(req: Request, res: Response, next: NextFunction) {
+  const { data } = await supabaseAdmin().from('profiles').select('papel').eq('id', req.userId!).maybeSingle();
+  if (data?.papel !== 'admin') return res.status(403).json({ erro: 'Área restrita ao administrador.' });
+  next();
+}

@@ -31,6 +31,7 @@ const CONTA = [
   { para: '/app/historico', rotulo: 'Histórico' },
   { para: '/app/agente', rotulo: 'Agente WhatsApp' },
   { para: '/app/conta', rotulo: 'Conta e assinatura' },
+  { para: '/app/admin/tabelas', rotulo: 'Tabelas anuais', soAdmin: true },
 ];
 
 const ABAS = [
@@ -74,6 +75,8 @@ export function AppLayout() {
   const { pathname } = useLocation();
   const telaDeCalculo = CALCULADORAS.some((c) => pathname.startsWith(c.para));
   const calculadoras = useCalculadoras();
+  const { perfil } = useConta();
+  const conta = CONTA.filter((c) => !c.soAdmin || perfil?.papel === 'admin');
 
   return (
     <div className="min-h-screen lg:flex">
@@ -86,7 +89,7 @@ export function AppLayout() {
           <span className="px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-suave">Calcular</span>
           {calculadoras.map((c) => <NavLink key={c.para} to={c.para} className={itemMenu}>{c.rotulo}</NavLink>)}
           <span className="px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-suave">Minha conta</span>
-          {CONTA.map((c) => <NavLink key={c.para} to={c.para} className={itemMenu}>{c.rotulo}</NavLink>)}
+          {conta.map((c) => <NavLink key={c.para} to={c.para} className={itemMenu}>{c.rotulo}</NavLink>)}
         </nav>
         <div className="mt-auto flex flex-col gap-1.5 rounded-2xl border border-dashed border-borda p-3.5">
           <span className="font-bold">{carregando ? '…' : ativa ? 'Assinatura ativa' : 'Sem assinatura ativa'}</span>

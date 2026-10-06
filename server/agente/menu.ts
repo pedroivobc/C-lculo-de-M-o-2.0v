@@ -1,5 +1,5 @@
 import { brl, custosDoCalculo, type Custos, type CustosPadrao, type TipoCalculo } from '../../src/lib/calc';
-import { ANO_BASE_INCC } from '../../src/lib/calc/correcao';
+import { anoBaseIncc } from '../../src/lib/calc/correcao';
 
 /**
  * Conversa do WhatsApp por menus numerados: o corretor escolhe opções (1, 2, 3…) e responde
@@ -391,7 +391,7 @@ function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): P
       if (valor === null) return naoEntendi();
     } else if (p.tipo === 'ano') {
       const ano = Number(t.match(/\b(19|20)\d{2}\b/)?.[0]);
-      if (!ano || ano < 1997 || ano > ANO_BASE_INCC) return { estado, mensagens: [telaPergunta(f, estado.i, `Digite o ano com 4 números, entre 1997 e ${ANO_BASE_INCC}.\n\n`, estado.dados)] };
+      if (!ano || ano < 1997 || ano > anoBaseIncc()) return { estado, mensagens: [telaPergunta(f, estado.i, `Digite o ano com 4 números, entre 1997 e ${anoBaseIncc()}.\n\n`, estado.dados)] };
       valor = ano;
     } else {
       const naoSabe = p.tipo === 'valorOuZero' && /^(nao sei|nao tenho|nao tem|sem|ainda nao)/.test(t);

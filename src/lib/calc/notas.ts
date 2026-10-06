@@ -1,4 +1,5 @@
 import { faixaComValor } from './registro';
+import { parametros } from './parametros';
 
 /**
  * Tabelionato de notas de MG (Tabela 1, Lei 15.424/2004), conferido com um orçamento de cartório de 09/09/2026
@@ -8,8 +9,8 @@ import { faixaComValor } from './registro';
  * No Registro de Imóveis de Juiz de Fora o ISSQN incide sobre o bruto (ver ./registro.ts).
  */
 const RECOMPE = 0.07;
-/** Tabela 8, código 8101: arquivamento, por folha. */
-const ARQUIVAMENTO_FOLHA = { bruto: 10.22, tfj: 3.21 };
+/** Tabela 8, código 8101: arquivamento, por folha (tabela vigente). */
+const arquivamentoFolha = () => parametros().emolumentos.atos.arquivamentoFolha;
 
 const emCentavos = (n: number) => Math.round(n * 100);
 
@@ -24,7 +25,7 @@ function valorNotas(ato: { bruto: number; tfj: number }, iss: number, qtd = 1) {
 export const lavratura = (base: number, iss: number) => valorNotas(faixaComValor(base), iss);
 
 /** Arquivamento das folhas da escritura. */
-export const arquivamento = (folhas: number, iss: number) => valorNotas(ARQUIVAMENTO_FOLHA, iss, folhas);
+export const arquivamento = (folhas: number, iss: number) => valorNotas(arquivamentoFolha(), iss, folhas);
 
 /** Preço de uma folha, para a nota do orçamento. */
-export const precoFolha = (iss: number) => valorNotas(ARQUIVAMENTO_FOLHA, iss);
+export const precoFolha = (iss: number) => valorNotas(arquivamentoFolha(), iss);
