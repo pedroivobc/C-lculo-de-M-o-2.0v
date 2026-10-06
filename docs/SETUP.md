@@ -26,8 +26,8 @@ Nos dois casos:
 | Perfil | Como vira | O que pode |
 |---|---|---|
 | `admin` | à mão, no SQL Editor | tudo; não precisa de cartão nem assinatura |
-| `pro` | assinatura ativa com `nivel = 'pro'` | usar o sistema; orçamento com a própria logo e cores |
-| `usuario` | assinatura ativa com `nivel = 'usuario'` | usar o sistema; orçamento com a marca Orçaí |
+| `pro` | assinatura ativa com `nivel = 'pro'` (Pró: R$ 19,90/mês · R$ 199/ano) | usar o sistema; orçamento com a própria logo e cores |
+| `usuario` | assinatura ativa com `nivel = 'usuario'` (Essencial: R$ 9,90/mês · R$ 99/ano) | usar o sistema; orçamento com a marca Orçaí |
 | `trial` | todo cadastro novo | 3 dias a partir da validação do cartão |
 
 Todos menos o admin precisam de um cartão validado no gateway (tabela `cartoes`, só com o token do gateway — nunca o número), mesmo pagando no Pix. A regra fica numa função só, `situacao_acesso(uid)`, usada pelo banco (RLS), pela API e pelo agente. O papel acompanha a assinatura sozinho (trigger).

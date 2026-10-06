@@ -12,7 +12,10 @@ Design de referência (web e mobile, todas as telas): canvas **Orçaí Imob** no
 ## 1. O que vamos colocar no ar
 
 - **Site/app** (web e mobile responsivo): landing, cadastro com WhatsApp, assinatura, calculadoras, histórico com exportação, agente, conta.
-- **Assinatura**: R$ 9,90/mês ou R$ 99,00/ano (equivale a R$ 8,25/mês, "2 meses grátis"), Pix ou cartão.
+- **Assinatura** (anual = 10 mensalidades, "2 meses grátis"), Pix ou cartão:
+  - **Essencial** (`nivel = 'usuario'`): R$ 9,90/mês ou R$ 99,00/ano (R$ 8,25/mês). Orçamento com a marca Orçaí.
+  - **Pró** (`nivel = 'pro'`): R$ 19,90/mês ou R$ 199,00/ano (R$ 16,58/mês). Orçamento com a logo e as cores do assinante.
+  - Preços de vitrine em `src/lib/config.ts` (`PLANOS`); os valores cobrados ficam no gateway.
 - **Agente no WhatsApp**: número próprio conectado na Evolution API, orquestrado pelo n8n. O cliente assinante manda mensagem do número cadastrado, o agente identifica a conta, calcula **chamando a nossa API** (nunca "de cabeça"), salva o cálculo no histórico, devolve o resumo + PDF e exporta quando pedido.
 
 ```
@@ -135,7 +138,7 @@ Separar em `server/routes/*.ts`. Três tipos de autenticação:
 |---|---|---|
 | `POST /api/whatsapp/codigo` | usuário | Gera código de 6 dígitos, salva hash, envia pela Evolution (`sendText`) |
 | `POST /api/whatsapp/verificar` | usuário | Confere código (máx. 5 tentativas, 10 min), grava `whatsapp_e164` + `verified_at` |
-| `POST /api/assinatura` | usuário | Cria cliente + assinatura no Asaas (mensal R$ 9,90 / anual R$ 99,00), devolve Pix copia-e-cola/QR ou processa cartão |
+| `POST /api/assinatura` | usuário | Cria cliente + assinatura no Asaas (Essencial R$ 9,90/mês ou R$ 99/ano; Pró R$ 19,90/mês ou R$ 199/ano), devolve Pix copia-e-cola/QR ou processa cartão |
 | `POST /api/webhooks/asaas` | gateway | Atualiza `subscriptions`; ao ativar, envia boas-vindas no WhatsApp |
 | `POST /api/calculos/:tipo` | usuário **e** agente | Roda a lib de cálculo, salva em `calculations` (origem site/whatsapp), devolve memória + total + `seq` |
 | `POST /api/iptu/extrair` | usuário **e** agente | Recebe PDF/foto (base64), chama Gemini no servidor, devolve dados + valor venal |
@@ -250,7 +253,7 @@ Regras de código:
 ## 8. Riscos e cuidados
 
 - **Evolution API usa o protocolo do WhatsApp Web (não oficial)**. Risco real de banimento do número, principalmente se mandar mensagens em massa. Cuidados: número dedicado e "aquecido", só responder a quem chamou, sem disparos. Plano B: a Evolution também conecta na **API oficial (WhatsApp Cloud API)** — migrar sem trocar o n8n quando o volume crescer.
-- **Margem com ticket de R$ 9,90**: taxa fixa por cobrança Pix/cartão e custo de IA por mensagem pesam. Confirme as taxas do gateway e incentive o anual. Defina um **uso justo** (ex.: [LIMITE] cálculos/mês) e conte no `/api/calculos`.
+- **Margem com ticket de R$ 9,90** (o Pró a R$ 19,90 dilui melhor a taxa fixa): taxa fixa por cobrança Pix/cartão e custo de IA por mensagem pesam. Confirme as taxas do gateway e incentive o anual. Defina um **uso justo** (ex.: [LIMITE] cálculos/mês) e conte no `/api/calculos`.
 - **LGPD**: telefone, endereço e valores de imóvel de terceiros são dados pessoais. Termos + política de privacidade no cadastro, exportar/excluir conta, retenção do log de conversas, PDFs em bucket privado com URL que expira.
 - **Responsabilidade**: todo resultado com "estimativa — confirme com o cartório", como já está no app.
 - **Segurança**: chaves só no servidor; webhooks autenticados; rate limit por IP e por telefone; `x-agent-key` rotacionável.

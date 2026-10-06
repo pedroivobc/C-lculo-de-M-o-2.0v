@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useConta } from '@/hooks/useConta';
 import { Aviso, Botao, BotaoLink, Campo, Cartao } from '@/components/ui/Campos';
 import { telefoneBonito } from '@/lib/formato';
-import { PRECO } from '@/lib/config';
+import { PLANOS } from '@/lib/config';
 
 export default function Conta() {
   const { perfil, assinatura, ativa, recarregar } = useConta();
@@ -62,12 +62,12 @@ export default function Conta() {
         <div className="flex flex-col gap-6">
           <section className="flex flex-col gap-3 rounded-2xl border-2 border-tinta bg-white p-6 shadow-[6px_6px_0_#101828]">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-lg font-bold">{assinatura ? `Plano ${assinatura.plan}` : 'Sem plano'}</h2>
+              <h2 className="text-lg font-bold">{assinatura ? `${PLANOS[assinatura.nivel ?? 'usuario'].nome} ${assinatura.plan}` : 'Sem plano'}</h2>
               <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ativa ? 'bg-ok-claro text-ok' : 'bg-amarelo-claro text-amarelo-texto'}`}>{ativa ? 'Ativo' : assinatura?.status ?? 'Inativo'}</span>
             </div>
             {assinatura ? (
               <>
-                <span className="numero text-[32px] font-black">{assinatura.plan === 'anual' ? PRECO.anual : PRECO.mensal}<span className="text-sm font-medium text-suave">/{assinatura.plan === 'anual' ? 'ano' : 'mês'}</span></span>
+                <span className="numero text-[32px] font-black">{PLANOS[assinatura.nivel ?? 'usuario'][assinatura.plan === 'anual' ? 'anual' : 'mensal']}<span className="text-sm font-medium text-suave">/{assinatura.plan === 'anual' ? 'ano' : 'mês'}</span></span>
                 {assinatura.current_period_end && <span className="text-suave">Válido até {new Date(assinatura.current_period_end).toLocaleDateString('pt-BR')}</span>}
               </>
             ) : (

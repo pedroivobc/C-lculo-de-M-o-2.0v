@@ -4,7 +4,7 @@ import { Check, Plus } from 'lucide-react';
 import { calcular, type Resultado } from '@/lib/calc';
 import { centavosParaTexto, textoParaCentavos } from '@/lib/formato';
 import { api } from '@/lib/api';
-import { PRECO } from '@/lib/config';
+import { PLANOS, PRECO } from '@/lib/config';
 import { Lockup } from '@/components/marca/Logo';
 import { Orcamento } from '@/components/ui/Orcamento';
 import { Aviso, BotaoLink } from '@/components/ui/Campos';
@@ -118,7 +118,7 @@ export default function Landing() {
               Digite o valor do imóvel e veja quanto o cliente vai gastar com ITBI, cartório e registro. Pelo site ou mandando uma mensagem no WhatsApp.
             </p>
             <div className="flex flex-wrap gap-3">
-              <BotaoLink to="/cadastro" className="min-h-14 px-6 text-[17px]">Assinar por {PRECO.mensal}/mês</BotaoLink>
+              <BotaoLink to="/cadastro" className="min-h-14 px-6 text-[17px]">A partir de {PRECO.mensal}/mês</BotaoLink>
               <a href="#whatsapp" className="inline-flex min-h-14 items-center rounded-xl border-[1.5px] border-borda bg-white px-6 text-[17px] font-bold text-tinta no-underline">Ver no WhatsApp</a>
             </div>
             <span className="text-sm text-suave">Pix ou cartão · cancele quando quiser · emolumentos pela tabela de MG</span>
@@ -218,26 +218,45 @@ export default function Landing() {
         </section>
 
         {/* Preço */}
-        <section id="preco" className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-16 gap-y-8 px-4 pt-24 sm:px-6">
-          <div className="flex flex-1 basis-80 flex-col gap-3">
-            <h2 className="text-[30px] font-[850] leading-9 sm:text-[38px] sm:leading-[44px]">Um preço. Tudo incluído.</h2>
-            <p className="text-[17px] leading-[27px] text-texto">Todas as calculadoras, o agente no WhatsApp, a leitura do IPTU, PDF com a sua marca e exportação do histórico.</p>
-          </div>
-          <div className="mr-2 flex flex-1 basis-96 flex-col gap-5 rounded-3xl border-2 border-tinta bg-white p-6 shadow-[8px_8px_0_#101828] sm:p-8">
-            <div role="group" aria-label="Período" className="grid grid-cols-2 gap-1 rounded-xl bg-cinza p-1">
+        <section id="preco" className="mx-auto flex max-w-[1200px] flex-col gap-8 px-4 pt-24 sm:px-6">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div className="flex max-w-[640px] flex-col gap-3">
+              <h2 className="text-[30px] font-[850] leading-9 sm:text-[38px] sm:leading-[44px]">Dois planos. Tudo incluído.</h2>
+              <p className="text-[17px] leading-[27px] text-texto">Os dois têm todas as calculadoras, o agente no WhatsApp, a leitura do IPTU e a exportação do histórico. O Pró coloca a sua marca no orçamento.</p>
+            </div>
+            <div role="group" aria-label="Período" className="grid w-full max-w-[400px] grid-cols-2 gap-1 rounded-xl bg-cinza p-1 text-[15px]">
               {[[false, 'Mensal'], [true, 'Anual · 2 meses grátis']].map(([v, r]) => (
                 <button key={String(v)} type="button" aria-pressed={anual === v} onClick={() => setAnual(v as boolean)}
                   className={cn('min-h-11 rounded-[9px] font-bold', anual === v ? 'bg-white text-tinta shadow-sm' : 'text-suave')}>{r as string}</button>
               ))}
             </div>
-            <div className="flex flex-wrap items-baseline gap-2">
-              <span className="numero text-[56px] font-black leading-[60px]">{anual ? 'R$ 99' : PRECO.mensal}</span>
-              <span className="text-[17px] text-suave">{anual ? 'por ano' : 'por mês'}</span>
-            </div>
-            <span className="self-start rounded-lg bg-amarelo-claro px-2.5 py-1 font-bold text-amarelo-texto">{anual ? `Sai a ${PRECO.anualPorMes} por mês` : 'Menos que um café por semana'}</span>
-            <BotaoLink to={`/cadastro?plano=${anual ? 'anual' : 'mensal'}`} className="min-h-14 text-[17px]">{anual ? 'Assinar o anual' : 'Assinar o mensal'}</BotaoLink>
-            <span className="text-center text-sm text-suave">Pix ou cartão · cancele quando quiser</span>
           </div>
+          <div className="grid gap-6 md:grid-cols-2">
+            {(['usuario', 'pro'] as const).map((nivel) => {
+              const p = PLANOS[nivel];
+              const pro = nivel === 'pro';
+              return (
+                <div key={nivel} className={cn('mr-2 flex flex-col gap-5 rounded-3xl border-2 bg-white p-6 sm:p-8', pro ? 'border-tinta shadow-[8px_8px_0_#101828]' : 'border-linha')}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xl font-[850]">{p.nome}</span>
+                    {pro && <span className="rounded-full bg-acao px-3 py-1 text-xs font-bold text-white">Com a sua marca</span>}
+                  </div>
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <span className="numero text-[52px] font-black leading-[56px]">{anual ? p.anual.replace(',00', '') : p.mensal}</span>
+                    <span className="text-[17px] text-suave">{anual ? 'por ano' : 'por mês'}</span>
+                  </div>
+                  <span className="self-start rounded-lg bg-amarelo-claro px-2.5 py-1 font-bold text-amarelo-texto">{anual ? `Sai a ${p.anualPorMes} por mês` : pro ? 'Sua marca em cada orçamento' : 'Menos que um café por semana'}</span>
+                  <ul className="flex flex-col gap-2 text-texto">
+                    {['Todas as calculadoras e o agente no WhatsApp', 'Histórico e exportação em planilha', p.resumo, ...(pro ? ['Escolha da cor do orçamento'] : [])].map((t) => (
+                      <li key={t} className="flex gap-2"><Check className="mt-0.5 size-5 shrink-0 text-ok" aria-hidden="true" />{t}</li>
+                    ))}
+                  </ul>
+                  <BotaoLink to={`/cadastro?nivel=${nivel}&plano=${anual ? 'anual' : 'mensal'}`} variante={pro ? 'primario' : 'secundario'} className="mt-auto min-h-14 text-[17px]">Começar com o {p.nome}</BotaoLink>
+                </div>
+              );
+            })}
+          </div>
+          <span className="text-center text-sm text-suave">3 dias grátis para testar · cartão de crédito no cadastro, mesmo pagando no Pix · cancele quando quiser</span>
         </section>
 
         {/* Dúvidas */}
@@ -258,7 +277,7 @@ export default function Landing() {
         <section className="mx-auto max-w-[1200px] px-4 py-24 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-6 rounded-[28px] bg-acao p-8 text-white sm:p-12">
             <h2 className="flex-1 basis-96 text-[28px] font-[850] leading-[34px] sm:text-[34px] sm:leading-10">Seu próximo orçamento sai em 10 segundos.</h2>
-            <BotaoLink to="/cadastro" variante="claro" className="min-h-14 px-6 text-[17px]">Assinar por {PRECO.mensal}/mês</BotaoLink>
+            <BotaoLink to="/cadastro" variante="claro" className="min-h-14 px-6 text-[17px]">A partir de {PRECO.mensal}/mês</BotaoLink>
           </div>
         </section>
       </main>

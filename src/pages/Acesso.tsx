@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useConta } from '@/hooks/useConta';
 import { Lockup } from '@/components/marca/Logo';
 import { Aviso, Botao, Campo } from '@/components/ui/Campos';
-import { PRECO } from '@/lib/config';
+import { PLANOS, PRECO, type Nivel } from '@/lib/config';
 import { telefoneBonito } from '@/lib/formato';
 import { cn } from '@/lib/utils';
 
@@ -21,7 +21,7 @@ function Moldura({ etapa, children }: { etapa?: 1 | 2 | 3; children: ReactNode }
           <p className="text-base leading-[26px] text-[#c7cedb]">Depois da assinatura, qualquer mensagem desse número cai direto na sua conta: o agente reconhece você, calcula e guarda tudo no seu histórico.</p>
         </div>
         <ol className="flex max-w-[480px] flex-col gap-3">
-          {['Crie a conta com seu WhatsApp', 'Confirme o número com o código', `Assine por ${PRECO.mensal}/mês ou ${PRECO.anual}/ano`].map((t, i) => (
+          {['Crie a conta com seu WhatsApp', 'Confirme o número com o código', `Escolha o plano: a partir de ${PRECO.mensal}/mês`].map((t, i) => (
             <li key={t} className="flex items-center gap-3">
               <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-full font-extrabold', etapa && i + 1 <= etapa ? 'bg-marca-texto text-tinta' : 'bg-[#1f2b44]')}>{i + 1}</span>{t}
             </li>
@@ -100,7 +100,7 @@ export function Cadastro() {
       }
       await api('/api/whatsapp/codigo', { corpo: { whatsapp: d.whatsapp } });
       sessionStorage.setItem('orcai:whatsapp', d.whatsapp);
-      navegar(`/verificar${params.get('plano') ? `?plano=${params.get('plano')}` : ''}`);
+      navegar(`/verificar${params.toString() ? `?${params}` : ''}`);
     } catch (err) {
       setErro(err instanceof Error ? err.message : String(err));
     } finally { setEnviando(false); }
@@ -165,7 +165,7 @@ export function Verificar() {
       await api('/api/whatsapp/verificar', { corpo: { codigo } });
       sessionStorage.removeItem('orcai:whatsapp');
       await recarregar();
-      navegar(`/assinar${params.get('plano') ? `?plano=${params.get('plano')}` : ''}`);
+      navegar(`/assinar${params.toString() ? `?${params}` : ''}`);
     } catch (e) { setErro(e instanceof Error ? e.message : String(e)); }
     finally { setOcupado(false); }
   }
@@ -203,27 +203,39 @@ export function Verificar() {
 
 export function Assinar() {
   const [params] = useSearchParams();
+  const [nivel, setNivel] = useState<Nivel>(params.get('nivel') === 'usuario' ? 'usuario' : 'pro');
   const [anual, setAnual] = useState(params.get('plano') !== 'mensal');
   const { perfil } = useConta();
+  const plano = PLANOS[nivel];
 
   return (
     <Moldura etapa={3}>
       <div>
         <h2 className="text-[28px] font-bold leading-[34px]">Escolha seu plano</h2>
-        <p className="text-suave">Tudo incluído: calculadoras, agente no WhatsApp, leitura do IPTU e exportação.</p>
+        <p className="text-suave">Os dois têm calculadoras, agente no WhatsApp, leitura do IPTU e exportação.</p>
       </div>
       <div role="group" aria-label="Plano" className="flex flex-col gap-2.5">
-        {[[true, 'Anual', `${PRECO.anual}/ano`, `Equivale a ${PRECO.anualPorMes}/mês`, '2 meses grátis'], [false, 'Mensal', `${PRECO.mensal}/mês`, 'Cancele quando quiser', '']].map(([v, nome, preco, nota, tag]) => (
-          <button key={nome as string} type="button" aria-pressed={anual === v} onClick={() => setAnual(v as boolean)}
-            className={cn('flex flex-col gap-1 rounded-2xl border-2 bg-white p-4 text-left', anual === v ? 'border-acao' : 'border-linha')}>
-            <span className="flex w-full items-center justify-between gap-2"><span className="text-base font-bold">{nome as string}</span>{tag && <span className="rounded-full bg-acao-claro px-2.5 py-0.5 text-xs font-bold text-acao">{tag as string}</span>}</span>
-            <span className="numero text-[26px] font-extrabold">{preco as string}</span>
-            <span className="text-suave">{nota as string}</span>
+        {(['pro', 'usuario'] as const).map((n) => (
+          <button key={n} type="button" aria-pressed={nivel === n} onClick={() => setNivel(n)}
+            className={cn('flex flex-col gap-1 rounded-2xl border-2 bg-white p-4 text-left', nivel === n ? 'border-acao' : 'border-linha')}>
+            <span className="flex w-full items-center justify-between gap-2">
+              <span className="text-base font-bold">{PLANOS[n].nome}</span>
+              {n === 'pro' && <span className="rounded-full bg-acao-claro px-2.5 py-0.5 text-xs font-bold text-acao">Sua logo e cores</span>}
+            </span>
+            <span className="numero text-[26px] font-extrabold">{anual ? `${PLANOS[n].anual}/ano` : `${PLANOS[n].mensal}/mês`}</span>
+            <span className="text-suave">{PLANOS[n].resumo}</span>
           </button>
         ))}
       </div>
+      <div role="group" aria-label="Período" className="grid grid-cols-2 gap-1 rounded-xl bg-cinza p-1">
+        {[[true, 'Anual · 2 meses grátis'], [false, 'Mensal']].map(([v, r]) => (
+          <button key={String(v)} type="button" aria-pressed={anual === v} onClick={() => setAnual(v as boolean)}
+            className={cn('min-h-11 rounded-[9px] text-sm font-bold', anual === v ? 'bg-white text-tinta shadow-sm' : 'text-suave')}>{r as string}</button>
+        ))}
+      </div>
+      {anual && <p className="text-suave">Equivale a {plano.anualPorMes}/mês.</p>}
       <Aviso tom="azul">
-        O pagamento online (Pix e cartão) entra na próxima etapa. Por enquanto a ativação é feita pela equipe: chame no WhatsApp e informe o plano {anual ? 'anual' : 'mensal'}{perfil?.email ? ` e o e-mail ${perfil.email}` : ''}.
+        O pagamento online (Pix e cartão) entra na próxima etapa. Por enquanto a ativação é feita pela equipe: chame no WhatsApp e informe o plano {plano.nome} {anual ? 'anual' : 'mensal'}{perfil?.email ? ` e o e-mail ${perfil.email}` : ''}.
       </Aviso>
       <Link to="/app" className="inline-flex min-h-[52px] items-center justify-center rounded-xl bg-acao text-base font-bold text-white no-underline">Ir para o app</Link>
     </Moldura>
