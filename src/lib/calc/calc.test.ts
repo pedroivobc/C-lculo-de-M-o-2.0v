@@ -61,6 +61,14 @@ describe('cálculos de referência', () => {
     expect(r.total).toBe(Math.round((jf.total + 3500) * 100) / 100);
   });
 
+  it('Belo Horizonte cobra ITBI de 3% como regra da prefeitura', () => {
+    const jf = calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 350000 });
+    const r = calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 350000, municipio: 'mg-belo-horizonte' });
+    expect(r.linhas.find((l) => l.rotulo === 'ITBI')).toMatchObject({ valor: 10500, origem: 'municipio' });
+    expect(r.municipioNome).toBe('Belo Horizonte');
+    expect(r.total).toBe(Math.round((jf.total + 3500) * 100) / 100);
+  });
+
   it('outra cidade sem alíquota pede a alíquota', () => {
     expect(() => calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 1, municipio: 'mg-outra' }))
       .toThrow(/alíquota/);

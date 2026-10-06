@@ -30,6 +30,17 @@ export const MUNICIPIOS: Record<string, Municipio> = {
     },
     issCartorio: 0.05,
   },
+  // Lei 6.492/1993 (3% desde 01/05/2014), conferida na base de pesquisa 2026 (docs/base-2026).
+  // Sem regra de SFH confirmada: financiamento paga 3% sobre o valor inteiro. As isenções do MCMV
+  // têm limites e condições próprios e não entram no cálculo automático.
+  'mg-belo-horizonte': {
+    id: 'mg-belo-horizonte',
+    nome: 'Belo Horizonte',
+    uf: 'MG',
+    itbi: { aliquota: 0.03 },
+    // A base de NFS-e não traz registro ativo de BH para o serviço 21.01: 5% até confirmar com um recibo.
+    issCartorio: 0.05,
+  },
 };
 
 export const MUNICIPIO_PADRAO = 'mg-juiz-de-fora';

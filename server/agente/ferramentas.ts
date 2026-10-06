@@ -24,7 +24,7 @@ const custos = {
   certidoes: { ...num, description: 'Certidões em reais. Omitir para usar o padrão.' },
   honorarios: { ...num, description: 'Honorários em reais. Omitir para usar o padrão.' },
   descricao: { type: 'string', description: 'Endereço ou nome do cliente, se o usuário informar.' },
-  municipio: { type: 'string', enum: ['mg-juiz-de-fora', 'mg-outra'], description: 'Omitir para usar a cidade do assinante. "mg-outra" = cidade de MG sem regra cadastrada (exige cidade e itbiPercentual).' },
+  municipio: { type: 'string', enum: ['mg-juiz-de-fora', 'mg-belo-horizonte', 'mg-outra'], description: 'Omitir para usar a cidade do assinante. "mg-outra" = cidade de MG sem regra cadastrada (exige cidade e itbiPercentual).' },
   cidade: { type: 'string', description: 'Nome da cidade quando municipio = "mg-outra".' },
   itbiPercentual: { type: 'number', description: 'Alíquota do ITBI em % (ex.: 2.5). Só quando o usuário informar.' },
 };

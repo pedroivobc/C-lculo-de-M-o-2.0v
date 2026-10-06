@@ -1,0 +1,9 @@
+regra_id,tributo,condicoes,efeito,fonte_id,referencia,status
+FED_SFH_290,EMOLUMENTOS,Primeira aquisição imobiliária para fins residenciais financiadaSFH,50% nos emolumentos de atos relacionados; enquadrar componentes estaduais separadamente,Fbeda1752786d,Art290Lei6015/1973,CONDICIONAL_NAO_AUTOMATICO
+FED_TITULO_38,TITULO,Contrato resultante aplicaçãoLei9514/1997,Instrumento particular pode ter caráter de escritura pública; planejar atos sem escritura adicional automaticamente,F5392f7b686fc,Art38,CONDICIONAL_TITULO
+SP_SFH2026,ITBI,Modalidade elegível+contrato2026+valorimóvel<=725808,"0,5%sobre parcela elegível até120968; restante3%",F40992f4cab0d,Portal2026,CONFERIDO
+CUR_FIN,ITBI,Residencialedificado+financiamento>=10anos+garantiahipotecaria/AF,"Faixas0%;0,5%;1,6%;2,7% sobreBC inteira",Fdf3298a76c73,LC148/2025,CONFERIDO
+DF_NOVO,ITBI,Primeira transmissão imóvelnovoedificado,"1%sobreBC, demais2%",Fb8b5de83a672,Art9,CONFERIDO
+FOR_ANTEC,ITBI,Pagamentoantesinstrumento,2%; combinaçãoSFH/residual pendente,F0cf3473affdc,Portal2026,PARCIAL
+APA_TEMP,ITBI,Campanha05/10/2026;requisitoslei/prazospendentes,"1,5%temporário; não aplicar2,5%genérica sem resolver vigência",Fe2af6301f17d,Lei/notícia2026,PARCIAL_BLOQUEADO
+REC_180,ITBI,Protocolopagamento180dias conformehipótese; confirmarart52,"1,8%condicional; não confundiralíquotageral3%",Ffc407f3fedf9,Lei15563/91 art52,PARCIAL
