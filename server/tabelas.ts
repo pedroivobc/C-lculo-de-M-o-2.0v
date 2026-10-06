@@ -49,11 +49,22 @@ export async function carregarTabelasVigentes() {
   vigentes = novasVersoes;
 }
 
-/** Carrega ao subir e de 15 em 15 minutos (pega a virada do ano sem reiniciar o servidor). */
-export function manterTabelasAtualizadas() {
-  const carregar = () => carregarTabelasVigentes().catch((e) => console.error('Tabelas anuais:', e instanceof Error ? e.message : e));
-  carregar();
-  setInterval(carregar, 15 * 60_000).unref();
+const RECARGA_MS = 15 * 60_000;
+let carregadasEm = 0;
+let carregando: Promise<void> | null = null;
+
+/**
+ * Garante que as tabelas em vigor estão carregadas, relendo do banco a cada 15 minutos
+ * (pega a virada do ano sem reiniciar). Serve para a VPS e para a Vercel, onde não há processo
+ * rodando o tempo todo: é chamada antes de cada pedido da API e só vai ao banco quando venceu.
+ */
+export function garantirTabelasCarregadas(): Promise<void> {
+  if (Date.now() - carregadasEm < RECARGA_MS) return Promise.resolve();
+  carregando ??= carregarTabelasVigentes()
+    .then(() => { carregadasEm = Date.now(); })
+    .catch((e) => { carregadasEm = Date.now() - RECARGA_MS + 60_000; console.error('Tabelas anuais:', e instanceof Error ? e.message : e); })
+    .finally(() => { carregando = null; });
+  return carregando;
 }
 
 /** Parâmetros para o site (JSON não tem Infinity: a última faixa de cancelamento vai como null). */

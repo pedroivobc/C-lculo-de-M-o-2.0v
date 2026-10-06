@@ -62,6 +62,29 @@ Qualquer VPS com 2 GB de RAM e Docker (Hetzner, Contabo, DigitalOcean, Hostinger
 
 > Teste: `https://app.seudominio/api/saude` responde `{"ok":true,...}`.
 
+## 2b. Site e API na Vercel (alternativa à VPS para o app)
+
+O site e a API (login, cálculos salvos, PDF/imagem, cupom, tabelas anuais) também rodam na Vercel:
+o `vercel.json` chama `scripts/vercel-build.mjs`, que gera o site estático e uma função com a API.
+A Evolution e o n8n continuam na VPS (precisam de processo ligado o tempo todo).
+
+Em **Vercel → Project → Settings → Environment Variables** (Preview e/ou Production):
+
+| Variável | Para quê |
+|---|---|
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | login no site (entram no build: depois de mudar, faça um novo deploy) |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | API: cálculos salvos, PDF, cupom, tabelas |
+| `APP_URL` | endereço do site (links no PDF e nas mensagens) |
+| `AGENT_API_KEY`, `VERIFICACAO_SEGREDO` | chamadas do n8n e código de verificação do WhatsApp |
+| `GEMINI_API_KEY` | respostas em texto livre no WhatsApp (opcional) |
+| `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE` | Evolution na VPS |
+| `VITE_AGENTE_WHATSAPP`, `VITE_EMPRESA_CNPJ`, `VITE_EMAIL_PRIVACIDADE` | número do agente e dados das páginas legais |
+
+No n8n, troque o endereço da API (`/api/agente/...`) pelo da Vercel. Se o deploy de preview estiver
+protegido (Vercel Authentication), o n8n não passa: use o domínio de produção ou um bypass de automação.
+
+> Teste: `https://<seu-projeto>.vercel.app/api/saude` responde `{"ok":true,...}`.
+
 ## 3. Evolution API: conectar o número do agente
 
 Use um chip **só para o agente** (não o seu WhatsApp pessoal).
