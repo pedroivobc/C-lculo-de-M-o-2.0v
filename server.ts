@@ -7,7 +7,7 @@ async function startServer() {
   const app = express();
   app.set("trust proxy", 1); // atrás do Caddy/Traefik: IP real para o rate limit
 
-  // 15 MB: fotos e PDFs do espelho do IPTU chegam em base64.
+  // 15 MB: anexos que o agente recebe chegam em base64.
   app.use(express.json({ limit: "15mb" }));
   app.use(rotas);
 

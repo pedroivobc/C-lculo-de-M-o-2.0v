@@ -16,7 +16,7 @@ export interface CalculoSalvo {
 
 export const NOME_TIPO: Record<string, string> = {
   escritura: 'Escritura', doacao: 'Doação', financiamento_caixa: 'Financiamento Caixa',
-  banco_privado: 'Banco privado', correcao: 'Correção contratual', valor_venal: 'Valor venal',
+  banco_privado: 'Banco privado', correcao: 'Correção contratual'
 };
 
 export const mesAtual = () => new Date().toISOString().slice(0, 7);

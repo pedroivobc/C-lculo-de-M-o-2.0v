@@ -11,7 +11,7 @@ Orçamento de escritura, ITBI, financiamento e doação para imóveis em Juiz de
 
 | Pasta | O que tem |
 |---|---|
-| `src/lib/calc/` | Fórmulas (escritura, doação, Caixa, banco privado, correção, valor venal), usadas pelo site, pela API e pelo agente |
+| `src/lib/calc/` | Fórmulas (escritura, doação, Caixa, banco privado, correção) e a Tabela 4 do Registro de Imóveis de MG (`registro.ts`), usadas pelo site, pela API e pelo agente |
 | `src/` | Front (Vite + React) |
 | `server/` | API Express, agente do WhatsApp (Gemini com ferramentas), PDF, exportação |
 | `supabase/migrations/` | Esquema do banco |

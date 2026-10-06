@@ -118,9 +118,9 @@ Enquanto o pagamento (Asaas) não está integrado, ative à mão:
    ```
 4. Do WhatsApp cadastrado, mande ao número do agente: *"escritura de 320 mil, venal 350 mil"*.
 
-> Esperado: resposta com **Total: R$ 19.044,99**, o número do cálculo e o orçamento anexado (PDF ou imagem, conforme a conta). O cálculo aparece em `calculations` com `origem = 'whatsapp'`.
+> Esperado: resposta com **Total: R$ 18.743,68**, o número do cálculo e o orçamento anexado (PDF ou imagem, conforme a conta). O cálculo aparece em `calculations` com `origem = 'whatsapp'`.
 
-Outros testes: foto do espelho do IPTU; *"exportar 2026-10"*; mensagem de um número não cadastrado (deve receber o link de cadastro).
+Outros testes: *"detalha o registro"*; *"exportar 2026-10"*; mensagem de um número não cadastrado (deve receber o link de cadastro).
 
 ## Rotas da API
 
@@ -129,12 +129,11 @@ Outros testes: foto do espelho do IPTU; *"exportar 2026-10"*; mensagem de um nú
 | `POST /api/agente/mensagem` | n8n (`x-agent-key`) | Processa a mensagem e devolve `{status, respostas[]}` |
 | `GET /api/agente/identificar?whatsapp=` | n8n | Status do número: `ativo`, `inativo`, `sem_cadastro` |
 | `POST /api/whatsapp/codigo` · `/verificar` | site (login) | Confirmação do WhatsApp por código |
-| `POST /api/calculos/:tipo` | site | `escritura`, `doacao`, `financiamento_caixa`, `banco_privado`, `correcao`, `valor_venal` |
+| `POST /api/calculos/:tipo` | site | `escritura`, `doacao`, `financiamento_caixa`, `banco_privado`, `correcao` |
 | `GET /api/calculos?mes=AAAA-MM` | site | Histórico |
 | `GET /api/calculos/:numero/arquivo?formato=pdf\|jpeg` | site | Link temporário do orçamento (sem `formato`, o da conta) |
 | `GET /api/calculos/:numero/pdf` | site | Link temporário do PDF |
 | `GET /api/exportar?mes=AAAA-MM` | site | Planilha CSV (abre no Excel) |
-| `POST /api/iptu/extrair` | site | Leitura do espelho do IPTU (Gemini, no servidor) |
 | `POST /api/cidades/pedido` | landing | "Quero na minha cidade" |
 
 ## Desenvolvimento local

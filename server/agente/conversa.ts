@@ -1,13 +1,10 @@
 import { GoogleGenAI, type Content } from '@google/genai';
-import { brl, calcular, MUNICIPIOS } from '../../src/lib/calc';
+import { MUNICIPIOS, MUNICIPIO_OUTRA } from '../../src/lib/calc';
 import { config } from '../config';
 import { supabaseAdmin } from '../supabase';
 import { variantesTelefone } from '../telefone';
-import { lerEspelhoIptu } from '../iptu';
-import { salvarCalculo, numeroCalculo } from '../historico';
 import { DECLARACOES, executar, type Contexto, type Resposta } from './ferramentas';
 import { configuracaoDoUsuario, type Configuracao } from '../estilo';
-import { MUNICIPIO_OUTRA } from '../../src/lib/calc';
 
 export interface MensagemRecebida {
   telefone: string;              // E.164
@@ -73,6 +70,7 @@ Regras:
 - Valores como "350 mil" ou "1,2 mi" viram números (350000, 1200000).
 - Se o imóvel for em outra cidade de MG sem regra cadastrada, peça a alíquota do ITBI dessa cidade e passe municipio "mg-outra", cidade e itbiPercentual na ferramenta. Fora de MG, diga que ainda não atende o estado e chame pedir_cidade.
 - Resposta curta, em português, no estilo do WhatsApp: total em *negrito* primeiro, depois os itens principais, e o número do cálculo (#0000). O orçamento já vai anexado em ${formato}: não cole links. Se ele pedir no outro formato, use reenviar_calculo com formato.
+- Mostre Escritura e Registro como um valor cada. Só se o usuário pedir para detalhar, liste as partes (campo detalhes): Escritura = lavratura + arquivamento; Registro = ato de registro + prenotação + certidão de inteiro teor + averbações.
 - Termine orçamentos lembrando que são estimativas a confirmar com o cartório e a prefeitura, em poucas palavras.
 - Não fale de assuntos fora de orçamento de documentação imobiliária.`;
 }
@@ -124,28 +122,8 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   let textoUsuario = msg.texto?.trim() ?? '';
   const anexos: Resposta[] = [];
 
-  // Foto ou PDF: tenta ler como espelho do IPTU antes de chamar o modelo.
-  if (msg.midia) {
-    try {
-      const d = await lerEspelhoIptu(msg.midia.base64, msg.midia.mimetype);
-      if (d.terreno?.valorVenal && d.terreno?.valorM2) {
-        const resultado = calcular('valor_venal', {
-          areaIsotima: d.terreno.areaIsotima, tipo: d.edificacao?.tipo, padrao: d.edificacao?.padrao,
-          terrenoValorVenal: d.terreno.valorVenal, terrenoValorM2: d.terreno.valorM2,
-          edificacaoValorVenal: d.edificacao?.valorVenal ?? 0, edificacaoValorM2: d.edificacao?.valorM2 ?? 0,
-          municipio: 'mg-juiz-de-fora',
-        });
-        const salvo = await salvarCalculo({ userId: assinante.userId, resultado, entrada: d, origem: 'whatsapp', descricao: d.endereco ?? undefined });
-        textoUsuario += `\n[Enviei o espelho do IPTU. Dados lidos: inscrição ${d.inscricao ?? '?'}, ${d.endereco ?? 'endereço não lido'}, ` +
-          `${d.edificacao?.tipo ?? 'tipo ?'} padrão ${d.edificacao?.padrao ?? '?'}, área isótima ${d.terreno.areaIsotima ?? '?'}. ` +
-          `Valor venal corrigido calculado: ${brl(resultado.total)} (cálculo ${numeroCalculo(salvo.seq)}).]`;
-      } else {
-        textoUsuario += '\n[Enviei um arquivo, mas ele não parece um espelho de IPTU legível.]';
-      }
-    } catch (e) {
-      textoUsuario += `\n[Enviei um arquivo que não consegui ler: ${e instanceof Error ? e.message : e}]`;
-    }
-  }
+  // Arquivos não são lidos: o agente trabalha com os valores escritos na mensagem.
+  if (msg.midia) textoUsuario += '\n[Enviei um arquivo. Peça os valores por escrito: o agente não lê anexos.]';
 
   await registrar(msg.telefone, assinante.userId, 'entrada', msg.midia ? 'midia' : 'texto', textoUsuario, msg.messageId);
   if (!config.geminiKey) return { status: 'erro', respostas: [{ tipo: 'texto', texto: 'O agente está em manutenção. Use o site enquanto isso.' }] };

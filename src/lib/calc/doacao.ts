@@ -17,13 +17,12 @@ export const entradaDoacao = z.object({
 });
 export type EntradaDoacao = z.infer<typeof entradaDoacao>;
 
-/** Espelha src/components/Doacao.tsx (registro com os valores próprios da tela de Doação). */
+/** Doação: ITCD, escritura (lavratura + arquivamento) e registro detalhado. */
 export function calcularDoacao(dados: EntradaDoacao): Resultado {
   const e = entradaDoacao.parse(dados);
   const m = obterMunicipio(e.municipio, { cidade: e.cidade, itbiPercentual: e.itbiPercentual ?? 0 });
   let bases: number[] = [];
-  const linhas: Linha[] = atosDeDoacao(e.subtipo, Math.max(e.valorAtribuido, e.avaliacaoFazenda), MG.registroDoacao, (b) => { bases = b; });
-  linhas.push({ rotulo: 'Arquivamento', valor: e.folhas * MG.precoFolha, origem: 'uf', nota: `${e.folhas} folhas × R$ 13,91` });
+  const linhas: Linha[] = atosDeDoacao(e.subtipo, Math.max(e.valorAtribuido, e.avaliacaoFazenda), e.folhas, m.issCartorio, (b) => { bases = b; });
   linhas.push({ rotulo: 'Certidões', valor: e.certidoes, origem: 'usuario' });
   linhas.push({ rotulo: 'Honorários', valor: e.honorarios, origem: 'usuario' });
   return { tipo: 'doacao', subtipo: e.subtipo, municipio: m.id, municipioNome: m.nome, bases, linhas, total: somar(linhas) };

@@ -7,7 +7,7 @@ import sharp from 'sharp';
 export const ROTULO_ORIGEM: Record<Origem, string> = { municipio: 'MUNICÍPIO', uf: 'MG', banco: 'BANCO', usuario: 'VOCÊ' };
 export const TITULO: Record<string, string> = {
   escritura: 'Escritura', doacao: 'Doação', financiamento_caixa: 'Financiamento Caixa',
-  banco_privado: 'Financiamento banco privado', correcao: 'Correção contratual (INCC)', valor_venal: 'Valor venal',
+  banco_privado: 'Financiamento banco privado', correcao: 'Correção contratual (INCC)'
 };
 
 export const ESTILO_PADRAO: Estilo = { cabecalho: config.marca, cor: COR_MARCA, formato: 'pdf', personalizado: false };

@@ -5,6 +5,8 @@
 > Feito também: perfis admin/pro/usuario/trial e cartão obrigatório no banco (`supabase/migrations/20261006000000_perfis_e_acesso.sql`); o agente já respeita a regra.
 
 > Feito também: etapa "Seu orçamento" no cadastro (`supabase/migrations/20261007000000_configuracao_orcamento.sql`): estado, cidade e alíquota do ITBI (outras cidades de MG com alíquota informada pelo assinante), logo, cor e formato PDF ou imagem JPEG (`server/imagem.ts`, com sharp). O teste de 3 dias mostra o orçamento como no Pró.
+
+> **Mudança (out/2026):** o **Valor Venal saiu do produto** (calculadora, leitura do espelho do IPTU, rota `/api/iptu/extrair`, tabelas `landValues`/`factors`). As menções a IPTU e valor venal abaixo ficam como histórico. O campo "valor venal" das escrituras continua só como base do ITBI. O orçamento agora mostra **Escritura** (lavratura + arquivamento) e **Registro** (ato de registro + prenotação + certidão de inteiro teor + averbação de inscrição municipal + averbação de dados pessoais), pela Tabela 4 de 2026, conferida com o relatório final do 3º RI de Juiz de Fora (protocolo 229.352: registro R$ 5.110,00).
 > Falta: pagamento (Asaas ou Mercado Pago) com tokenização do cartão e webhook de assinatura; telas de cartão, upload de logo/cores do Pro e painel admin; PDF do Pro com logo e paleta — por enquanto a ativação é manual e o app não bloqueia sem assinatura (`VITE_EXIGIR_ASSINATURA`); verificar INPI, domínio (orcai.com.br) e @ antes de lançar.
 
 Design de referência (web e mobile, todas as telas): canvas **Orçaí Imob** no claude.ai (páginas Marca, Web e Mobile).

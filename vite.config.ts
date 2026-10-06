@@ -4,7 +4,7 @@ import path from 'path';
 import {defineConfig} from 'vitest/config';
 
 export default defineConfig(() => {
-  // A chave do Gemini não entra mais no bundle: a leitura do IPTU roda em /api/iptu/extrair.
+  // A chave do Gemini não entra no bundle: só o servidor (agente) usa.
   return {
     plugins: [react(), tailwindcss()],
     test: {

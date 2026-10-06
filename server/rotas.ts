@@ -8,7 +8,6 @@ import { exigirAgente, exigirUsuario } from './auth';
 import { supabaseAdmin, salvarArquivo, urlAssinada } from './supabase';
 import { normalizarTelefone, telefoneDoJid } from './telefone';
 import { baixarMidia, enviarTexto } from './evolution';
-import { lerEspelhoIptu } from './iptu';
 import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, salvarCalculo } from './historico';
 import { comLocalidade, configuracaoDoUsuario } from './estilo';
 import { gerarCsv } from './exportar';
@@ -105,7 +104,7 @@ rotas.post('/api/calculos/:tipo', exigirUsuario, h(async (req, res) => {
   if (!CALCULADORAS[tipo]) return res.status(404).json({ erro: 'Tipo de cálculo inexistente' });
   const { descricao, salvar = true, ...informado } = req.body ?? {};
   // Cidade e alíquota do ITBI do assinante entram quando a tela não manda outra.
-  const usaLocalidade = tipo !== 'correcao' && tipo !== 'valor_venal';
+  const usaLocalidade = tipo !== 'correcao';
   const entrada = usaLocalidade ? comLocalidade(informado, (await configuracaoDoUsuario(req.userId!)).localidade) : informado;
   const resultado = calcular(tipo, entrada);
   if (!salvar) return res.json({ resultado });
@@ -136,13 +135,6 @@ rotas.get('/api/exportar', exigirUsuario, h(async (req, res) => {
   const nome = `calculos-${mes}.csv`;
   const caminho = await salvarArquivo(`${req.userId}/exportacoes/${nome}`, gerarCsv(calculos), 'text/csv');
   res.json({ quantidade: calculos.length, url: await urlAssinada(caminho, 600, nome) });
-}));
-
-// ---------------- IPTU (a chave do Gemini fica só aqui) ----------------
-
-rotas.post('/api/iptu/extrair', exigirUsuario, h(async (req, res) => {
-  const { base64, mimeType } = z.object({ base64: z.string().min(10), mimeType: z.string().default('application/pdf') }).parse(req.body);
-  res.json(await lerEspelhoIptu(base64, mimeType));
 }));
 
 // ---------------- Pedido de cidade (landing, sem login) ----------------

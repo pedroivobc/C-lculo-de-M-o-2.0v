@@ -32,7 +32,7 @@ const custos = {
 export const DECLARACOES: FunctionDeclaration[] = [
   {
     name: 'calcular_escritura',
-    description: 'Custos de escritura: ITBI, lavratura, registro, arquivamento, certidões e honorários. Salva no histórico e gera o PDF.',
+    description: 'Custos de escritura: ITBI, escritura (lavratura + arquivamento), registro (ato de registro, prenotação, certidão de inteiro teor e averbações), certidões e honorários. Salva no histórico e gera o orçamento.',
     parametersJsonSchema: {
       type: 'object',
       properties: {
@@ -128,7 +128,7 @@ const TIPO_POR_FERRAMENTA: Record<string, TipoCalculo> = {
 const resumo = (r: Resultado, seq: number) => ({
   numero: numeroCalculo(seq),
   bases: r.bases.map(brl),
-  itens: r.linhas.map((l) => ({ item: l.rotulo, valor: brl(l.valor), nota: l.nota })),
+  itens: r.linhas.map((l) => ({ item: l.rotulo, valor: brl(l.valor), nota: l.nota, detalhes: l.detalhes?.map((d) => `${d.rotulo}: ${brl(d.valor)}`) })),
   total: brl(r.total),
   detalhes: r.detalhes,
 });

@@ -11,7 +11,6 @@ function CidadeCurta() {
 }
 
 export const CALCULADORAS = [
-  { para: '/app/valor-venal', rotulo: 'Valor venal', nota: 'Espelho do IPTU' },
   { para: '/app/escrituras', rotulo: 'Escrituras', nota: '6 tipos de ato' },
   { para: '/app/financiamento-caixa', rotulo: 'Financiamento Caixa', nota: 'ITBI pelo SFH' },
   { para: '/app/banco-privado', rotulo: 'Banco privado', nota: 'Itaú, Bradesco, Santander' },

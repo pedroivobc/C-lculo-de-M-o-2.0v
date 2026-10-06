@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { obterMunicipio, camposLocalidade, percentual } from './municipios';
 import { MG, aliquotaItcd } from './uf';
-import { Linha, Resultado, somar } from './tipos';
+import { linhaRegistro } from './registro';
+import { Detalhe, Linha, Resultado, somar } from './tipos';
 
 const valor = z.coerce.number().nonnegative();
 
@@ -35,29 +36,39 @@ export const ROTULO_SUBTIPO_ESCRITURA: Record<EntradaEscritura['subtipo'], strin
   renuncia_usufruto: 'Renúncia de usufruto',
 };
 
-/** Espelha src/components/Escrituras.tsx. */
+const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+/** Linha "Escritura" do tabelionato: lavratura(s) + arquivamento, com o detalhamento. */
+export function linhaEscritura(lavraturas: { rotulo: string; base: number }[], folhas: number): Linha {
+  const detalhes: Detalhe[] = lavraturas.map((l) => ({ rotulo: l.rotulo, valor: MG.lavratura(l.base), nota: `Tabelionato de notas · base ${brl(l.base)}` }));
+  detalhes.push({ rotulo: 'Arquivamento', valor: Math.round(folhas * MG.precoFolha * 100) / 100, nota: `${folhas} folhas × R$ 13,91` });
+  return {
+    rotulo: 'Escritura',
+    valor: Math.round(detalhes.reduce((s, d) => s + d.valor, 0) * 100) / 100,
+    origem: 'uf',
+    nota: 'Lavratura e arquivamento · tabela de MG',
+    detalhes,
+  };
+}
+
+/** Escrituras de compra e venda e de doação: ITBI/ITCD, escritura (lavratura + arquivamento) e registro. */
 export function calcularEscritura(dados: EntradaEscritura): Resultado {
   const e = entradaEscritura.parse(dados);
   const m = obterMunicipio(e.municipio, e);
-  const lav = MG.lavratura;
-  const reg = MG.registroEscritura;
+  const iss = m.issCartorio;
   const linhas: Linha[] = [];
   let bases: number[] = [];
 
   const itbi = (base: number, ato?: string) =>
     linhas.push({ rotulo: ato ? `ITBI · ${ato}` : 'ITBI', valor: base * m.itbi.aliquota, origem: m.itbiDoUsuario ? 'usuario' : 'municipio', nota: `${percentual(m.itbi.aliquota)} · ${m.nome}${m.itbiDoUsuario ? ' (alíquota informada)' : ''}` });
-  const lavratura = (base: number, ato?: string) =>
-    linhas.push({ rotulo: ato ? `Lavratura · ${ato}` : 'Lavratura', valor: lav(base), origem: 'uf', nota: 'Tabela de emolumentos de MG' });
-  const registro = (valorReg: number, ato?: string, nota?: string) =>
-    linhas.push({ rotulo: ato ? `Registro · ${ato}` : 'Registro', valor: valorReg, origem: 'uf', nota });
 
   switch (e.subtipo) {
     case 'compra_venda_simples': {
       const base = Math.max(e.valorDeclarado, e.valorVenal);
       bases = [base];
       itbi(base);
-      lavratura(base);
-      registro(lav(base) + reg.base, undefined, `Lavratura + R$ ${reg.base.toFixed(2).replace('.', ',')}`);
+      linhas.push(linhaEscritura([{ rotulo: 'Lavratura', base }], e.folhas));
+      linhas.push(linhaRegistro([{ rotulo: 'Ato de registro · compra e venda', base }], { iss }));
       break;
     }
     case 'interveniencia': {
@@ -65,9 +76,8 @@ export function calcularEscritura(dados: EntradaEscritura): Resultado {
       const b2 = Math.max(e.valorDeclarado2, e.valorVenal2);
       bases = [b1, b2];
       itbi(b1, '1º ato'); itbi(b2, '2º ato');
-      lavratura(b1, '1º ato'); lavratura(b2, '2º ato');
-      registro(lav(b1) + reg.base, '1º ato');
-      registro(lav(b2) + reg.reduzido, '2º ato', 'Registro reduzido');
+      linhas.push(linhaEscritura([{ rotulo: 'Lavratura · 1º ato', base: b1 }, { rotulo: 'Lavratura · 2º ato', base: b2 }], e.folhas));
+      linhas.push(linhaRegistro([{ rotulo: 'Ato de registro · 1º ato', base: b1 }, { rotulo: 'Ato de registro · 2º ato', base: b2 }], { iss }));
       break;
     }
     case 'compra_vinculo': {
@@ -75,54 +85,56 @@ export function calcularEscritura(dados: EntradaEscritura): Resultado {
       const bv = e.valorVinculo;
       bases = [bc, bv];
       itbi(bc, 'compra');
-      lavratura(bc, 'compra'); lavratura(bv, 'vínculo');
-      registro(lav(bc) + reg.base, 'compra');
-      registro(lav(bv) + reg.reduzido, 'vínculo', 'Registro reduzido');
+      linhas.push(linhaEscritura([{ rotulo: 'Lavratura · compra', base: bc }, { rotulo: 'Lavratura · vínculo', base: bv }], e.folhas));
+      linhas.push(linhaRegistro([{ rotulo: 'Ato de registro · compra', base: bc }, { rotulo: 'Ato de registro · vínculo', base: bv }], { iss }));
       break;
     }
     case 'doacao_simples':
     case 'doacao_usufruto':
     case 'renuncia_usufruto': {
-      linhas.push(...atosDeDoacao(e.subtipo, Math.max(e.valorAtribuido, e.avaliacaoFazenda), reg, (b) => { bases = b; }));
+      linhas.push(...atosDeDoacao(e.subtipo, Math.max(e.valorAtribuido, e.avaliacaoFazenda), e.folhas, iss, (b) => { bases = b; }));
       break;
     }
   }
 
-  linhas.push({ rotulo: 'Arquivamento', valor: e.folhas * MG.precoFolha, origem: 'uf', nota: `${e.folhas} folhas × R$ 13,91` });
   linhas.push({ rotulo: 'Certidões', valor: e.certidoes, origem: 'usuario' });
   linhas.push({ rotulo: 'Honorários', valor: e.honorarios, origem: 'usuario' });
 
   return { tipo: 'escritura', subtipo: e.subtipo, municipio: m.id, municipioNome: m.nome, bases, linhas, total: somar(linhas) };
 }
 
-/** Atos de doação compartilhados por Escrituras e Doação (que só diferem nos valores de registro). */
+/** Atos de doação compartilhados por Escrituras e Doação: imposto, escritura e registro. */
 export function atosDeDoacao(
   subtipo: 'doacao_simples' | 'doacao_usufruto' | 'renuncia_usufruto',
   base: number,
-  reg: { base: number; reduzido: number },
+  folhas: number,
+  iss: number,
   definirBases: (b: number[]) => void,
 ): Linha[] {
-  const lav = MG.lavratura;
-  const linhas: Linha[] = [];
   if (subtipo === 'doacao_simples') {
     const aliq = aliquotaItcd(base);
     definirBases([base]);
-    linhas.push({ rotulo: 'ITCD', valor: base * aliq, origem: 'uf', nota: `${(aliq * 100).toFixed(1).replace('.', ',')}% · MG` });
-    linhas.push({ rotulo: 'Lavratura', valor: lav(base), origem: 'uf' });
-    linhas.push({ rotulo: 'Registro', valor: lav(base) + reg.base, origem: 'uf' });
-  } else if (subtipo === 'doacao_usufruto') {
+    return [
+      { rotulo: 'ITCD', valor: base * aliq, origem: 'uf', nota: `${(aliq * 100).toFixed(1).replace('.', ',')}% · MG` },
+      linhaEscritura([{ rotulo: 'Lavratura', base }], folhas),
+      linhaRegistro([{ rotulo: 'Ato de registro · doação', base }], { iss }),
+    ];
+  }
+  if (subtipo === 'doacao_usufruto') {
+    // Nota V da Tabela 4: o usufruto vale a terça parte do imóvel.
     const bu = base / 3;
     definirBases([base, bu]);
-    linhas.push({ rotulo: 'ITCD', valor: base * MG.itcd.aliquotaCheia, origem: 'uf', nota: '5% · MG' });
-    linhas.push({ rotulo: 'Lavratura · doação', valor: lav(base), origem: 'uf' });
-    linhas.push({ rotulo: 'Lavratura · usufruto', valor: lav(bu), origem: 'uf', nota: '1/3 da base' });
-    linhas.push({ rotulo: 'Registro · doação', valor: lav(base) + reg.base, origem: 'uf' });
-    linhas.push({ rotulo: 'Registro · usufruto', valor: lav(bu) + reg.reduzido, origem: 'uf' });
-  } else {
-    definirBases([base]);
-    linhas.push({ rotulo: 'ITCD', valor: 0, origem: 'uf', nota: 'Isento' });
-    linhas.push({ rotulo: 'Lavratura', valor: lav(base), origem: 'uf' });
-    linhas.push({ rotulo: 'Registro', valor: MG.registroRenunciaUsufruto, origem: 'uf' });
+    return [
+      { rotulo: 'ITCD', valor: base * MG.itcd.aliquotaCheia, origem: 'uf', nota: '5% · MG' },
+      linhaEscritura([{ rotulo: 'Lavratura · doação', base }, { rotulo: 'Lavratura · usufruto (1/3)', base: bu }], folhas),
+      linhaRegistro([{ rotulo: 'Ato de registro · doação', base }, { rotulo: 'Ato de registro · usufruto (1/3)', base: bu }], { iss }),
+    ];
   }
-  return linhas;
+  const bu = base / 3;
+  definirBases([base]);
+  return [
+    { rotulo: 'ITCD', valor: 0, origem: 'uf', nota: 'Isento' },
+    linhaEscritura([{ rotulo: 'Lavratura', base }], folhas),
+    linhaRegistro([{ rotulo: 'Cancelamento do usufruto (1/3)', base: bu, cancelamento: true }], { iss, rotulo: 'Registro (averbação)' }),
+  ];
 }

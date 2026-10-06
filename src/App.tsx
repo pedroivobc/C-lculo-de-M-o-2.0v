@@ -9,7 +9,6 @@ import { Assinar, Cadastro, Configurar, Entrar, Verificar } from '@/pages/Acesso
 
 // Telas do app carregadas sob demanda (a landing fica leve).
 const Inicio = lazy(() => import('@/pages/app/Inicio'));
-const ValorVenal = lazy(() => import('@/pages/app/ValorVenal'));
 const Escrituras = lazy(() => import('@/pages/app/Escrituras'));
 const FinanciamentoCaixa = lazy(() => import('@/pages/app/Financiamento').then((m) => ({ default: m.FinanciamentoCaixa })));
 const BancoPrivado = lazy(() => import('@/pages/app/Financiamento').then((m) => ({ default: m.BancoPrivado })));
@@ -54,7 +53,6 @@ export default function App() {
             <Route path="/assinar" element={<Protegido><Assinar /></Protegido>} />
             <Route path="/app" element={<Protegido exigirWhatsapp><AppLayout /></Protegido>}>
               <Route index element={<Inicio />} />
-              <Route path="valor-venal" element={<ValorVenal />} />
               <Route path="escrituras" element={<Escrituras />} />
               <Route path="financiamento-caixa" element={<FinanciamentoCaixa />} />
               <Route path="banco-privado" element={<BancoPrivado />} />

@@ -15,7 +15,7 @@ const NOME_FORMATO: Record<Formato, string> = { pdf: 'PDF', jpeg: 'imagem' };
 function useEntradaComLocalidade(tipo: TipoCalculo, entrada: unknown) {
   const { perfil } = useConta();
   return useMemo(() => {
-    if (!perfil || tipo === 'correcao' || tipo === 'valor_venal' || typeof entrada !== 'object' || !entrada) return entrada;
+    if (!perfil || tipo === 'correcao' || typeof entrada !== 'object' || !entrada) return entrada;
     return {
       municipio: perfil.municipio_padrao,
       ...(perfil.cidade_nome ? { cidade: perfil.cidade_nome } : {}),

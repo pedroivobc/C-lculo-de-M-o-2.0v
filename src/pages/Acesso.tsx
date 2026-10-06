@@ -228,7 +228,7 @@ export function Assinar() {
     <Moldura etapa={4}>
       <div>
         <h2 className="text-[28px] font-bold leading-[34px]">Escolha seu plano</h2>
-        <p className="text-suave">Os dois têm calculadoras, agente no WhatsApp, leitura do IPTU e exportação.</p>
+        <p className="text-suave">Os dois têm calculadoras, agente no WhatsApp, histórico e exportação.</p>
       </div>
       <div role="group" aria-label="Plano" className="flex flex-col gap-2.5">
         {(['pro', 'usuario'] as const).map((n) => (

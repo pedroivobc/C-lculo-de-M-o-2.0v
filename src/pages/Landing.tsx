@@ -29,7 +29,7 @@ const NOTA: Record<Ato, string> = {
 };
 
 const ETIQUETAS = [
-  ['JUIZ DE FORA', 'bg-minas-claro text-minas-texto', 'ITBI e valor venal. Regras da prefeitura, que mudam de cidade para cidade.'],
+  ['JUIZ DE FORA', 'bg-minas-claro text-minas-texto', 'ITBI pela regra da prefeitura, que muda de cidade para cidade.'],
   ['MG', 'bg-acao-claro text-acao-escuro', 'Lavratura, registro e arquivamento pela tabela de emolumentos de Minas, e o ITCD estadual na doação.'],
   ['BANCO', 'bg-cinza text-texto', 'Taxa da Caixa ou tarifa de contrato do Itaú, Bradesco e Santander.'],
   ['VOCÊ', 'bg-amarelo-claro text-amarelo-texto', 'Certidões e honorários: você define o valor e ele entra no orçamento.'],
@@ -37,7 +37,7 @@ const ETIQUETAS = [
 
 const DUVIDAS = [
   ['Os valores são oficiais?', 'São estimativas feitas com a tabela de emolumentos de MG e as regras de ITBI de Juiz de Fora do ano corrente. Os valores finais são os do cartório e da prefeitura no dia do ato.'],
-  ['Meu imóvel é em outra cidade de MG. Serve?', 'Por enquanto o ITBI e o valor venal são só de Juiz de Fora. Peça a sua cidade no formulário acima: avisamos no seu WhatsApp quando ela abrir.'],
+  ['Meu imóvel é em outra cidade de MG. Serve?', 'Sim. Juiz de Fora já tem a regra de ITBI cadastrada; nas outras cidades de MG você informa a alíquota no cadastro. Peça a sua cidade no formulário acima para ela ganhar a regra completa.'],
   ['Como o agente sabe que sou eu?', 'Pelo número que você confirma no cadastro com um código. Só esse número tem acesso aos seus orçamentos.'],
   ['Posso cancelar quando quiser?', 'Sim. No mensal, você não é cobrado no mês seguinte. O seu histórico continua disponível para exportar.'],
 ];
@@ -171,9 +171,9 @@ export default function Landing() {
             <div className="flex min-w-0 flex-1 basis-80 flex-col gap-4">
               <span className="text-xs font-bold uppercase tracking-[0.12em] text-marca-texto">Incluído na assinatura</span>
               <h2 className="text-[30px] font-[850] leading-9 sm:text-[38px] sm:leading-[44px]">O cliente perguntou no WhatsApp? Pergunte ao agente no WhatsApp.</h2>
-              <p className="text-[17px] leading-[27px] text-[#c7cedb]">Escreva do jeito que você fala ou mande a foto do espelho do IPTU. O agente reconhece o seu número, calcula, devolve o PDF e guarda tudo no seu histórico.</p>
+              <p className="text-[17px] leading-[27px] text-[#c7cedb]">Escreva do jeito que você fala. O agente reconhece o seu número, calcula, devolve o PDF e guarda tudo no seu histórico.</p>
               <ul className="flex flex-col gap-2.5">
-                {['Lê o espelho do IPTU de Juiz de Fora por foto ou PDF', 'Responde com o PDF pronto para encaminhar ao cliente', '"Exportar outubro" e a planilha do mês chega na hora'].map((t) => (
+                {['Entende "350 mil", "1,2 mi" e pergunta só o que falta', 'Responde com o PDF pronto para encaminhar ao cliente', '"Exportar outubro" e a planilha do mês chega na hora'].map((t) => (
                   <li key={t} className="flex gap-2.5"><Check className="mt-0.5 size-5 shrink-0 text-[#5be3a5]" aria-hidden="true" />{t}</li>
                 ))}
               </ul>
@@ -182,8 +182,8 @@ export default function Landing() {
               <div className="max-w-[82%] self-end rounded-2xl rounded-br-[4px] bg-acao px-3.5 py-2.5">Escritura de um apê de 320 mil, venal 350</div>
               <div className="flex max-w-[88%] flex-col gap-1.5 self-start rounded-2xl rounded-bl-[4px] bg-white px-3.5 py-3 text-tinta">
                 <span>Compra e venda · base <strong>R$ 350.000,00</strong></span>
-                <span className="numero whitespace-pre-line text-texto">{'ITBI: R$ 7.000,00\nLavratura: R$ 5.050,25\nRegistro: R$ 5.546,99\nOutros: R$ 1.447,75'}</span>
-                <span className="display text-xl font-black">Total: <span className="marca-texto">R$ 19.044,99</span></span>
+                <span className="numero whitespace-pre-line text-texto">{'ITBI: R$ 7.000,00\nEscritura: R$ 5.398,00\nRegistro: R$ 5.245,68\nCertidões e honorários: R$ 1.100,00'}</span>
+                <span className="display text-xl font-black">Total: <span className="marca-texto">R$ 18.743,68</span></span>
               </div>
               <div className="flex items-center gap-2.5 self-start rounded-xl bg-white px-3.5 py-2.5 text-tinta">
                 <span className="rounded-md bg-minas-claro p-1.5 text-[11px] font-extrabold text-minas-texto">PDF</span><span className="font-semibold">orcamento-0142.pdf</span>
@@ -196,7 +196,7 @@ export default function Landing() {
         <section className="mx-auto flex max-w-[1200px] flex-col gap-7 px-4 pt-24 sm:px-6">
           <h2 className="max-w-[720px] text-[30px] font-[850] leading-9 sm:text-[38px] sm:leading-[44px]">Tudo o que aparece na mesa de quem vende imóvel.</h2>
           <ul className="grid gap-x-8 border-t-2 border-tinta sm:grid-cols-2 lg:grid-cols-3">
-            {[['Escrituras', 'compra e venda, interveniência, vínculo'], ['Financiamento Caixa', 'SBPE, MCMV, SFI, FGTS'], ['Banco privado', 'Itaú, Bradesco, Santander'], ['Doação', 'simples, com ou sem usufruto'], ['Valor venal', 'a partir do espelho do IPTU'], ['Correção contratual', 'pelo INCC']].map(([t, d]) => (
+            {[['Escrituras', 'compra e venda, interveniência, vínculo'], ['Financiamento Caixa', 'SBPE, MCMV, SFI, FGTS'], ['Banco privado', 'Itaú, Bradesco, Santander'], ['Doação', 'simples, com ou sem usufruto'], ['Correção contratual', 'pelo INCC']].map(([t, d]) => (
               <li key={t} className="flex justify-between gap-3 border-b border-[#d5dae2] py-4"><strong>{t}</strong><span className="text-right text-suave">{d}</span></li>
             ))}
           </ul>
@@ -208,7 +208,7 @@ export default function Landing() {
             <div className="flex flex-1 basis-80 flex-col gap-3.5">
               <span className="rotulo-secao">Minas Gerais primeiro</span>
               <h2 className="text-[30px] font-[850] leading-9 sm:text-[38px] sm:leading-[44px]">Começamos por Juiz de Fora. A próxima cidade é você que escolhe.</h2>
-              <p className="text-[17px] leading-[27px] text-texto">A tabela de cartório de MG já vale para o estado inteiro. Para abrir uma cidade nova, falta cadastrar o ITBI e o valor venal da prefeitura. Vamos pela ordem dos pedidos.</p>
+              <p className="text-[17px] leading-[27px] text-texto">A tabela de cartório de MG já vale para o estado inteiro. Para abrir uma cidade nova, falta cadastrar a regra de ITBI da prefeitura. Vamos pela ordem dos pedidos.</p>
               <div className="flex items-center gap-3 rounded-xl bg-nevoa px-4 py-3.5">
                 <span className="size-2.5 rounded-full bg-ok" aria-hidden="true" /><span><strong>Juiz de Fora</strong> · disponível</span>
               </div>
@@ -222,7 +222,7 @@ export default function Landing() {
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div className="flex max-w-[640px] flex-col gap-3">
               <h2 className="text-[30px] font-[850] leading-9 sm:text-[38px] sm:leading-[44px]">Dois planos. Tudo incluído.</h2>
-              <p className="text-[17px] leading-[27px] text-texto">Os dois têm todas as calculadoras, o agente no WhatsApp, a leitura do IPTU e a exportação do histórico. O Pró coloca a sua marca no orçamento.</p>
+              <p className="text-[17px] leading-[27px] text-texto">Os dois têm todas as calculadoras, o agente no WhatsApp, o histórico e a exportação. O Pró coloca a sua marca no orçamento.</p>
             </div>
             <div role="group" aria-label="Período" className="grid w-full max-w-[400px] grid-cols-2 gap-1 rounded-xl bg-cinza p-1 text-[15px]">
               {[[false, 'Mensal'], [true, 'Anual · 2 meses grátis']].map(([v, r]) => (

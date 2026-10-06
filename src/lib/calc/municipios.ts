@@ -1,6 +1,4 @@
 import { z } from 'zod';
-import { LAND_VALUES } from '../../data/landValues';
-import { CONSTRUCTION_PRICES, COMMERCIALIZATION_FACTORS } from '../../data/factors';
 
 /**
  * Regras que pertencem à prefeitura. Para abrir uma cidade nova de MG,
@@ -17,11 +15,8 @@ export interface Municipio {
   };
   /** true quando a alíquota do ITBI foi informada pelo assinante (cidade ainda sem regra cadastrada). */
   itbiDoUsuario?: boolean;
-  valorVenal?: {
-    valorM2Terreno: Record<string, number>;
-    valorM2Edificacao: Record<string, Record<string, number>>;
-    fatorComercializacao: Record<string, Record<string, number>>;
-  };
+  /** ISSQN do município sobre os emolumentos do cartório (Juiz de Fora: 5%). */
+  issCartorio: number;
 }
 
 export const MUNICIPIOS: Record<string, Municipio> = {
@@ -33,11 +28,7 @@ export const MUNICIPIOS: Record<string, Municipio> = {
       aliquota: 0.02,
       sfh: { limiar: 107603.17, fixoNoLimiar: 538.02, aliquotaFinanciado: 0.005 },
     },
-    valorVenal: {
-      valorM2Terreno: LAND_VALUES,
-      valorM2Edificacao: CONSTRUCTION_PRICES,
-      fatorComercializacao: COMMERCIALIZATION_FACTORS,
-    },
+    issCartorio: 0.05,
   },
 };
 
@@ -63,7 +54,8 @@ export function obterMunicipio(id: string = MUNICIPIO_PADRAO, ajuste: { cidade?:
   }
   if (id !== MUNICIPIO_OUTRA) throw new Error(`Município ainda não atendido: ${id}`);
   if (pct === undefined) throw new Error('Informe a alíquota do ITBI da sua cidade (em Conta → Orçamentos).');
-  return { id, nome: ajuste.cidade || 'Outra cidade de MG', uf: 'MG', itbi: { aliquota: pct / 100 }, itbiDoUsuario: true };
+  // ISS dos cartórios: 5% como em Juiz de Fora até a cidade ter regra própria cadastrada.
+  return { id, nome: ajuste.cidade || 'Outra cidade de MG', uf: 'MG', itbi: { aliquota: pct / 100 }, itbiDoUsuario: true, issCartorio: 0.05 };
 }
 
 /** Texto da alíquota para a nota do orçamento: "2%", "2,5%". */

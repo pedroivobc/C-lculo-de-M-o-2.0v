@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { PaginaCalculadora, Grade } from '@/components/calc/PaginaCalculadora';
 import { CampoMoeda, CampoNumero, Opcoes } from '@/components/ui/Campos';
 import { ROTULO_SUBTIPO_ESCRITURA } from '@/lib/calc';
@@ -30,7 +29,6 @@ export default function Escrituras() {
       tituloOrcamento={ROTULO_SUBTIPO_ESCRITURA[subtipo].toLowerCase()}
       opcoes={<Opcoes rotulo="Tipo de escritura" valor={subtipo} onChange={setSubtipo}
         opcoes={(Object.keys(ROTULO_SUBTIPO_ESCRITURA) as Subtipo[]).map((s) => ({ valor: s, rotulo: ROTULO_SUBTIPO_ESCRITURA[s] }))} />}
-      avisoFormulario={<p className="rounded-xl bg-amarelo-claro px-4 py-3 text-amarelo-texto">Não tem o valor venal? <Link to="/app/valor-venal" className="font-bold text-amarelo-texto underline">Leia o espelho do IPTU</Link> e use o resultado aqui.</p>}
     >
       {subtipo === 'compra_venda_simples' && (
         <Grade>
