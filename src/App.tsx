@@ -28,7 +28,10 @@ function Carregando() {
   );
 }
 
-/** Exige login; opcionalmente WhatsApp confirmado e assinatura ativa. */
+/**
+ * Exige login; opcionalmente cadastro concluído e assinatura ativa.
+ * A identidade é confirmada pelo e-mail (Supabase Auth). O WhatsApp é opcional: só serve para usar o agente.
+ */
 function Protegido({ children, exigirWhatsapp = false }: { children: ReactNode; exigirWhatsapp?: boolean }) {
   const { user, perfil, ativa, carregando } = useConta();
   const local = useLocation();
@@ -36,7 +39,6 @@ function Protegido({ children, exigirWhatsapp = false }: { children: ReactNode; 
   if (!user) return <Navigate to="/entrar" replace state={{ de: local.pathname }} />;
   // CPF único por conta: sem ele, nada além da tela de CPF.
   if (perfil && !perfil.cpf && local.pathname !== '/cpf') return <Navigate to={`/cpf${local.search}`} replace />;
-  if (exigirWhatsapp && perfil && !perfil.whatsapp_verified_at) return <Navigate to="/verificar" replace />;
   if (exigirWhatsapp && perfil && !perfil.configurado_em) return <Navigate to="/configurar" replace />;
   if (exigirWhatsapp && EXIGIR_ASSINATURA && !ativa) return <Navigate to="/assinar" replace />;
   return <>{children}</>;

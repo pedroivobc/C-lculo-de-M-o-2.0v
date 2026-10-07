@@ -154,14 +154,18 @@ export function Cadastro() {
       guardarCupom(cupom.trim() || null);
       guardarCpf(soDigitosCpf(d.cpf));
       if (!data.session) {
-        setErro('Conta criada. Confirme o e-mail que enviamos e depois entre para validar o WhatsApp.');
+        setErro('Conta criada. Abra o e-mail que enviamos, toque no link de confirmação e depois entre.');
         return;
       }
       // CPF repetido ou recusado: a tela de CPF explica e deixa corrigir.
       if (!(await aplicarCpfPendente()).ok) return navegar(`/cpf${params.toString() ? `?${params}` : ''}`);
       await aplicarCupomPendente();
-      await pedirConfirmacao(d.whatsapp);
-      navegar(`/verificar${params.toString() ? `?${params}` : ''}`);
+      // Com o agente no ar, já gera o código do WhatsApp (dá para pular); sem ele, segue direto para a configuração.
+      if (AGENTE_WHATSAPP && d.whatsapp.replace(/\D/g, '').length >= 10) {
+        await pedirConfirmacao(d.whatsapp);
+        return navegar(`/verificar${params.toString() ? `?${params}` : ''}`);
+      }
+      navegar(`/configurar${params.toString() ? `?${params}` : ''}`);
     } catch (err) {
       setErro(err instanceof Error ? err.message : String(err));
     } finally { setEnviando(false); }
@@ -233,7 +237,7 @@ export function CompletarCpf() {
     await aplicarCupomPendente();
     await recarregar();
     setOcupado(false);
-    navegar(`${perfil?.whatsapp_verified_at ? '/app' : '/verificar'}${params.toString() ? `?${params}` : ''}`);
+    navegar(`${AGENTE_WHATSAPP && !perfil?.whatsapp_verified_at ? '/verificar' : '/app'}${params.toString() ? `?${params}` : ''}`);
   }
 
   // Veio do cadastro com CPF recusado: mostra o motivo de cara.
@@ -295,6 +299,20 @@ export function Verificar() {
   }
 
   const link = pedido && AGENTE_WHATSAPP ? `https://wa.me/${AGENTE_WHATSAPP}?text=${encodeURIComponent(pedido.mensagem)}` : null;
+  const depois = () => navegar(`${perfil?.configurado_em ? '/app/conta' : '/configurar'}${params.toString() ? `?${params}` : ''}`);
+
+  // Agente ainda não está no ar: o WhatsApp é opcional, então segue sem ele.
+  if (!AGENTE_WHATSAPP) {
+    return (
+      <Moldura etapa={2}>
+        <div>
+          <h2 className="text-[28px] font-bold leading-[34px]">WhatsApp em breve</h2>
+          <p className="text-suave">O agente do WhatsApp está sendo ativado. Você já pode usar tudo pelo site; quando ele estiver no ar, é só conectar o seu número em <strong className="text-tinta">Minha conta</strong>.</p>
+        </div>
+        <Botao onClick={depois} className="min-h-[52px] text-base">Continuar</Botao>
+      </Moldura>
+    );
+  }
 
   return (
     <Moldura etapa={2}>
@@ -332,6 +350,7 @@ export function Verificar() {
       {avisoCupom && <Aviso tom="verde">{avisoCupom}</Aviso>}
       {erro && <Aviso tom="vermelho">{erro}</Aviso>}
       <Aviso>É este número que o agente vai reconhecer. Use o WhatsApp que você leva no dia a dia.</Aviso>
+      <button type="button" onClick={depois} className="min-h-11 text-sm font-bold text-suave">Fazer isso depois</button>
     </Moldura>
   );
 }
