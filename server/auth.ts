@@ -11,7 +11,19 @@ declare module 'express-serve-static-core' {
 export async function exigirUsuario(req: Request, res: Response, next: NextFunction) {
   const token = req.header('authorization')?.replace(/^Bearer\s+/i, '');
   if (!token) return res.status(401).json({ erro: 'Faça login para continuar.' });
-  const { data, error } = await supabaseAdmin().auth.getUser(token);
+  let resposta: Awaited<ReturnType<ReturnType<typeof supabaseAdmin>['auth']['getUser']>>;
+  try {
+    resposta = await supabaseAdmin().auth.getUser(token);
+  } catch (e) {
+    // Falha de rede ou configuração (ex.: SUPABASE_URL errada), não de sessão: não mandar o usuário entrar de novo à toa.
+    console.error('Login: não foi possível falar com o Supabase:', e);
+    return res.status(503).json({ erro: 'Não conseguimos confirmar o seu login agora. Tente de novo em instantes.' });
+  }
+  const { data, error } = resposta;
+  if (error?.name === 'AuthRetryableFetchError') {
+    console.error('Login: não foi possível falar com o Supabase:', error.message);
+    return res.status(503).json({ erro: 'Não conseguimos confirmar o seu login agora. Tente de novo em instantes.' });
+  }
   if (error || !data.user) return res.status(401).json({ erro: 'Sessão expirada. Entre de novo.' });
   req.userId = data.user.id;
   next();
