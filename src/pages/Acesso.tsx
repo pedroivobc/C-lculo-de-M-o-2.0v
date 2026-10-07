@@ -149,7 +149,7 @@ export function Cadastro() {
     if (!cpfValido(d.cpf)) return setErro('CPF inválido. Confira os números.');
     setEnviando(true); setErro(null);
     try {
-      const { data, error } = await supabase.auth.signUp({ email: d.email, password: d.senha, options: { data: { full_name: d.nome } } });
+      const { data, error } = await supabase.auth.signUp({ email: d.email, password: d.senha, options: { data: { full_name: d.nome, telefone: d.whatsapp.replace(/\D/g, '') } } });
       if (error) throw error;
       guardarCupom(cupom.trim() || null);
       guardarCpf(soDigitosCpf(d.cpf));
