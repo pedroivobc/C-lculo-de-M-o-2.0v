@@ -1,0 +1,13 @@
+{$DOMINIO_APP} {
+	reverse_proxy app:3000
+}
+
+{$DOMINIO_N8N} {
+	reverse_proxy n8n:5678
+}
+
+# Painel e API da Evolution (para ler o QR Code e configurar a instância).
+# Protegido pela AUTHENTICATION_API_KEY. Pode ser removido depois de conectar o número.
+{$DOMINIO_EVOLUTION} {
+	reverse_proxy evolution:8080
+}

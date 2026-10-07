@@ -1,0 +1,315 @@
+regra_id,codigo_ibge,uf,municipio,modalidade,aliquota_geral,metodo,formula,condicoes,vigencia_inicio,vigencia_fim,ano_parametros,status,habilitado_motor_referencia,fonte_id,referencia,observacao
+ITBI_1200401_A_VISTA_2026,1200401,AC,Rio Branco,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1200401_FINANCIADO_2026,1200401,AC,Rio Branco,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1200203_A_VISTA_2026,1200203,AC,Cruzeiro do Sul,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1200203_FINANCIADO_2026,1200203,AC,Cruzeiro do Sul,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1200609_A_VISTA_2026,1200609,AC,Tarauacá,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1200609_FINANCIADO_2026,1200609,AC,Tarauacá,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1200500_A_VISTA_2026,1200500,AC,Sena Madureira,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1200500_FINANCIADO_2026,1200500,AC,Sena Madureira,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1200302_A_VISTA_2026,1200302,AC,Feijó,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1200302_FINANCIADO_2026,1200302,AC,Feijó,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1200104_A_VISTA_2026,1200104,AC,Brasiléia,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1200104_FINANCIADO_2026,1200104,AC,Brasiléia,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2704302_A_VISTA_2026,2704302,AL,Maceió,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2704302_FINANCIADO_2026,2704302,AL,Maceió,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2700300_A_VISTA_2026,2700300,AL,Arapiraca,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2700300_FINANCIADO_2026,2700300,AL,Arapiraca,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2707701_A_VISTA_2026,2707701,AL,Rio Largo,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2707701_FINANCIADO_2026,2707701,AL,Rio Largo,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2706307_A_VISTA_2026,2706307,AL,Palmeira dos Índios,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2706307_FINANCIADO_2026,2706307,AL,Palmeira dos Índios,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2704708_A_VISTA_2026,2704708,AL,Marechal Deodoro,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2704708_FINANCIADO_2026,2704708,AL,Marechal Deodoro,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2709301_A_VISTA_2026,2709301,AL,União dos Palmares,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2709301_FINANCIADO_2026,2709301,AL,União dos Palmares,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1600303_A_VISTA_2026,1600303,AP,Macapá,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1600303_FINANCIADO_2026,1600303,AP,Macapá,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1600600_A_VISTA_2026,1600600,AP,Santana,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1600600_FINANCIADO_2026,1600600,AP,Santana,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1600279_A_VISTA_2026,1600279,AP,Laranjal do Jari,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1600279_FINANCIADO_2026,1600279,AP,Laranjal do Jari,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1600501_A_VISTA_2026,1600501,AP,Oiapoque,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1600501_FINANCIADO_2026,1600501,AP,Oiapoque,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1600402_A_VISTA_2026,1600402,AP,Mazagão,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1600402_FINANCIADO_2026,1600402,AP,Mazagão,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1600535_A_VISTA_2026,1600535,AP,Porto Grande,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1600535_FINANCIADO_2026,1600535,AP,Porto Grande,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1302603_A_VISTA_2026,1302603,AM,Manaus,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1302603_FINANCIADO_2026,1302603,AM,Manaus,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1301902_A_VISTA_2026,1301902,AM,Itacoatiara,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1301902_FINANCIADO_2026,1301902,AM,Itacoatiara,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1302504_A_VISTA_2026,1302504,AM,Manacapuru,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1302504_FINANCIADO_2026,1302504,AM,Manacapuru,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1303403_A_VISTA_2026,1303403,AM,Parintins,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1303403_FINANCIADO_2026,1303403,AM,Parintins,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1304203_A_VISTA_2026,1304203,AM,Tefé,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1304203_FINANCIADO_2026,1304203,AM,Tefé,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1301209_A_VISTA_2026,1301209,AM,Coari,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1301209_FINANCIADO_2026,1301209,AM,Coari,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2927408_A_VISTA_2026,2927408,BA,Salvador,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2927408_FINANCIADO_2026,2927408,BA,Salvador,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2910800_A_VISTA_2026,2910800,BA,Feira de Santana,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2910800_FINANCIADO_2026,2910800,BA,Feira de Santana,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2933307_A_VISTA_2026,2933307,BA,Vitória da Conquista,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2933307_FINANCIADO_2026,2933307,BA,Vitória da Conquista,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2905701_A_VISTA_2026,2905701,BA,Camaçari,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2905701_FINANCIADO_2026,2905701,BA,Camaçari,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2918407_A_VISTA_2026,2918407,BA,Juazeiro,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2918407_FINANCIADO_2026,2918407,BA,Juazeiro,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2919207_A_VISTA_2026,2919207,BA,Lauro de Freitas,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2919207_FINANCIADO_2026,2919207,BA,Lauro de Freitas,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2304400_A_VISTA_2026,2304400,CE,Fortaleza,A_VISTA,0.04,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,"LimiteSFH390672,24 para2026; antecipação deve anteceder instrumento.",,,2026,CONFERIDO_FONTE_PRIMARIA,False,F0cf3473affdc,CTM/portalSefin2026,"Não assumir2%incondicionalmente, nem limitarSFH aos antigos200mil. Combinação2%/0,5%bloqueada."
+ITBI_2304400_FINANCIADO_2026,2304400,CE,Fortaleza,FINANCIADO,0.04,PARCIAL_COMBINACAO_BENEFICIOS,"Regra geral0.04*BC; SFH0.005 sobremin(F,390672.24); antecipação antes do instrumento2%; precedência/residual pendentes.","LimiteSFH390672,24 para2026; antecipação deve anteceder instrumento.",,,2026,PARCIAL,False,F0cf3473affdc,CTM/portalSefin2026,"Não assumir2%incondicionalmente, nem limitarSFH aos antigos200mil. Combinação2%/0,5%bloqueada."
+ITBI_2303709_A_VISTA_2026,2303709,CE,Caucaia,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2303709_FINANCIADO_2026,2303709,CE,Caucaia,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2307304_A_VISTA_2026,2307304,CE,Juazeiro do Norte,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2307304_FINANCIADO_2026,2307304,CE,Juazeiro do Norte,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2307650_A_VISTA_2026,2307650,CE,Maracanaú,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2307650_FINANCIADO_2026,2307650,CE,Maracanaú,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2312908_A_VISTA_2026,2312908,CE,Sobral,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2312908_FINANCIADO_2026,2312908,CE,Sobral,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2304202_A_VISTA_2026,2304202,CE,Crato,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2304202_FINANCIADO_2026,2304202,CE,Crato,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5300108_A_VISTA_2026,5300108,DF,Brasília,A_VISTA,0.02,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,Benefício1% exige primeira transmissão de imóvel novo edificado; não confundir com primeiro imóvel do comprador.,2025-01-01,,2026,CONFERIDO_FONTE_PRIMARIA,True,Fb8b5de83a672,Lei7635/2024 art1 alterandoLei3830/2006 art9,
+ITBI_5300108_FINANCIADO_2026,5300108,DF,Brasília,FINANCIADO,0.02,MESMA_REGRA_A_VISTA,ITBI=BC*(0.01 se primeira_transmissao_imovel_novo_edificado else0.02),Benefício1% exige primeira transmissão de imóvel novo edificado; não confundir com primeiro imóvel do comprador.,2025-01-01,,2026,CONFERIDO_FONTE_PRIMARIA,True,Fb8b5de83a672,Lei7635/2024 art1 alterandoLei3830/2006 art9,
+ITBI_3205309_A_VISTA_2026,3205309,ES,Vitória,A_VISTA,0.02,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,CONFERIDO_FONTE_PRIMARIA,False,F3e9088391d04,PortalSecretariaFazenda,Portal identifica1% para cooperativas habitacionais; condições ainda não normalizadas. Financiamento não liberado.
+ITBI_3205309_FINANCIADO_2026,3205309,ES,Vitória,FINANCIADO,0.02,,,,,,2026,PARCIAL,False,F3e9088391d04,PortalSecretariaFazenda,Portal identifica1% para cooperativas habitacionais; condições ainda não normalizadas. Financiamento não liberado.
+ITBI_3205002_A_VISTA_2026,3205002,ES,Serra,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3205002_FINANCIADO_2026,3205002,ES,Serra,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3205200_A_VISTA_2026,3205200,ES,Vila Velha,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3205200_FINANCIADO_2026,3205200,ES,Vila Velha,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3201308_A_VISTA_2026,3201308,ES,Cariacica,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3201308_FINANCIADO_2026,3201308,ES,Cariacica,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3201209_A_VISTA_2026,3201209,ES,Cachoeiro de Itapemirim,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3201209_FINANCIADO_2026,3201209,ES,Cachoeiro de Itapemirim,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3203205_A_VISTA_2026,3203205,ES,Linhares,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3203205_FINANCIADO_2026,3203205,ES,Linhares,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5208707_A_VISTA_2026,5208707,GO,Goiânia,A_VISTA,0.02,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,CONFERIDO_FONTE_PRIMARIA,False,F24b5f7fe415d,LC344/2021 art203; Decreto3794/2022 art172,Art203 do CTM atual estipula2%; não transportar faixasSFH do regulamento2015/comentárioHTML para2026.
+ITBI_5208707_FINANCIADO_2026,5208707,GO,Goiânia,FINANCIADO,0.02,MESMA_REGRA_A_VISTA,0.02*BC; examinar isenções específicas,,,,2026,CONFERIDO_FONTE_PRIMARIA,False,F24b5f7fe415d,LC344/2021 art203; Decreto3794/2022 art172,Art203 do CTM atual estipula2%; não transportar faixasSFH do regulamento2015/comentárioHTML para2026.
+ITBI_5201405_A_VISTA_2026,5201405,GO,Aparecida de Goiânia,A_VISTA,0.025,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,PARCIAL,False,Fe2af6301f17d,NotíciaPrefeitura05/10/2026; prazo final/norma pendentes,"Campanha iniciada05/10/2026:1,5%temporário;0,5%parcela financiada depende lei. Regra geral não deve suplantar campanha."
+ITBI_5201405_FINANCIADO_2026,5201405,GO,Aparecida de Goiânia,FINANCIADO,0.025,PARCIAL_CAMPANHA_TEMPORARIA,,,,,2026,PARCIAL,False,Fe2af6301f17d,NotíciaPrefeitura05/10/2026; prazo final/norma pendentes,"Campanha iniciada05/10/2026:1,5%temporário;0,5%parcela financiada depende lei. Regra geral não deve suplantar campanha."
+ITBI_5201108_A_VISTA_2026,5201108,GO,Anápolis,A_VISTA,0.015,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,PARCIAL,False,Fdb455a81e2c6,ProgramaDesengaveta2026,"Fonte2026 identifica geral1,5%; redução0,75%por90dias para transmissõesformalizadasaté31/12/2025 exige conferir encerramento/prorrogação."
+ITBI_5201108_FINANCIADO_2026,5201108,GO,Anápolis,FINANCIADO,0.015,,,,,,2026,PARCIAL,False,Fdb455a81e2c6,ProgramaDesengaveta2026,"Fonte2026 identifica geral1,5%; redução0,75%por90dias para transmissõesformalizadasaté31/12/2025 exige conferir encerramento/prorrogação."
+ITBI_5200258_A_VISTA_2026,5200258,GO,Águas Lindas de Goiás,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5200258_FINANCIADO_2026,5200258,GO,Águas Lindas de Goiás,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5218805_A_VISTA_2026,5218805,GO,Rio Verde,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5218805_FINANCIADO_2026,5218805,GO,Rio Verde,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5212501_A_VISTA_2026,5212501,GO,Luziânia,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5212501_FINANCIADO_2026,5212501,GO,Luziânia,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2111300_A_VISTA_2026,2111300,MA,São Luís,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2111300_FINANCIADO_2026,2111300,MA,São Luís,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2105302_A_VISTA_2026,2105302,MA,Imperatriz,A_VISTA,0.02,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,PARCIAL,False,F040a5e5775ae,LC01/2003,Texto2003 identifica estruturaSFH. Vigência consolidada2026 não demonstrada.
+ITBI_2105302_FINANCIADO_2026,2105302,MA,Imperatriz,FINANCIADO,0.02,PENDENTE_CONSOLIDACAO,Lei2003:0.005*F+0.02*(BC-F); conferir alterações posteriores,,,,2026,PARCIAL,False,F040a5e5775ae,LC01/2003,Texto2003 identifica estruturaSFH. Vigência consolidada2026 não demonstrada.
+ITBI_2111201_A_VISTA_2026,2111201,MA,São José de Ribamar,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2111201_FINANCIADO_2026,2111201,MA,São José de Ribamar,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2112209_A_VISTA_2026,2112209,MA,Timon,A_VISTA,0.02,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,PARCIAL,False,F1cf9756d3332,LC025/2013 art65,Lei2013 identifica2%; redução50%para empreendimentointeressesocial/renda<=2SM. Alterações posteriores pendentes.
+ITBI_2112209_FINANCIADO_2026,2112209,MA,Timon,FINANCIADO,0.02,,,,,,2026,PARCIAL,False,F1cf9756d3332,LC025/2013 art65,Lei2013 identifica2%; redução50%para empreendimentointeressesocial/renda<=2SM. Alterações posteriores pendentes.
+ITBI_2103000_A_VISTA_2026,2103000,MA,Caxias,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2103000_FINANCIADO_2026,2103000,MA,Caxias,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2107506_A_VISTA_2026,2107506,MA,Paço do Lumiar,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2107506_FINANCIADO_2026,2107506,MA,Paço do Lumiar,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5103403_A_VISTA_2026,5103403,MT,Cuiabá,A_VISTA,0.02,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,Comprovar enquadramentoSFH; garantir0<=F<=BC.,,,2026,CONFERIDO_FONTE_PRIMARIA,True,Fcec89de639f2,Portal do Imposto; LC43/1997,Portal informa taxas administrativas adicionais: manter fora de emolumentos estaduais e validar atualização.
+ITBI_5103403_FINANCIADO_2026,5103403,MT,Cuiabá,FINANCIADO,0.02,DUAS_PARCELAS,SFH:ITBI=0.005*F+0.02*(BC-F); demais:0.02*BC,Comprovar enquadramentoSFH; garantir0<=F<=BC.,,,2026,CONFERIDO_FONTE_PRIMARIA,True,Fcec89de639f2,Portal do Imposto; LC43/1997,Portal informa taxas administrativas adicionais: manter fora de emolumentos estaduais e validar atualização.
+ITBI_5108402_A_VISTA_2026,5108402,MT,Várzea Grande,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5108402_FINANCIADO_2026,5108402,MT,Várzea Grande,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5107602_A_VISTA_2026,5107602,MT,Rondonópolis,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5107602_FINANCIADO_2026,5107602,MT,Rondonópolis,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5107909_A_VISTA_2026,5107909,MT,Sinop,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5107909_FINANCIADO_2026,5107909,MT,Sinop,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5107925_A_VISTA_2026,5107925,MT,Sorriso,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5107925_FINANCIADO_2026,5107925,MT,Sorriso,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5107958_A_VISTA_2026,5107958,MT,Tangará da Serra,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5107958_FINANCIADO_2026,5107958,MT,Tangará da Serra,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5002704_A_VISTA_2026,5002704,MS,Campo Grande,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5002704_FINANCIADO_2026,5002704,MS,Campo Grande,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5003702_A_VISTA_2026,5003702,MS,Dourados,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5003702_FINANCIADO_2026,5003702,MS,Dourados,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5008305_A_VISTA_2026,5008305,MS,Três Lagoas,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5008305_FINANCIADO_2026,5008305,MS,Três Lagoas,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5003207_A_VISTA_2026,5003207,MS,Corumbá,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5003207_FINANCIADO_2026,5003207,MS,Corumbá,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5006606_A_VISTA_2026,5006606,MS,Ponta Porã,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5006606_FINANCIADO_2026,5006606,MS,Ponta Porã,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5005707_A_VISTA_2026,5005707,MS,Naviraí,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_5005707_FINANCIADO_2026,5005707,MS,Naviraí,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3106200_A_VISTA_2026,3106200,MG,Belo Horizonte,A_VISTA,0.03,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,CONFERIDO_FONTE_PRIMARIA,False,F7a7135c258b7,Lei6492/1993 alterações,3%desde01/05/2014; isençõesMCMV com limites e condições devem ser analisadas separadamente.
+ITBI_3106200_FINANCIADO_2026,3106200,MG,Belo Horizonte,FINANCIADO,0.03,,,,,,2026,PARCIAL,False,F7a7135c258b7,Lei6492/1993 alterações,3%desde01/05/2014; isençõesMCMV com limites e condições devem ser analisadas separadamente.
+ITBI_3170206_A_VISTA_2026,3170206,MG,Uberlândia,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3170206_FINANCIADO_2026,3170206,MG,Uberlândia,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3118601_A_VISTA_2026,3118601,MG,Contagem,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3118601_FINANCIADO_2026,3118601,MG,Contagem,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3136702_A_VISTA_2026,3136702,MG,Juiz de Fora,A_VISTA,0.02,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,CONFERIDO_FONTE_PRIMARIA,False,F34d977d432ed,Lei10862/2004 art14; Lei11914/2009; art35§2,"Lei11914/2009 introduziu teto41971,00 indexado;107603,17 do repositório não foi validado para2026."
+ITBI_3136702_FINANCIADO_2026,3136702,MG,Juiz de Fora,FINANCIADO,0.02,PENDENTE_LIMITE_ANUAL,"EstruturaSFH:R=min(F,L_anual,BC);ITBI=0.005*R+0.02*(BC-R). L_anual2026 não confirmado.",,,,2026,PARCIAL,False,F34d977d432ed,Lei10862/2004 art14; Lei11914/2009; art35§2,"Lei11914/2009 introduziu teto41971,00 indexado;107603,17 do repositório não foi validado para2026."
+ITBI_3143302_A_VISTA_2026,3143302,MG,Montes Claros,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3143302_FINANCIADO_2026,3143302,MG,Montes Claros,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3106705_A_VISTA_2026,3106705,MG,Betim,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3106705_FINANCIADO_2026,3106705,MG,Betim,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1501402_A_VISTA_2026,1501402,PA,Belém,A_VISTA,0.03,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,PARCIAL,False,Fa3a45bf940d9,AgênciaBelém31/07/2026; ato2026pendente,"Notíciajulho2026 identifica3%, conflita com notíciajaneiro2%; redução50%prorrogadaaté31/08/2026 e regra novoscontratos60dias precisam conciliação legal. Bloquear valor estimado."
+ITBI_1501402_FINANCIADO_2026,1501402,PA,Belém,FINANCIADO,0.03,PARCIAL_BENEFICIO60DIAS,,,,,2026,PARCIAL,False,Fa3a45bf940d9,AgênciaBelém31/07/2026; ato2026pendente,"Notíciajulho2026 identifica3%, conflita com notíciajaneiro2%; redução50%prorrogadaaté31/08/2026 e regra novoscontratos60dias precisam conciliação legal. Bloquear valor estimado."
+ITBI_1500800_A_VISTA_2026,1500800,PA,Ananindeua,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1500800_FINANCIADO_2026,1500800,PA,Ananindeua,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1506807_A_VISTA_2026,1506807,PA,Santarém,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1506807_FINANCIADO_2026,1506807,PA,Santarém,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1505536_A_VISTA_2026,1505536,PA,Parauapebas,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1505536_FINANCIADO_2026,1505536,PA,Parauapebas,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1504208_A_VISTA_2026,1504208,PA,Marabá,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1504208_FINANCIADO_2026,1504208,PA,Marabá,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1502400_A_VISTA_2026,1502400,PA,Castanhal,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1502400_FINANCIADO_2026,1502400,PA,Castanhal,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2507507_A_VISTA_2026,2507507,PB,João Pessoa,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2507507_FINANCIADO_2026,2507507,PB,João Pessoa,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2504009_A_VISTA_2026,2504009,PB,Campina Grande,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2504009_FINANCIADO_2026,2504009,PB,Campina Grande,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2513703_A_VISTA_2026,2513703,PB,Santa Rita,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2513703_FINANCIADO_2026,2513703,PB,Santa Rita,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2510808_A_VISTA_2026,2510808,PB,Patos,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2510808_FINANCIADO_2026,2510808,PB,Patos,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2501807_A_VISTA_2026,2501807,PB,Bayeux,A_VISTA,0.025,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,CONFERIDO_FONTE_PRIMARIA,False,F5976243847ce,LC03/2023 art47,"Redução10% significa alíquota efetiva2,25%, não0,25% nem10pontos percentuais. Benefício condicionado não implementado."
+ITBI_2501807_FINANCIADO_2026,2501807,PB,Bayeux,FINANCIADO,0.025,MESMA_REGRA_A_VISTA,0.025*BC; desconto10%daalíquota condicionado à antecipação/120diasHabite-se,,,,2026,CONFERIDO_FONTE_PRIMARIA,False,F5976243847ce,LC03/2023 art47,"Redução10% significa alíquota efetiva2,25%, não0,25% nem10pontos percentuais. Benefício condicionado não implementado."
+ITBI_2503209_A_VISTA_2026,2503209,PB,Cabedelo,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2503209_FINANCIADO_2026,2503209,PB,Cabedelo,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4106902_A_VISTA_2026,4106902,PR,Curitiba,A_VISTA,0.027,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,Imóvel edificado residencial; financiamento prazo>=10anos; garantia hipotecária ou alienação fiduciária.,,,2026,CONFERIDO_FONTE_PRIMARIA,True,Fdf3298a76c73,LC40/2001; LC105/2017; LC148/2025,Faixas não são progressivas e não incidem apenas na parcela financiada.
+ITBI_4106902_FINANCIADO_2026,4106902,PR,Curitiba,FINANCIADO,0.027,ALIQUOTA_FAIXA_IMOVEL,Se elegível: V<=176000:0;176000<V<=205000:0.005*BC;205000<V<=220000:0.016*BC; V>220000:0.027*BC. Sem elegibilidade:0.027*BC,Imóvel edificado residencial; financiamento prazo>=10anos; garantia hipotecária ou alienação fiduciária.,,,2026,CONFERIDO_FONTE_PRIMARIA,True,Fdf3298a76c73,LC40/2001; LC105/2017; LC148/2025,Faixas não são progressivas e não incidem apenas na parcela financiada.
+ITBI_4113700_A_VISTA_2026,4113700,PR,Londrina,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4113700_FINANCIADO_2026,4113700,PR,Londrina,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4115200_A_VISTA_2026,4115200,PR,Maringá,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4115200_FINANCIADO_2026,4115200,PR,Maringá,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4119905_A_VISTA_2026,4119905,PR,Ponta Grossa,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4119905_FINANCIADO_2026,4119905,PR,Ponta Grossa,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4104808_A_VISTA_2026,4104808,PR,Cascavel,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4104808_FINANCIADO_2026,4104808,PR,Cascavel,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4125506_A_VISTA_2026,4125506,PR,São José dos Pinhais,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4125506_FINANCIADO_2026,4125506,PR,São José dos Pinhais,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2611606_A_VISTA_2026,2611606,PE,Recife,A_VISTA,0.03,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,CONFERIDO_FONTE_PRIMARIA,False,Ffc407f3fedf9,Lei15563/1991 art52,"FAQ não basta para definir parcela abrangida1%. Benefício1,8% tem requisito de protocolo/pagamento180dias."
+ITBI_2611606_FINANCIADO_2026,2611606,PE,Recife,FINANCIADO,0.03,PARCIAL_ART52,"Geral3%; SFH1% nos casos art52;1,8% dependendo de prazo/condições; financiamento pendente decomposição.",,,,2026,PARCIAL,False,Ffc407f3fedf9,Lei15563/1991 art52,"FAQ não basta para definir parcela abrangida1%. Benefício1,8% tem requisito de protocolo/pagamento180dias."
+ITBI_2607901_A_VISTA_2026,2607901,PE,Jaboatão dos Guararapes,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2607901_FINANCIADO_2026,2607901,PE,Jaboatão dos Guararapes,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2611101_A_VISTA_2026,2611101,PE,Petrolina,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2611101_FINANCIADO_2026,2611101,PE,Petrolina,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2604106_A_VISTA_2026,2604106,PE,Caruaru,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2604106_FINANCIADO_2026,2604106,PE,Caruaru,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2610707_A_VISTA_2026,2610707,PE,Paulista,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2610707_FINANCIADO_2026,2610707,PE,Paulista,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2609600_A_VISTA_2026,2609600,PE,Olinda,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2609600_FINANCIADO_2026,2609600,PE,Olinda,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2211001_A_VISTA_2026,2211001,PI,Teresina,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2211001_FINANCIADO_2026,2211001,PI,Teresina,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2207702_A_VISTA_2026,2207702,PI,Parnaíba,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2207702_FINANCIADO_2026,2207702,PI,Parnaíba,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2208007_A_VISTA_2026,2208007,PI,Picos,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2208007_FINANCIADO_2026,2208007,PI,Picos,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2208403_A_VISTA_2026,2208403,PI,Piripiri,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2208403_FINANCIADO_2026,2208403,PI,Piripiri,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2203909_A_VISTA_2026,2203909,PI,Floriano,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2203909_FINANCIADO_2026,2203909,PI,Floriano,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2200400_A_VISTA_2026,2200400,PI,Altos,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2200400_FINANCIADO_2026,2200400,PI,Altos,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3304557_A_VISTA_2026,3304557,RJ,Rio de Janeiro,A_VISTA,0.03,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,CONFERIDO_FONTE_PRIMARIA,False,F2597c3248e73,Lei6250/2017,3%desde01/01/2018. Tratamento específico do financiamento pendente.
+ITBI_3304557_FINANCIADO_2026,3304557,RJ,Rio de Janeiro,FINANCIADO,0.03,,,,,,2026,PARCIAL,False,F2597c3248e73,Lei6250/2017,3%desde01/01/2018. Tratamento específico do financiamento pendente.
+ITBI_3304904_A_VISTA_2026,3304904,RJ,São Gonçalo,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3304904_FINANCIADO_2026,3304904,RJ,São Gonçalo,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3301702_A_VISTA_2026,3301702,RJ,Duque de Caxias,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3301702_FINANCIADO_2026,3301702,RJ,Duque de Caxias,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3303500_A_VISTA_2026,3303500,RJ,Nova Iguaçu,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3303500_FINANCIADO_2026,3303500,RJ,Nova Iguaçu,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3301009_A_VISTA_2026,3301009,RJ,Campos dos Goytacazes,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3301009_FINANCIADO_2026,3301009,RJ,Campos dos Goytacazes,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3300456_A_VISTA_2026,3300456,RJ,Belford Roxo,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3300456_FINANCIADO_2026,3300456,RJ,Belford Roxo,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2408102_A_VISTA_2026,2408102,RN,Natal,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2408102_FINANCIADO_2026,2408102,RN,Natal,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2408003_A_VISTA_2026,2408003,RN,Mossoró,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2408003_FINANCIADO_2026,2408003,RN,Mossoró,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2403251_A_VISTA_2026,2403251,RN,Parnamirim,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2403251_FINANCIADO_2026,2403251,RN,Parnamirim,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2412005_A_VISTA_2026,2412005,RN,São Gonçalo do Amarante,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2412005_FINANCIADO_2026,2412005,RN,São Gonçalo do Amarante,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2407104_A_VISTA_2026,2407104,RN,Macaíba,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2407104_FINANCIADO_2026,2407104,RN,Macaíba,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2402600_A_VISTA_2026,2402600,RN,Ceará-Mirim,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2402600_FINANCIADO_2026,2402600,RN,Ceará-Mirim,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4314902_A_VISTA_2026,4314902,RS,Porto Alegre,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4314902_FINANCIADO_2026,4314902,RS,Porto Alegre,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4305108_A_VISTA_2026,4305108,RS,Caxias do Sul,A_VISTA,0.02,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,CONFERIDO_FONTE_PRIMARIA,False,F4b5343767403,LC701/2022 art44,ValorVRM2026 não confirmado; financiamento permanece bloqueado.
+ITBI_4305108_FINANCIADO_2026,4305108,RS,Caxias do Sul,FINANCIADO,0.02,PENDENTE_VALOR_VRM,"R=min(F,13377*VRM_ano,BC);ITBI=0.005*R+0.02*(BC-R)",,,,2026,PARCIAL,False,F4b5343767403,LC701/2022 art44,ValorVRM2026 não confirmado; financiamento permanece bloqueado.
+ITBI_4304606_A_VISTA_2026,4304606,RS,Canoas,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4304606_FINANCIADO_2026,4304606,RS,Canoas,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4314407_A_VISTA_2026,4314407,RS,Pelotas,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4314407_FINANCIADO_2026,4314407,RS,Pelotas,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4316907_A_VISTA_2026,4316907,RS,Santa Maria,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4316907_FINANCIADO_2026,4316907,RS,Santa Maria,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4309209_A_VISTA_2026,4309209,RS,Gravataí,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4309209_FINANCIADO_2026,4309209,RS,Gravataí,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1100205_A_VISTA_2026,1100205,RO,Porto Velho,A_VISTA,0.02,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,CONFERIDO_FONTE_PRIMARIA,False,F29850632674d,CTMconsolidado art486,Não aplicar isençãoMCMV sem requisitos do programa.
+ITBI_1100205_FINANCIADO_2026,1100205,RO,Porto Velho,FINANCIADO,0.02,MESMA_REGRA_A_VISTA,0.02*BC; examinar isenções específicas,,,,2026,CONFERIDO_FONTE_PRIMARIA,False,F29850632674d,CTMconsolidado art486,Não aplicar isençãoMCMV sem requisitos do programa.
+ITBI_1100122_A_VISTA_2026,1100122,RO,Ji-Paraná,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1100122_FINANCIADO_2026,1100122,RO,Ji-Paraná,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1100304_A_VISTA_2026,1100304,RO,Vilhena,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1100304_FINANCIADO_2026,1100304,RO,Vilhena,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1100023_A_VISTA_2026,1100023,RO,Ariquemes,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1100023_FINANCIADO_2026,1100023,RO,Ariquemes,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1100049_A_VISTA_2026,1100049,RO,Cacoal,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1100049_FINANCIADO_2026,1100049,RO,Cacoal,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1100288_A_VISTA_2026,1100288,RO,Rolim de Moura,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1100288_FINANCIADO_2026,1100288,RO,Rolim de Moura,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1400100_A_VISTA_2026,1400100,RR,Boa Vista,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1400100_FINANCIADO_2026,1400100,RR,Boa Vista,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1400472_A_VISTA_2026,1400472,RR,Rorainópolis,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1400472_FINANCIADO_2026,1400472,RR,Rorainópolis,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1400050_A_VISTA_2026,1400050,RR,Alto Alegre,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1400050_FINANCIADO_2026,1400050,RR,Alto Alegre,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1400456_A_VISTA_2026,1400456,RR,Pacaraima,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1400456_FINANCIADO_2026,1400456,RR,Pacaraima,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1400209_A_VISTA_2026,1400209,RR,Caracaraí,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1400209_FINANCIADO_2026,1400209,RR,Caracaraí,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1400175_A_VISTA_2026,1400175,RR,Cantá,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1400175_FINANCIADO_2026,1400175,RR,Cantá,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4205407_A_VISTA_2026,4205407,SC,Florianópolis,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4205407_FINANCIADO_2026,4205407,SC,Florianópolis,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4209102_A_VISTA_2026,4209102,SC,Joinville,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4209102_FINANCIADO_2026,4209102,SC,Joinville,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4202404_A_VISTA_2026,4202404,SC,Blumenau,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4202404_FINANCIADO_2026,4202404,SC,Blumenau,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4216602_A_VISTA_2026,4216602,SC,São José,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4216602_FINANCIADO_2026,4216602,SC,São José,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4208203_A_VISTA_2026,4208203,SC,Itajaí,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4208203_FINANCIADO_2026,4208203,SC,Itajaí,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4204202_A_VISTA_2026,4204202,SC,Chapecó,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_4204202_FINANCIADO_2026,4204202,SC,Chapecó,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3550308_A_VISTA_2026,3550308,SP,São Paulo,A_VISTA,0.03,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,Contrato em2026; SFH/PAR/HIS/consórcio; imóvel<=725808; F=crédito efetivamente usado; SFI/CH não elegíveis.,2026-01-01,,2026,CONFERIDO_FONTE_PRIMARIA,True,F40992f4cab0d,Lei11154/1991; portal atualizado13/01/2026,Limites anuais. Não usar limites2026 em contrato2025. Base municipal operacional diverge da orientaçãoTema1113.
+ITBI_3550308_FINANCIADO_2026,3550308,SP,São Paulo,FINANCIADO,0.03,PARCELA_FINANCIADA_LIMITADA,"R=min(F,120968,BC); ITBI=0.005*R+0.03*(BC-R); se V_imovel>725808 ou modalidade não elegível:0.03*BC",Contrato em2026; SFH/PAR/HIS/consórcio; imóvel<=725808; F=crédito efetivamente usado; SFI/CH não elegíveis.,2026-01-01,,2026,CONFERIDO_FONTE_PRIMARIA,True,F40992f4cab0d,Lei11154/1991; portal atualizado13/01/2026,Limites anuais. Não usar limites2026 em contrato2025. Base municipal operacional diverge da orientaçãoTema1113.
+ITBI_3518800_A_VISTA_2026,3518800,SP,Guarulhos,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3518800_FINANCIADO_2026,3518800,SP,Guarulhos,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3509502_A_VISTA_2026,3509502,SP,Campinas,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3509502_FINANCIADO_2026,3509502,SP,Campinas,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3548708_A_VISTA_2026,3548708,SP,São Bernardo do Campo,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3548708_FINANCIADO_2026,3548708,SP,São Bernardo do Campo,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3547809_A_VISTA_2026,3547809,SP,Santo André,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3547809_FINANCIADO_2026,3547809,SP,Santo André,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3552205_A_VISTA_2026,3552205,SP,Sorocaba,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_3552205_FINANCIADO_2026,3552205,SP,Sorocaba,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2800308_A_VISTA_2026,2800308,SE,Aracaju,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2800308_FINANCIADO_2026,2800308,SE,Aracaju,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2804805_A_VISTA_2026,2804805,SE,Nossa Senhora do Socorro,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2804805_FINANCIADO_2026,2804805,SE,Nossa Senhora do Socorro,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2802908_A_VISTA_2026,2802908,SE,Itabaiana,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2802908_FINANCIADO_2026,2802908,SE,Itabaiana,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2803500_A_VISTA_2026,2803500,SE,Lagarto,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2803500_FINANCIADO_2026,2803500,SE,Lagarto,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2806701_A_VISTA_2026,2806701,SE,São Cristóvão,A_VISTA,0.02,ALIQUOTA_UNICA,BC*aliquota_geral; avaliar excecoes,,,,2026,CONFERIDO_FONTE_PRIMARIA,False,F27f7fee26ac3,PortalContribuinte,Reduções temporárias precisam comprovar vigência e elegibilidade; portalgenérico não habilita desconto.
+ITBI_2806701_FINANCIADO_2026,2806701,SE,São Cristóvão,FINANCIADO,0.02,,,,,,2026,PARCIAL,False,F27f7fee26ac3,PortalContribuinte,Reduções temporárias precisam comprovar vigência e elegibilidade; portalgenérico não habilita desconto.
+ITBI_2802106_A_VISTA_2026,2802106,SE,Estância,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_2802106_FINANCIADO_2026,2802106,SE,Estância,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1721000_A_VISTA_2026,1721000,TO,Palmas,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1721000_FINANCIADO_2026,1721000,TO,Palmas,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1702109_A_VISTA_2026,1702109,TO,Araguaína,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1702109_FINANCIADO_2026,1702109,TO,Araguaína,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1709500_A_VISTA_2026,1709500,TO,Gurupi,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1709500_FINANCIADO_2026,1709500,TO,Gurupi,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1718204_A_VISTA_2026,1718204,TO,Porto Nacional,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1718204_FINANCIADO_2026,1718204,TO,Porto Nacional,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1716109_A_VISTA_2026,1716109,TO,Paraíso do Tocantins,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1716109_FINANCIADO_2026,1716109,TO,Paraíso do Tocantins,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1705508_A_VISTA_2026,1705508,TO,Colinas do Tocantins,A_VISTA,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.
+ITBI_1705508_FINANCIADO_2026,1705508,TO,Colinas do Tocantins,FINANCIADO,,PENDENTE,,,,,2026,PENDENTE,False,,,Alíquota/regras não conclusivas na pesquisa; NÃO preencher como zero.

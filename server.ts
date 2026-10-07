@@ -1,26 +1,17 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
-import { fileURLToPath } from "url";
-import dotenv from "dotenv";
+import { config } from "./server/config";
+import { criarApp } from "./server/app";
+import { garantirTabelasCarregadas } from "./server/tabelas";
 
-dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+/** Servidor completo (VPS ou desenvolvimento): API + site. Na Vercel, quem atende a API é server/vercel.ts. */
 async function startServer() {
-  const app = express();
-  const PORT = 3000;
+  const app = criarApp();
 
-  app.use(express.json());
-
-  // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
+    // Import dinâmico: o Vite só existe em desenvolvimento.
+    const { createServer: createViteServer } = await import("vite");
+    const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
@@ -30,8 +21,10 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  if (config.supabaseUrl && config.supabaseServiceKey) garantirTabelasCarregadas();
+
+  app.listen(config.port, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${config.port}`);
   });
 }
 
