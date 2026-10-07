@@ -1,0 +1,23 @@
+{
+  "name": "Orçaí Imob — orçamento de cartório e ITBI",
+  "short_name": "Orçaí Imob",
+  "description": "Orçamento de escritura, registro, ITBI e financiamento em segundos.",
+  "lang": "pt-BR",
+  "id": "/app",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2f4f7",
+  "theme_color": "#2342d6",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    { "src": "/icones/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icones/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Escritura", "url": "/app/escrituras", "icons": [{ "src": "/icones/icone-192.png", "sizes": "192x192" }] },
+    { "name": "Financiamento", "url": "/app/financiamento-caixa", "icons": [{ "src": "/icones/icone-192.png", "sizes": "192x192" }] }
+  ]
+}

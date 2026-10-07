@@ -21,3 +21,8 @@ carregarTabelas().finally(() => {
     </StrictMode>,
   );
 });
+
+// PWA: instala o service worker (só no build de produção; no desenvolvimento ele atrapalharia o recarregamento).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => { /* segue sem offline */ }); });
+}
