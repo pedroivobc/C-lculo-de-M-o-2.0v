@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useConta } from '@/hooks/useConta';
 import { CUSTOS_SISTEMA, lerCustosPadrao, MUNICIPIOS, MUNICIPIO_OUTRA, MUNICIPIO_PADRAO, ROTULO_GRUPO, type CustosPadrao, type GrupoCustos } from '@/lib/calc';
 import { MARCA } from '@/lib/config';
-import { brl } from '@/lib/formato';
+import { brl, telefoneBonito } from '@/lib/formato';
 import { Aviso, Botao, Campo, CampoMoeda } from '@/components/ui/Campos';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +29,7 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
   const [cidade, setCidade] = useState('');
   const [aliquota, setAliquota] = useState('2');
   const [cabecalho, setCabecalho] = useState('');
+  const [telefone, setTelefone] = useState('');
   const [cor, setCor] = useState(COR_MARCA);
   const [formato, setFormato] = useState<Formato>('pdf');
   const [logoArquivo, setLogoArquivo] = useState<File | null>(null);
@@ -49,6 +50,7 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
     const padrao = MUNICIPIOS[perfil.municipio_padrao]?.itbi.aliquota;
     setAliquota(perfil.itbi_percentual != null ? String(perfil.itbi_percentual).replace('.', ',') : padrao ? String(padrao * 100).replace('.', ',') : '');
     setCabecalho(perfil.pdf_header ?? '');
+    setTelefone(telefoneBonito(perfil.telefone ?? perfil.whatsapp_e164) || '');
     setCor(perfil.cor_primaria ?? COR_MARCA);
     setFormato(perfil.formato_orcamento ?? 'pdf');
     setCustos(paraCentavos(lerCustosPadrao(perfil.custos_padrao) ?? CUSTOS_SISTEMA));
@@ -62,6 +64,7 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
   const pct = Number(aliquota.replace(',', '.'));
   const pctValido = aliquota.trim() !== '' && Number.isFinite(pct) && pct >= 0 && pct <= 10;
   const ufAtendida = UFS_ATENDIDAS.has(uf);
+  const telefoneDigitos = telefone.replace(/\D/g, '');
   const podeSalvar = ufAtendida && pctValido && (!outra || cidade.trim().length >= 2);
 
   function escolherLogo(e: ChangeEvent<HTMLInputElement>) {
@@ -97,7 +100,7 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
       const itbi_percentual = outra || daPrefeitura === undefined || Math.abs(pct / 100 - daPrefeitura) > 1e-9 ? pct : null;
       const { error } = await supabase.from('profiles').update({
         uf, municipio_padrao: municipio, cidade_nome: outra ? cidade.trim() : null, itbi_percentual,
-        pdf_header: cabecalho.trim() || null, cor_primaria: cor === COR_MARCA ? null : cor, pdf_logo_path,
+        pdf_header: cabecalho.trim() || null, telefone: telefoneDigitos.length >= 10 ? telefoneDigitos : null, cor_primaria: cor === COR_MARCA ? null : cor, pdf_logo_path,
         formato_orcamento: formato,
         custos_padrao: Object.fromEntries((Object.keys(custos) as GrupoCustos[]).map((g) => [g, { certidoes: custos[g].certidoes / 100, honorarios: custos[g].honorarios / 100 }])),
         configurado_em: perfil.configurado_em ?? new Date().toISOString(),
@@ -181,6 +184,8 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
       {/* Marca no orçamento */}
       <fieldset className="flex flex-col gap-3">
         <legend className="rotulo-secao mb-3">Sua marca no orçamento</legend>
+        <Campo rotulo="Telefone / WhatsApp de contato (sai no orçamento)" type="tel" autoComplete="tel" value={telefone}
+          onChange={(e) => setTelefone(e.target.value)} placeholder="(32) 99999-0000" />
         <Campo rotulo="Nome no topo do orçamento" value={cabecalho} onChange={(e) => setCabecalho(e.target.value)} placeholder="Ex.: Silva Moura Assessoria" maxLength={60} />
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex h-20 w-44 items-center justify-center overflow-hidden rounded-xl border border-dashed border-borda bg-nevoa">
