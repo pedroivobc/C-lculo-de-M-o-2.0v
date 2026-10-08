@@ -62,6 +62,20 @@ Qualquer VPS com 2 GB de RAM e Docker (Hetzner, Contabo, DigitalOcean, Hostinger
 
 > Teste: `https://app.seudominio/api/saude` responde `{"ok":true,...}`.
 
+## 2a. Só o site num VPS separado (Evolution e n8n em outro servidor)
+
+É o caso da produção hoje: o site fica no VPS da Hostinger (`calculonamao.com.br`) e o agente no `vps.clementeassessoria.cloud`.
+
+1. Registros A de `calculonamao.com.br` e `www` apontando para o IP do VPS.
+2. No VPS:
+   ```bash
+   git clone https://github.com/pedroivobc/C-lculo-de-M-o-2.0v /opt/orcaai
+   cd /opt/orcaai/infra/app-vps && cp .env.example .env && nano .env
+   docker compose up -d --build
+   ```
+3. Para atualizar depois: `cd /opt/orcaai && git pull && cd infra/app-vps && docker compose up -d --build`.
+4. No n8n, o nó que chama o app usa `https://calculonamao.com.br/api/agente/mensagem`.
+
 ## 2b. Site e API na Vercel (alternativa à VPS para o app)
 
 O site e a API (login, cálculos salvos, PDF/imagem, cupom, tabelas anuais) também rodam na Vercel:
