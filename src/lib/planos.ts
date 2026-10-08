@@ -6,7 +6,7 @@ export type Nivel = 'usuario' | 'pro';
 export type Periodo = 'trimestral' | 'semestral' | 'anual';
 
 export const PLANOS: Record<Nivel, { nome: string; mensalCentavos: number; resumo: string }> = {
-  usuario: { nome: 'Essencial', mensalCentavos: 2990, resumo: 'Orçamento em PDF com a marca Orçaí' },
+  usuario: { nome: 'Starter', mensalCentavos: 2990, resumo: 'Orçamento em PDF com a marca Orçaí, só no site' },
   pro: { nome: 'Pró', mensalCentavos: 3990, resumo: 'Orçamento com a sua logo, as suas cores e o seu contato' },
 };
 
@@ -30,5 +30,41 @@ export function preco(nivel: Nivel, periodo: Periodo) {
 /** Período válido vindo de URL ou banco; o padrão é o anual. */
 export const lerPeriodo = (v?: string | null): Periodo => (v === 'trimestral' || v === 'semestral' || v === 'anual' ? v : 'anual');
 
-/** Menor preço por mês (Essencial no anual), para as chamadas "a partir de". */
+/** Menor preço por mês (Starter no anual), para as chamadas "a partir de". */
 export const A_PARTIR_DE = preco('usuario', 'anual').porMesTexto;
+
+/**
+ * Plano de equipe (imobiliárias): fee fixo mensal por um pacote de usuários e um valor por usuário a mais.
+ * VALORES PROVISÓRIOS: trocar quando os produtos forem criados no Stripe.
+ */
+export const EQUIPE = {
+  nome: 'Teams',
+  assentosBase: 5,
+  fixoMensalCentavos: 14990,
+  adicionalMensalCentavos: 2490,
+  resumo: 'Para imobiliárias: todos com recursos do Pro, a logo e as cores da imobiliária',
+};
+
+/** Mensalidade de uma equipe com `usuarios` ativos. Clemente Team não é cobrada. */
+export function precoEquipe(usuarios: number, assentosBase: number = EQUIPE.assentosBase) {
+  const adicionais = Math.max(0, usuarios - assentosBase);
+  const mensal = EQUIPE.fixoMensalCentavos + adicionais * EQUIPE.adicionalMensalCentavos;
+  return {
+    adicionais, mensal, mensalTexto: brl(mensal),
+    fixoTexto: brl(EQUIPE.fixoMensalCentavos), adicionalTexto: brl(EQUIPE.adicionalMensalCentavos),
+  };
+}
+
+/** Os seis perfis de usuário. `usuario` é o Starter (nome antigo no banco). */
+export type Papel = 'admin' | 'teams' | 'usuario' | 'pro' | 'trial' | 'clemente';
+export const NOME_PAPEL: Record<Papel, string> = {
+  admin: 'Administrador',
+  teams: 'Teams',
+  usuario: 'Starter',
+  pro: 'Pró',
+  trial: 'Trial',
+  clemente: 'Clemente Team',
+};
+
+/** Starter não usa o agente do WhatsApp; os demais perfis usam. */
+export const usaWhatsapp = (papel?: Papel | null) => papel !== 'usuario';

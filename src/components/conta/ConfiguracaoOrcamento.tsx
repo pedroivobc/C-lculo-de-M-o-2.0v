@@ -23,7 +23,9 @@ type Formato = 'pdf' | 'jpeg';
  * Usada no cadastro (etapa "Seu orçamento") e na Conta.
  */
 export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { textoSalvar?: string; aoSalvar?: () => void }) {
-  const { perfil, recarregar } = useConta();
+  const { perfil, equipe, recarregar } = useConta();
+  /** Colaborador de equipe segue a marca do gestor: não escolhe logo, cor nem cabeçalho. */
+  const marcaDaEquipe = equipe?.funcao === 'colaborador';
   const [uf, setUf] = useState('MG');
   const [municipio, setMunicipio] = useState(MUNICIPIO_PADRAO);
   const [cidade, setCidade] = useState('');
@@ -97,7 +99,7 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
       const itbi_percentual = outra || daPrefeitura === undefined || Math.abs(pct / 100 - daPrefeitura) > 1e-9 ? pct : null;
       const { error } = await supabase.from('profiles').update({
         uf, municipio_padrao: municipio, cidade_nome: outra ? cidade.trim() : null, itbi_percentual,
-        pdf_header: cabecalho.trim() || null, cor_primaria: cor === COR_MARCA ? null : cor, pdf_logo_path,
+        ...(marcaDaEquipe ? {} : { pdf_header: cabecalho.trim() || null, cor_primaria: cor === COR_MARCA ? null : cor, pdf_logo_path }),
         formato_orcamento: formato,
         custos_padrao: Object.fromEntries((Object.keys(custos) as GrupoCustos[]).map((g) => [g, { certidoes: custos[g].certidoes / 100, honorarios: custos[g].honorarios / 100 }])),
         configurado_em: perfil.configurado_em ?? new Date().toISOString(),
@@ -179,6 +181,12 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
       </fieldset>
 
       {/* Marca no orçamento */}
+      {marcaDaEquipe ? (
+        <fieldset className="flex flex-col gap-3">
+          <legend className="rotulo-secao mb-3">Sua marca no orçamento</legend>
+          <Aviso tom="azul">Seus orçamentos saem com a logo e as cores de {equipe.nome}, definidas pelo gestor da equipe, e com o seu nome e contato.</Aviso>
+        </fieldset>
+      ) : (
       <fieldset className="flex flex-col gap-3">
         <legend className="rotulo-secao mb-3">Sua marca no orçamento</legend>
         <Campo rotulo="Nome no topo do orçamento" value={cabecalho} onChange={(e) => setCabecalho(e.target.value)} placeholder="Ex.: Silva Moura Assessoria" maxLength={60} />
@@ -212,8 +220,11 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
             </label>
           </div>
         </div>
-        <Aviso tom="azul">Logo e cor aparecem no teste grátis e no plano Pró. No Essencial, o orçamento sai com a marca {MARCA}, e o que você configurar aqui fica guardado.</Aviso>
+        <Aviso tom="azul">{equipe?.funcao === 'gestor'
+          ? `Logo, cor e nome no topo valem para todos os orçamentos de ${equipe.nome}.`
+          : `Logo e cor aparecem no teste grátis e no plano Pró. No Starter, o orçamento sai com a marca ${MARCA}, e o que você configurar aqui fica guardado.`}</Aviso>
       </fieldset>
+      )}
 
       {/* Formato */}
       <fieldset className="flex flex-col gap-3">
@@ -230,8 +241,8 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
         <span className="text-xs text-suave">Você pode pedir o outro formato a qualquer momento, no site ou para o agente.</span>
       </fieldset>
 
-      <Previa cabecalho={cabecalho || MARCA} cor={cor} logoUrl={removerLogo ? null : logoUrl} formato={formato}
-        cidade={outra ? (cidade || 'Sua cidade') : MUNICIPIOS[municipio]?.nome ?? ''} aliquota={pctValido ? pct : 0} />
+      {!marcaDaEquipe && <Previa cabecalho={cabecalho || MARCA} cor={cor} logoUrl={removerLogo ? null : logoUrl} formato={formato}
+        cidade={outra ? (cidade || 'Sua cidade') : MUNICIPIOS[municipio]?.nome ?? ''} aliquota={pctValido ? pct : 0} />}
 
       {aviso && <Aviso tom={aviso.tom}>{aviso.texto}</Aviso>}
       <Botao onClick={salvar} disabled={ocupado || !podeSalvar} className="min-h-[52px] text-base">{ocupado ? 'Salvando…' : textoSalvar}</Botao>

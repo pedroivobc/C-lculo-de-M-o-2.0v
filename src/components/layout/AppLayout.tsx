@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
-import { Home, History, MessageCircle, UserRound } from 'lucide-react';
+import { BarChart3, Home, History, MessageCircle, UserRound, Users } from 'lucide-react';
 import { Lockup } from '@/components/marca/Logo';
 import { useConta } from '@/hooks/useConta';
 import { EXIGIR_ASSINATURA } from '@/lib/config';
@@ -27,18 +27,34 @@ export function useCalculadoras() {
   return CALCULADORAS.filter((c) => !c.soJuizDeFora || perfil?.municipio_padrao === MUNICIPIO_CORRECAO);
 }
 
-const CONTA = [
+type Item = { para: string; rotulo: string; soGestor?: boolean };
+
+const CONTA: Item[] = [
   { para: '/app/historico', rotulo: 'Histórico' },
+  { para: '/app/equipe', rotulo: 'Minha equipe', soGestor: true },
   { para: '/app/agente', rotulo: 'Agente WhatsApp' },
   { para: '/app/conta', rotulo: 'Conta e assinatura' },
-  { para: '/app/admin/tabelas', rotulo: 'Tabelas anuais', soAdmin: true },
+];
+
+/** O administrador vê só a gestão do negócio (e a própria equipe, se for gestor de uma). */
+const ADMIN: Item[] = [
+  { para: '/app/admin/gestao', rotulo: 'Gestão do negócio' },
+  { para: '/app/admin/tabelas', rotulo: 'Tabelas anuais' },
+  { para: '/app/equipe', rotulo: 'Minha equipe', soGestor: true },
+  { para: '/app/conta', rotulo: 'Conta' },
 ];
 
 const ABAS = [
   { para: '/app', rotulo: 'Início', icone: Home, fim: true },
   { para: '/app/historico', rotulo: 'Histórico', icone: History },
+  { para: '/app/equipe', rotulo: 'Equipe', icone: Users, soGestor: true },
   { para: '/app/agente', rotulo: 'Agente', icone: MessageCircle },
   { para: '/app/conta', rotulo: 'Conta', icone: UserRound },
+];
+
+const ABAS_ADMIN = [
+  { para: '/app/admin/gestao', rotulo: 'Gestão', icone: BarChart3, fim: false },
+  { para: '/app/conta', rotulo: 'Conta', icone: UserRound, fim: false },
 ];
 
 const itemMenu = ({ isActive }: { isActive: boolean }) =>
@@ -75,8 +91,11 @@ export function AppLayout() {
   const { pathname } = useLocation();
   const telaDeCalculo = CALCULADORAS.some((c) => pathname.startsWith(c.para));
   const calculadoras = useCalculadoras();
-  const { perfil } = useConta();
-  const conta = CONTA.filter((c) => !c.soAdmin || perfil?.papel === 'admin');
+  const { perfil, equipe } = useConta();
+  const admin = perfil?.papel === 'admin';
+  const gestor = equipe?.funcao === 'gestor';
+  const conta = (admin ? ADMIN : CONTA).filter((c) => !c.soGestor || gestor);
+  const abas = admin ? ABAS_ADMIN : ABAS.filter((a) => !a.soGestor || gestor);
 
   return (
     <div className="min-h-screen lg:flex">
@@ -85,16 +104,28 @@ export function AppLayout() {
         <Link to="/app" className="px-2 py-1 no-underline"><Lockup tamanho={22} /></Link>
         <SeletorMunicipio className="px-1" />
         <nav aria-label="Menu principal" className="flex flex-col gap-0.5">
-          <NavLink to="/app" end className={itemMenu}>Início</NavLink>
-          <span className="px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-suave">Calcular</span>
-          {calculadoras.map((c) => <NavLink key={c.para} to={c.para} className={itemMenu}>{c.rotulo}</NavLink>)}
-          <span className="px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-suave">Minha conta</span>
+          {!admin && (
+            <>
+              <NavLink to="/app" end className={itemMenu}>Início</NavLink>
+              <span className="px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-suave">Calcular</span>
+              {calculadoras.map((c) => <NavLink key={c.para} to={c.para} className={itemMenu}>{c.rotulo}</NavLink>)}
+            </>
+          )}
+          <span className="px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-suave">{admin ? 'Administrador' : 'Minha conta'}</span>
           {conta.map((c) => <NavLink key={c.para} to={c.para} className={itemMenu}>{c.rotulo}</NavLink>)}
         </nav>
-        <div className="mt-auto flex flex-col gap-1.5 rounded-2xl border border-dashed border-borda p-3.5">
-          <span className="font-bold">{carregando ? '…' : ativa ? 'Assinatura ativa' : 'Sem assinatura ativa'}</span>
-          <Link to={ativa ? '/app/conta' : '/assinar'} className="font-bold text-acao">{ativa ? 'Gerenciar assinatura' : 'Ver planos'}</Link>
-        </div>
+        {!admin && (equipe ? (
+          <div className="mt-auto flex flex-col gap-1.5 rounded-2xl border border-dashed border-borda p-3.5">
+            <span className="font-bold">{equipe.nome}</span>
+            <span className="text-sm text-suave">{carregando ? '…' : ativa ? (equipe.tipo === 'clemente' ? 'Clemente Team' : 'Plano Teams ativo') : 'Plano da equipe inativo'}</span>
+            {gestor && <Link to="/app/equipe" className="font-bold text-acao">Gerenciar equipe</Link>}
+          </div>
+        ) : (
+          <div className="mt-auto flex flex-col gap-1.5 rounded-2xl border border-dashed border-borda p-3.5">
+            <span className="font-bold">{carregando ? '…' : ativa ? 'Assinatura ativa' : 'Sem assinatura ativa'}</span>
+            <Link to={ativa ? '/app/conta' : '/assinar'} className="font-bold text-acao">{ativa ? 'Gerenciar assinatura' : 'Ver planos'}</Link>
+          </div>
+        ))}
       </aside>
 
       <div className="min-w-0 flex-1 pb-24 lg:pb-0">
@@ -106,7 +137,7 @@ export function AppLayout() {
           </span>
         </header>
 
-        {!carregando && !ativa && !EXIGIR_ASSINATURA && (
+        {!carregando && !ativa && !admin && !equipe && !EXIGIR_ASSINATURA && (
           <div className="border-b border-[#f5df8a] bg-amarelo-claro px-4 py-2.5 text-sm font-medium text-amarelo-texto lg:px-8">
             Sua conta ainda não tem assinatura ativa: o agente do WhatsApp só responde a assinantes. <Link to="/assinar" className="font-bold text-amarelo-texto underline">Ver planos</Link>
           </div>
@@ -119,8 +150,8 @@ export function AppLayout() {
 
       {/* Barra inferior (celular) — some nas telas de cálculo, que têm botões fixos próprios */}
       {!telaDeCalculo && (
-        <nav aria-label="Navegação" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 gap-1 border-t border-linha bg-white px-2 pt-2 pb-[max(env(safe-area-inset-bottom),12px)] lg:hidden">
-          {ABAS.map(({ para, rotulo, icone: Icone, fim }) => (
+        <nav aria-label="Navegação" className="fixed inset-x-0 bottom-0 z-30 grid auto-cols-fr grid-flow-col gap-1 border-t border-linha bg-white px-2 pt-2 pb-[max(env(safe-area-inset-bottom),12px)] lg:hidden">
+          {abas.map(({ para, rotulo, icone: Icone, fim }) => (
             <NavLink
               key={para}
               to={para}

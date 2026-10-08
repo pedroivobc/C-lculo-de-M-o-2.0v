@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { calcular, CALCULADORAS, comCustos, type TipoCalculo } from '../src/lib/calc';
 import { config } from './config';
-import { exigirAdmin, exigirAgente, exigirUsuario } from './auth';
+import { exigirAdmin, exigirAgente, exigirGestor, exigirUsuario } from './auth';
 import { compararTabelas, ehErroPlanilha, gerarPlanilha, lerPlanilha, listarVersoes, parametrosParaJson, publicarTabela, removerVersao, TIPOS, tipoValido, versoesVigentes } from './tabelas';
 import { supabaseAdmin, salvarArquivo, urlAssinada } from './supabase';
 import { normalizarTelefone, telefoneDoJid, variantesTelefone } from './telefone';
@@ -14,6 +14,10 @@ import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, salva
 import { comLocalidade, configuracaoDoUsuario, correcaoLiberada } from './estilo';
 import { gerarCsv } from './exportar';
 import { identificar, processarMensagem } from './agente/conversa';
+import {
+  alterarMembro, alterarOrganizacao, criarOrganizacao, ErroEquipe, gestaoDoNegocio, incluirMembro, liberarManualmente,
+  orcamentosDaEquipe, relatorioDaEquipe, removerMembro, resumoEquipe, type DadosMembro, type NovaOrganizacao,
+} from './equipe';
 
 export const rotas = Router();
 
@@ -21,6 +25,7 @@ export const rotas = Router();
 const h = (fn: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response) =>
   fn(req, res).catch((e) => {
     if (e instanceof z.ZodError) return res.status(400).json({ erro: 'Dados inválidos', detalhes: e.issues });
+    if (e instanceof ErroEquipe) return res.status(e.status).json({ erro: e.message });
     console.error(e);
     res.status(500).json({ erro: e instanceof Error ? e.message : 'Erro interno' });
   });
@@ -218,6 +223,106 @@ rotas.get('/api/exportar', exigirUsuario, h(async (req, res) => {
   const nome = `calculos-${mes}.csv`;
   const caminho = await salvarArquivo(`${req.userId}/exportacoes/${nome}`, gerarCsv(calculos), 'text/csv');
   res.json({ quantidade: calculos.length, url: await urlAssinada(caminho, 600, nome) });
+}));
+
+// ---------------- Equipe (gestor da imobiliária) ----------------
+
+const mesDaConsulta = (req: Request) => {
+  const mes = String(req.query.mes ?? new Date().toISOString().slice(0, 7));
+  return { mes, ...intervaloDoMes(mes) };
+};
+
+/** Valida e devolve a primeira mensagem em português, para mostrar no formulário. */
+function validar<T>(schema: z.ZodTypeAny, corpo: unknown): T {
+  const r = schema.safeParse(corpo);
+  if (!r.success) throw new ErroEquipe(r.error.issues[0]?.message ?? 'Dados inválidos');
+  return r.data as T;
+}
+
+const membroSchema = z.object({
+  nome: z.string().trim().min(2, 'Informe o nome.').max(120),
+  telefone: z.string().transform((t, ctx) => {
+    const n = normalizarTelefone(t);
+    if (!n) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Informe o telefone com DDD.' });
+    return n ?? '';
+  }),
+  email: z.string().trim().email('E-mail inválido.').max(200).optional().or(z.literal('')).nullable(),
+});
+
+rotas.get('/api/equipe', exigirUsuario, exigirGestor, h(async (req, res) => {
+  res.json(await resumoEquipe(req.organizacao!, mesDaConsulta(req)));
+}));
+
+rotas.post('/api/equipe/membros', exigirUsuario, exigirGestor, h(async (req, res) => {
+  res.json(await incluirMembro(req.organizacao!, validar<DadosMembro>(membroSchema, req.body)));
+}));
+
+rotas.put('/api/equipe/membros/:id', exigirUsuario, exigirGestor, h(async (req, res) => {
+  res.json(await alterarMembro(req.organizacao!, String(req.params.id), validar<DadosMembro>(membroSchema, req.body)));
+}));
+
+rotas.delete('/api/equipe/membros/:id', exigirUsuario, exigirGestor, h(async (req, res) => {
+  res.json(await removerMembro(req.organizacao!, String(req.params.id)));
+}));
+
+rotas.get('/api/equipe/orcamentos', exigirUsuario, exigirGestor, h(async (req, res) => {
+  const { de, ate } = mesDaConsulta(req);
+  const { calculos, nomes } = await orcamentosDaEquipe(req.organizacao!.id, { de, ate, membroUserId: req.query.usuario ? String(req.query.usuario) : undefined });
+  res.json(calculos.map((c) => ({
+    id: c.id, seq: c.seq, tipo: c.tipo, origem: c.origem, descricao: c.descricao, total: c.total, created_at: c.created_at,
+    userId: c.user_id, usuario: nomes.get(c.user_id) ?? '—',
+  })));
+}));
+
+/** Orçamento de alguém da equipe, com a marca da equipe e o contato de quem orçou. */
+rotas.get('/api/equipe/orcamentos/:id/arquivo', exigirUsuario, exigirGestor, h(async (req, res) => {
+  const { data } = await supabaseAdmin().from('calculations').select('*').eq('id', String(req.params.id)).eq('organizacao_id', req.organizacao!.id).maybeSingle();
+  if (!data) return res.status(404).json({ erro: 'Orçamento não encontrado' });
+  const { estilo } = await configuracaoDoUsuario(data.user_id);
+  res.json(await arquivoDoOrcamento(data, estilo));
+}));
+
+rotas.get('/api/equipe/relatorio', exigirUsuario, exigirGestor, h(async (req, res) => {
+  const { mes, de, ate } = mesDaConsulta(req);
+  res.json(await relatorioDaEquipe(req.organizacao!, mes, { de, ate }));
+}));
+
+rotas.get('/api/equipe/exportar', exigirUsuario, exigirGestor, h(async (req, res) => {
+  const { mes, de, ate } = mesDaConsulta(req);
+  const { calculos, nomes } = await orcamentosDaEquipe(req.organizacao!.id, { de, ate });
+  const nome = `equipe-${mes}.csv`;
+  const caminho = await salvarArquivo(`${req.userId}/exportacoes/${nome}`, gerarCsv(calculos, nomes), 'text/csv');
+  res.json({ quantidade: calculos.length, url: await urlAssinada(caminho, 600, nome) });
+}));
+
+// ---------------- Gestão do negócio (admin) ----------------
+
+rotas.get('/api/admin/gestao', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  const { de, ate } = mesDaConsulta(req);
+  res.json(await gestaoDoNegocio({ de, ate }));
+}));
+
+rotas.post('/api/admin/organizacoes', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  const d = validar<NovaOrganizacao>(z.object({
+    nome: z.string().trim().min(2, 'Informe o nome da organização.').max(120),
+    tipo: z.enum(['teams', 'clemente']),
+    emailGestor: z.string().trim().email('E-mail do gestor inválido.'),
+    telefoneGestor: z.string().optional().nullable(),
+    assentosBase: z.coerce.number().int().min(1, 'O pacote precisa de pelo menos 1 usuário.').max(500).default(5),
+  }), req.body);
+  const telefoneGestor = d.telefoneGestor ? normalizarTelefone(d.telefoneGestor) : null;
+  if (d.telefoneGestor && !telefoneGestor) return res.status(400).json({ erro: 'Telefone do gestor inválido.' });
+  res.json(await criarOrganizacao({ ...d, telefoneGestor }));
+}));
+
+rotas.put('/api/admin/organizacoes/:id', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  const d = z.object({ nome: z.string().trim().min(2).max(120).optional(), assentosBase: z.coerce.number().int().min(1).max(500).optional() }).parse(req.body);
+  res.json(await alterarOrganizacao(String(req.params.id), d));
+}));
+
+rotas.post('/api/admin/organizacoes/:id/liberar', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  const { ate } = validar<{ ate: string }>(z.object({ ate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida.') }), req.body);
+  res.json(await liberarManualmente(String(req.params.id), ate));
 }));
 
 // ---------------- Pedido de cidade (landing, sem login) ----------------

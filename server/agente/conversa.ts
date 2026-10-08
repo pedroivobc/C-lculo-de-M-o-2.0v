@@ -11,6 +11,7 @@ import { orcamentoEmTexto } from './orcamentoTexto';
 import { codigoDoUsuario, DIAS_TESTE, DIAS_TESTE_INDICACAO, linkDeIndicacao } from '../indicacao';
 import { arquivoDoOrcamento, buscarPorSeq, numeroCalculo, salvarCalculo, type CalculoSalvo } from '../historico';
 import { comLocalidade, configuracaoDoUsuario, type Configuracao } from '../estilo';
+import { usaWhatsapp, type Papel } from '../../src/lib/planos';
 
 export interface MensagemRecebida {
   telefone: string;              // E.164
@@ -21,13 +22,13 @@ export interface MensagemRecebida {
   temAnexo?: boolean;
 }
 
-export type MotivoAcesso = 'ok' | 'trial' | 'sem_cartao' | 'trial_expirado' | 'assinatura_inativa' | 'sem_perfil';
+export type MotivoAcesso = 'ok' | 'trial' | 'sem_cartao' | 'trial_expirado' | 'assinatura_inativa' | 'organizacao_inativa' | 'sem_perfil';
 
 export interface Assinante {
   userId: string;
   nome: string | null;
   configuracao: Configuracao;
-  papel: 'admin' | 'pro' | 'usuario' | 'trial';
+  papel: Papel;
   /** Regra única do banco (situacao_acesso): cartão validado + trial no prazo ou assinatura ativa; admin sempre. */
   ativo: boolean;
   motivo: MotivoAcesso;
@@ -55,6 +56,7 @@ const MENSAGEM_BLOQUEIO: Record<MotivoAcesso, (url: string) => string> = {
   sem_cartao: (u) => `Para usar o ${config.marca}, cadastre um cartão de crédito na sua conta (mesmo que vá pagar no Pix): ${u}/app/conta`,
   trial_expirado: (u) => `Seu teste grátis do ${config.marca} terminou. Assine em ${u}/assinar e eu volto a calcular na hora.`,
   assinatura_inativa: (u) => `Sua assinatura do ${config.marca} não está ativa. Renove em ${u}/assinar e eu volto a calcular na hora.`,
+  organizacao_inativa: () => `O plano da sua equipe no ${config.marca} não está ativo. Fale com o gestor da sua imobiliária.`,
   sem_perfil: (u) => `Não encontrei sua conta. Entre em ${u}/entrar.`,
 };
 
@@ -146,6 +148,13 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   if (!assinante.ativo) {
     await registrar(msg.telefone, assinante.userId, 'entrada', 'texto', msg.texto ?? '', msg.messageId);
     return { status: assinante.motivo, respostas: [{ tipo: 'texto', texto: MENSAGEM_BLOQUEIO[assinante.motivo](config.appUrl) }] };
+  }
+
+  // Starter usa só o site: o agente do WhatsApp é dos planos Pró e de equipe.
+  if (!usaWhatsapp(assinante.papel)) {
+    await registrar(msg.telefone, assinante.userId, 'entrada', 'texto', msg.texto ?? '', msg.messageId);
+    return { status: 'sem_whatsapp', respostas: [{ tipo: 'texto', texto:
+      `O atendimento pelo WhatsApp é do plano Pró. No Starter, os orçamentos são feitos em ${config.appUrl}/app. Para usar o agente, mude de plano em ${config.appUrl}/assinar?nivel=pro` }] };
   }
 
   const textoUsuario = msg.texto?.trim() ?? '';
