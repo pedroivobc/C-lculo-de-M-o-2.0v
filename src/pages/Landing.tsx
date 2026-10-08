@@ -29,6 +29,7 @@ const NOTA: Record<Ato, string> = {
 };
 
 const DUVIDAS = [
+  ['Cálculo na Mão e Orça.ai são a mesma coisa?', 'São. O endereço calculonamao.com.br traz você para o Orça.ai: mesma conta, mesmo plano e o mesmo agente no WhatsApp.'],
   ['Os valores são oficiais?', 'São estimativas feitas com a tabela de emolumentos de MG e as regras de ITBI de Juiz de Fora do ano corrente. Os valores finais são os do cartório e da prefeitura no dia do ato.'],
   ['Meu imóvel é em outra cidade de MG. Serve?', 'Sim. Juiz de Fora já tem a regra de ITBI cadastrada; nas outras cidades de MG você informa a alíquota no cadastro. Peça a sua cidade no formulário acima para ela ganhar a regra completa.'],
   ['Como o agente sabe que sou eu?', 'Pelo número que você confirma no cadastro com um código. Só esse número tem acesso aos seus orçamentos.'],
@@ -103,6 +104,10 @@ export default function Landing() {
         {/* Hero: calculadora ao vivo */}
         <section className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-12 px-4 pt-10 sm:px-6 sm:pt-14">
           <div className="flex min-w-0 flex-1 basis-[420px] flex-col gap-5">
+            <a href="#novo-nome" className="inline-flex w-fit flex-wrap items-center gap-x-2 rounded-full border border-borda bg-white py-1 pr-3.5 pl-1 text-sm font-semibold text-tinta no-underline">
+              <span className="rounded-full bg-tinta px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-white">Cálculo na Mão</span>
+              <span>é o <strong className="text-acao">Orça.ai</strong></span>
+            </a>
             <span className="rotulo-secao">Para corretores e despachantes de Juiz de Fora</span>
             <h1 className="text-[38px] font-[850] leading-[42px] sm:text-[60px] sm:leading-[62px]">
               Orçamento de escritura e ITBI <span className="marca-texto">em 10 segundos.</span>
@@ -138,6 +143,24 @@ export default function Landing() {
             </div>
             <Orcamento titulo={ato === 'caixa' ? 'financiamento Caixa' : ato === 'doacao' ? 'doação' : 'escritura'} resultado={resultado} />
             <span className="text-[13px] text-[#d5ddff]">{NOTA[ato]} Certidões e honorários você ajusta no app.</span>
+          </div>
+        </section>
+
+        {/* Novo nome */}
+        <section id="novo-nome" className="mx-auto max-w-[1200px] px-4 pt-20 sm:px-6">
+          <div className="flex flex-col gap-6 rounded-[28px] bg-tinta p-6 text-white sm:p-10 md:flex-row md:items-center md:gap-12">
+            <div className="flex shrink-0 flex-col gap-1">
+              <span className="display text-2xl font-black text-[#c7cedb] sm:text-3xl">cálculo na mão</span>
+              <span className="display text-xl font-black text-marca-texto sm:text-2xl">=</span>
+              <span className="display text-4xl font-black sm:text-[52px] sm:leading-[56px]" style={{ letterSpacing: '-0.04em' }}>orça<span className="text-marca-texto">.ai</span></span>
+            </div>
+            <div className="flex flex-col gap-3">
+              <h2 className="text-[26px] font-[850] leading-8 sm:text-[32px] sm:leading-[38px]">Cálculo na mão? É o Orça.ai.</h2>
+              <p className="max-w-[620px] text-base leading-[26px] text-[#c7cedb] sm:text-[17px] sm:leading-[28px]">
+                Cálculo na Mão e <strong className="text-white">Orça.ai</strong> são a mesma coisa: a conta de ITBI, escritura e registro que você fazia na mão, na planilha ou ligando para o cartório, pronta em 10 segundos, pelo site ou no WhatsApp.
+                Chegou por calculonamao.com.br? Está no lugar certo.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -256,7 +279,7 @@ export default function Landing() {
 
       <footer className="border-t border-linha bg-white">
         <div className="mx-auto flex max-w-[1200px] flex-wrap justify-between gap-x-8 gap-y-3 p-6 text-[13px] text-suave">
-          <span>Orçaí Imob · Juiz de Fora, MG · um produto Clemente Assessoria</span>
+          <span>Orça.ai Imob · Juiz de Fora, MG · um produto Clemente Assessoria</span>
           <span>Valores estimados. Confirme com o cartório e a prefeitura antes do ato.</span>
           <span className="flex gap-5"><Link to="/termos" className="text-suave">Termos de uso</Link><Link to="/privacidade" className="text-suave">Política de privacidade</Link></span>
         </div>

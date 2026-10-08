@@ -26,9 +26,9 @@ function simular(titulo: string, mensagens: string[]) {
       const r: Resultado = calcular(p.acao.calculo, p.acao.dados);
       const bot = p.acao.formato === 'texto' ? orcamentoEmTexto(r, meta, ESTILO_PADRAO)
         : `📎 orcamento-0143.${p.acao.formato === 'pdf' ? 'pdf' : 'jpg'} · Orçamento #0143 · Total ${brl(r.total)}`;
-      linhas.push('**🤖 Orçaí:**', '', '```', bot, '```', '');
+      linhas.push('**🤖 Orça.ai:**', '', '```', bot, '```', '');
     }
-    for (const b of p.mensagens) linhas.push('**🤖 Orçaí:**', '', '```', b.texto, '```', '');
+    for (const b of p.mensagens) linhas.push('**🤖 Orça.ai:**', '', '```', b.texto, '```', '');
   }
   return linhas.join('\n');
 }

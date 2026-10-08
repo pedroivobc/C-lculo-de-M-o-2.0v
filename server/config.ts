@@ -8,7 +8,7 @@ export const config = {
   port: Number(env('PORT', '3000')),
   appUrl: env('APP_URL', 'http://localhost:3000').replace(/\/$/, ''),
   /** Nome da vertical (marca Orçaí + segmento). Cada vertical roda com o seu MARCA_NOME. */
-  marca: env('MARCA_NOME', 'Orçaí Imob'),
+  marca: env('MARCA_NOME', 'Orça.ai Imob'),
   supabaseUrl: env('SUPABASE_URL', env('VITE_SUPABASE_URL')),
   supabaseServiceKey: env('SUPABASE_SERVICE_ROLE_KEY'),
   geminiKey: env('GEMINI_API_KEY'),

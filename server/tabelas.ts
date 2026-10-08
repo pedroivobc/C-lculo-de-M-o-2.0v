@@ -93,7 +93,7 @@ function planilha(wb: ExcelJS.Workbook, nome: string, colunas: { header: string;
 
 export async function gerarPlanilha(tipo: TipoTabela, p: Parametros = parametros()): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Orçaí Imob';
+  wb.creator = 'Orça.ai Imob';
   if (tipo === 'emolumentos') {
     const e = p.emolumentos;
     instrucoes(wb, [
