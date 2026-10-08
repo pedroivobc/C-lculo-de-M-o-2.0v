@@ -1,5 +1,6 @@
-import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
-import { Home, History, MessageCircle, UserRound } from 'lucide-react';
+import { NavLink, Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Home, History, LogOut, MessageCircle, UserRound } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import { Lockup } from '@/components/marca/Logo';
 import { useConta } from '@/hooks/useConta';
 import { EXIGIR_ASSINATURA } from '@/lib/config';
@@ -70,6 +71,15 @@ function SeletorMunicipio({ className }: { className?: string }) {
   );
 }
 
+/** Encerra a sessão e volta para a página inicial. */
+function useSair() {
+  const navegar = useNavigate();
+  return async () => {
+    await supabase.auth.signOut();
+    navegar('/');
+  };
+}
+
 export function AppLayout() {
   const { ativa, carregando } = useConta();
   const { pathname } = useLocation();
@@ -77,6 +87,7 @@ export function AppLayout() {
   const calculadoras = useCalculadoras();
   const { perfil } = useConta();
   const conta = CONTA.filter((c) => !c.soAdmin || perfil?.papel === 'admin');
+  const sair = useSair();
 
   return (
     <div className="min-h-screen lg:flex">
@@ -95,15 +106,24 @@ export function AppLayout() {
           <span className="font-bold">{carregando ? '…' : ativa ? 'Assinatura ativa' : 'Sem assinatura ativa'}</span>
           <Link to={ativa ? '/app/conta' : '/assinar'} className="font-bold text-acao">{ativa ? 'Gerenciar assinatura' : 'Ver planos'}</Link>
         </div>
+        <button type="button" onClick={sair} className="-mt-2 flex items-center gap-2 rounded-[10px] px-3 py-2.5 text-left font-semibold text-suave transition-colors hover:bg-nevoa hover:text-texto">
+          <LogOut className="size-[18px]" strokeWidth={1.75} aria-hidden="true" />
+          Sair
+        </button>
       </aside>
 
       <div className="min-w-0 flex-1 pb-24 lg:pb-0">
         {/* Topo (celular) */}
         <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-linha bg-white/95 px-4 py-2.5 backdrop-blur lg:hidden">
           <Link to="/app" className="no-underline"><Lockup tamanho={18} /></Link>
-          <span className="flex items-center gap-1.5 rounded-full bg-nevoa px-3 py-1.5 text-xs font-bold">
-            <span aria-hidden="true" className="h-0 w-0 border-x-[5px] border-b-[8px] border-x-transparent border-b-minas" /><CidadeCurta />
-          </span>
+          <div className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5 rounded-full bg-nevoa px-3 py-1.5 text-xs font-bold">
+              <span aria-hidden="true" className="h-0 w-0 border-x-[5px] border-b-[8px] border-x-transparent border-b-minas" /><CidadeCurta />
+            </span>
+            <button type="button" onClick={sair} aria-label="Sair da conta" className="flex size-11 items-center justify-center rounded-full text-suave hover:bg-nevoa hover:text-texto">
+              <LogOut className="size-5" strokeWidth={1.75} aria-hidden="true" />
+            </button>
+          </div>
         </header>
 
         {!carregando && !ativa && !EXIGIR_ASSINATURA && (
