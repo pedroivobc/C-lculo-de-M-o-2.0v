@@ -129,7 +129,7 @@ function Numero({ rotulo, valor, nota }: { rotulo: string; valor: string; nota?:
   return (
     <div className="flex flex-col gap-1 rounded-2xl border border-linha bg-white p-5">
       <span className="text-sm font-semibold text-suave">{rotulo}</span>
-      <span className="numero text-[28px] font-black leading-8">{valor}</span>
+      <span className="numero text-[26px] font-black leading-8 [overflow-wrap:anywhere]">{valor}</span>
       {nota && <span className="text-xs text-suave">{nota}</span>}
     </div>
   );

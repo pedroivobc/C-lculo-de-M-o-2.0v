@@ -97,7 +97,7 @@ function Numero({ rotulo, valor, nota }: { rotulo: string; valor: string; nota?:
   return (
     <div className="flex flex-col gap-1 rounded-2xl border border-linha bg-white p-5">
       <span className="text-sm font-semibold text-suave">{rotulo}</span>
-      <span className="numero text-[28px] font-black leading-8">{valor}</span>
+      <span className="numero text-[26px] font-black leading-8 [overflow-wrap:anywhere]">{valor}</span>
       {nota && <span className="text-xs text-suave">{nota}</span>}
     </div>
   );
@@ -168,9 +168,9 @@ function Usuarios({ resumo, aoMudar }: { resumo: Resumo; aoMudar: () => void }) 
                     {m.email && <span className="text-xs text-suave">{m.email}</span>}
                   </span>
                 </td>
-                <td className="p-2">{telefoneBonito(m.telefone)}</td>
+                <td className="whitespace-nowrap p-2">{telefoneBonito(m.telefone)}</td>
                 <td className="p-2">
-                  <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-bold', m.situacao === 'ativo' ? 'bg-ok-claro text-ok' : 'bg-amarelo-claro text-amarelo-texto')}>
+                  <span className={cn('whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold', m.situacao === 'ativo' ? 'bg-ok-claro text-ok' : 'bg-amarelo-claro text-amarelo-texto')}>
                     {m.situacao === 'ativo' ? 'Ativo' : 'Aguardando cadastro'}
                   </span>
                 </td>
