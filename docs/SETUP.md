@@ -62,6 +62,25 @@ Qualquer VPS com 2 GB de RAM e Docker (Hetzner, Contabo, DigitalOcean, Hostinger
 
 > Teste: `https://app.seudominio/api/saude` responde `{"ok":true,...}`.
 
+## 2a. Produção: só o site no servidor da Clemente (2.24.79.129)
+
+O servidor já roda Evolution, n8n e outros serviços atrás de um nginx com certbot. O site entra ao lado deles:
+
+1. Registros A de `calculonamao.com.br` e `www` apontando para `2.24.79.129` (registro.br > Configurar endereçamento).
+2. No servidor:
+   ```bash
+   git clone https://github.com/pedroivobc/C-lculo-de-M-o-2.0v /opt/orcaai
+   cd /opt/orcaai/infra/app-servidor && cp .env.example .env && nano .env
+   docker compose up -d --build
+   cp nginx-calculonamao.conf /etc/nginx/sites-enabled/calculonamao
+   nginx -t && systemctl reload nginx
+   certbot --nginx -d calculonamao.com.br -d www.calculonamao.com.br
+   ```
+3. Para atualizar: `cd /opt/orcaai && git pull && cd infra/app-servidor && docker compose up -d --build`.
+4. No n8n, o nó que chama o app usa `https://calculonamao.com.br/api/agente/mensagem`.
+
+`infra/app-vps` é a variante para um VPS vazio (traz o próprio Caddy).
+
 ## 2b. Site e API na Vercel (alternativa à VPS para o app)
 
 O site e a API (login, cálculos salvos, PDF/imagem, cupom, tabelas anuais) também rodam na Vercel:

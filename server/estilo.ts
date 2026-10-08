@@ -68,7 +68,7 @@ export async function configuracaoDoUsuario(userId: string): Promise<Configuraca
   const db = supabaseAdmin();
   const [{ data: p }, { data: s }] = await Promise.all([
     db.from('profiles')
-      .select('pdf_header, pdf_logo_path, cor_primaria, formato_orcamento, municipio_padrao, cidade_nome, itbi_percentual, custos_padrao, full_name, email, whatsapp_e164, whatsapp_verified_at')
+      .select('pdf_header, pdf_logo_path, cor_primaria, formato_orcamento, municipio_padrao, cidade_nome, itbi_percentual, custos_padrao, full_name, email, telefone, whatsapp_e164, whatsapp_verified_at')
       .eq('id', userId).maybeSingle(),
     db.rpc('situacao_acesso', { uid: userId }).maybeSingle<{ personaliza_orcamento: boolean }>(),
   ]);
@@ -85,7 +85,8 @@ export async function configuracaoDoUsuario(userId: string): Promise<Configuraca
       personalizado,
       contato: personalizado ? {
         nome: p?.full_name || undefined,
-        whatsapp: p?.whatsapp_verified_at && p?.whatsapp_e164 ? telefoneBonito(p.whatsapp_e164) : undefined,
+        // Telefone de contato informado pelo assinante; sem ele, o WhatsApp confirmado pelo agente.
+        whatsapp: p?.telefone ? telefoneBonito(p.telefone) : p?.whatsapp_verified_at && p?.whatsapp_e164 ? telefoneBonito(p.whatsapp_e164) : undefined,
         email: p?.email || undefined,
       } : undefined,
     },

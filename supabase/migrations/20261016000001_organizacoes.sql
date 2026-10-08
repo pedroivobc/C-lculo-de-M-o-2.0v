@@ -1,6 +1,6 @@
 -- Organizações (imobiliárias e equipe Clemente): um gestor paga um fee fixo por um pacote de usuários
 -- (assentos_base) e cada usuário a mais entra como adicional. Preços em src/lib/planos.ts (EQUIPE).
--- Rodar DEPOIS de 20261015000000_papeis_equipe.sql.
+-- Rodar DEPOIS de 20261016000000_papeis_equipe.sql.
 --
 -- Regras:
 --   - Cada pessoa está em no máximo uma organização ativa.

@@ -34,7 +34,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://c-lculo-de-m-o-2-0v.vercel.app/api/agente/mensagem",
+        "url": "https://calculonamao.com.br/api/agente/mensagem",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [

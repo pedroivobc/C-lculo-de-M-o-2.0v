@@ -7,7 +7,7 @@ import type { CalculoSalvo } from './historico';
 /**
  * Organizações (imobiliárias e Clemente Team): o gestor inclui, altera e remove usuários (nome e telefone,
  * e-mail opcional para entrar no site) e acompanha os orçamentos da equipe. Regras de acesso no banco
- * (supabase/migrations/20261015000001_organizacoes.sql).
+ * (supabase/migrations/20261016000001_organizacoes.sql).
  */
 
 export type TipoOrganizacao = 'teams' | 'clemente';
