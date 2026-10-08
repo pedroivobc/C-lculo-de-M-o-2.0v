@@ -1,3 +1,4 @@
+import { textoDasBases } from '../src/lib/calc';
 import type { CalculoSalvo } from './historico';
 import { numeroCalculo } from './historico';
 
@@ -18,7 +19,7 @@ export function gerarCsv(calculos: CalculoSalvo[]): Buffer {
     c.municipio ?? '',
     c.origem,
     c.descricao ?? '',
-    (c.resultado.bases ?? []).map(decimal).join(' + '),
+    textoDasBases(c.resultado, decimal),
     c.resultado.linhas.map((l) => `${l.rotulo}: ${decimal(l.valor)}`).join(' | '),
     decimal(Number(c.total)),
   ].map(cel).join(';'));

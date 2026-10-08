@@ -2,7 +2,7 @@ import { jsPDF } from 'jspdf';
 import { brl, type Resultado } from '../src/lib/calc';
 import { config } from './config';
 import { COR_MARCA, hexParaRgb, type Estilo } from './estilo';
-import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContato, linhaDeContexto, linhaDoEndereco, logoOrcaiPng, SUAVE, TEXTO, TINTA, tituloDoDocumento, type MetaOrcamento } from './documento';
+import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContato, linhasDeContexto, linhaDoEndereco, logoOrcaiPng, SUAVE, TEXTO, TINTA, tituloDoDocumento, type MetaOrcamento } from './documento';
 import sharp from 'sharp';
 
 export { TITULO } from './documento';
@@ -59,12 +59,11 @@ export async function gerarPdfOrcamento(r: Resultado, meta: MetaOrcamento, estil
     doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(...rgb(TEXTO));
     doc.text(doc.splitTextToSize(linhaDoEndereco(r, meta.endereco), R - L)[0], L, y);
   }
-  const contexto = linhaDeContexto(r, brl, !!meta.endereco);
-  if (contexto) {
-    y += 6;
+  linhasDeContexto(r, brl, !!meta.endereco).forEach((contexto, i) => {
+    y += i ? 4.5 : 6;
     doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(...rgb(SUAVE));
     doc.text(contexto, L, y);
-  }
+  });
 
   // Tabela.
   y += 11;

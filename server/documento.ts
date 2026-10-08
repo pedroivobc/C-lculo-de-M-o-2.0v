@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { ROTULO_SUBTIPO_ESCRITURA, type Resultado } from '../src/lib/calc';
+import { ROTULO_SUBTIPO_ESCRITURA, textoDasBases, type Resultado } from '../src/lib/calc';
 import { hexParaRgb, type Estilo } from './estilo';
 
 /**
@@ -34,11 +34,13 @@ export function tituloDoDocumento(r: Resultado) {
   return base;
 }
 
-export function linhaDeContexto(r: Resultado, brl: (n: number) => string, semCidade = false) {
-  const partes: string[] = [];
-  if (!semCidade && r.municipioNome && r.municipio !== 'n/a') partes.push(`Imóvel em ${r.municipioNome} (MG)`);
-  if (r.bases.length) partes.push(`Base de cálculo ${r.bases.map(brl).join(' + ')}`);
-  return partes.join(' · ');
+/** Linhas abaixo do título: a cidade e a base de cálculo, cada uma na sua linha (a base com o nome de cada parte). */
+export function linhasDeContexto(r: Resultado, brl: (n: number) => string, semCidade = false) {
+  const linhas: string[] = [];
+  if (!semCidade && r.municipioNome && r.municipio !== 'n/a') linhas.push(`Imóvel em ${r.municipioNome} (MG)`);
+  const bases = textoDasBases(r, brl);
+  if (bases) linhas.push(`Base de cálculo: ${bases}`);
+  return linhas;
 }
 
 /** Nome · WhatsApp · e-mail do assinante (plano Pró). Vazio quando não há contato. */
