@@ -29,7 +29,7 @@ const NOTA: Record<Ato, string> = {
 };
 
 const DUVIDAS = [
-  ['O Cálculo na Mão virou Orçaí?', 'Virou. O endereço calculonamao.com.br continua trazendo você para cá. Nada muda para quem já assina: mesma conta, mesmo plano e o mesmo agente no WhatsApp.'],
+  ['Cálculo na Mão e Orça.ai são a mesma coisa?', 'São. O endereço calculonamao.com.br traz você para o Orça.ai: mesma conta, mesmo plano e o mesmo agente no WhatsApp.'],
   ['Os valores são oficiais?', 'São estimativas feitas com a tabela de emolumentos de MG e as regras de ITBI de Juiz de Fora do ano corrente. Os valores finais são os do cartório e da prefeitura no dia do ato.'],
   ['Meu imóvel é em outra cidade de MG. Serve?', 'Sim. Juiz de Fora já tem a regra de ITBI cadastrada; nas outras cidades de MG você informa a alíquota no cadastro. Peça a sua cidade no formulário acima para ela ganhar a regra completa.'],
   ['Como o agente sabe que sou eu?', 'Pelo número que você confirma no cadastro com um código. Só esse número tem acesso aos seus orçamentos.'],
@@ -105,8 +105,8 @@ export default function Landing() {
         <section className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-12 px-4 pt-10 sm:px-6 sm:pt-14">
           <div className="flex min-w-0 flex-1 basis-[420px] flex-col gap-5">
             <a href="#novo-nome" className="inline-flex w-fit flex-wrap items-center gap-x-2 rounded-full border border-borda bg-white py-1 pr-3.5 pl-1 text-sm font-semibold text-tinta no-underline">
-              <span className="rounded-full bg-tinta px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-white">Novo nome</span>
-              <span><s className="text-suave">Cálculo na Mão</s> agora é <strong className="text-acao">Orçaí</strong></span>
+              <span className="rounded-full bg-tinta px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-white">Cálculo na Mão</span>
+              <span>é o <strong className="text-acao">Orça.ai</strong></span>
             </a>
             <span className="rotulo-secao">Para corretores e despachantes de Juiz de Fora</span>
             <h1 className="text-[38px] font-[850] leading-[42px] sm:text-[60px] sm:leading-[62px]">
@@ -150,14 +150,15 @@ export default function Landing() {
         <section id="novo-nome" className="mx-auto max-w-[1200px] px-4 pt-20 sm:px-6">
           <div className="flex flex-col gap-6 rounded-[28px] bg-tinta p-6 text-white sm:p-10 md:flex-row md:items-center md:gap-12">
             <div className="flex shrink-0 flex-col gap-1">
-              <span className="display text-2xl font-black text-[#8a93a6] line-through decoration-2 sm:text-3xl">cálculo na mão</span>
-              <span className="display text-4xl font-black sm:text-[52px] sm:leading-[56px]" style={{ letterSpacing: '-0.05em' }}>orça<span className="text-marca-texto">í</span></span>
+              <span className="display text-2xl font-black text-[#c7cedb] sm:text-3xl">cálculo na mão</span>
+              <span className="display text-xl font-black text-marca-texto sm:text-2xl">=</span>
+              <span className="display text-4xl font-black sm:text-[52px] sm:leading-[56px]" style={{ letterSpacing: '-0.04em' }}>orça<span className="text-marca-texto">.ai</span></span>
             </div>
             <div className="flex flex-col gap-3">
-              <h2 className="text-[26px] font-[850] leading-8 sm:text-[32px] sm:leading-[38px]">Chega de cálculo na mão. Agora é Orçaí.</h2>
+              <h2 className="text-[26px] font-[850] leading-8 sm:text-[32px] sm:leading-[38px]">Cálculo na mão? É o Orça.ai.</h2>
               <p className="max-w-[620px] text-base leading-[26px] text-[#c7cedb] sm:text-[17px] sm:leading-[28px]">
-                O Cálculo na Mão agora se chama <strong className="text-white">Orçaí</strong>. A conta de ITBI, escritura e registro que você fazia na mão, na planilha ou ligando para o cartório sai pronta em 10 segundos, pelo site ou no WhatsApp.
-                Chegou por calculonamao.com.br? Está no lugar certo: sua conta, sua assinatura e o agente continuam os mesmos.
+                Cálculo na Mão e <strong className="text-white">Orça.ai</strong> são a mesma coisa: a conta de ITBI, escritura e registro que você fazia na mão, na planilha ou ligando para o cartório, pronta em 10 segundos, pelo site ou no WhatsApp.
+                Chegou por calculonamao.com.br? Está no lugar certo.
               </p>
             </div>
           </div>
