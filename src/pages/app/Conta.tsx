@@ -73,6 +73,15 @@ export default function Conta() {
             <span className="text-suave">Você faz parte de <strong className="text-tinta">{equipe.nome}</strong>{equipe.funcao === 'gestor' ? ' como gestor.' : '. O plano é cuidado pelo gestor da equipe.'}</span>
             {equipe.funcao === 'gestor' && <BotaoLink to="/app/equipe">Gerenciar equipe</BotaoLink>}
           </section>
+          ) : perfil?.papel === 'admin' ? (
+          <section className="flex flex-col gap-3 rounded-2xl border-2 border-tinta bg-white p-6 shadow-[6px_6px_0_#101828]">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-bold">Administrador</h2>
+              <span className="rounded-full bg-ok-claro px-2.5 py-1 text-xs font-bold text-ok">Acesso completo</span>
+            </div>
+            <span className="text-suave">A sua conta usa tudo do Pro sem assinatura. Monte a sua equipe para cadastrar colaboradores.</span>
+            <BotaoLink to="/app/equipe">Montar minha equipe</BotaoLink>
+          </section>
           ) : (
           <section className="flex flex-col gap-3 rounded-2xl border-2 border-tinta bg-white p-6 shadow-[6px_6px_0_#101828]">
             <div className="flex items-center justify-between gap-2">

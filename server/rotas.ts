@@ -18,6 +18,7 @@ import {
   alterarMembro, alterarOrganizacao, criarOrganizacao, ErroEquipe, gestaoDoNegocio, incluirMembro, liberarManualmente,
   orcamentosDaEquipe, relatorioDaEquipe, removerMembro, resumoEquipe, type DadosMembro, type NovaOrganizacao,
 } from './equipe';
+import { encerrarLiberacao, estenderTeste, fichaDoUsuario, liberarPlano, listarUsuarios, registrar, visaoGeral } from './gestao';
 
 export const rotas = Router();
 
@@ -312,17 +313,73 @@ rotas.post('/api/admin/organizacoes', exigirUsuario, exigirAdmin, h(async (req, 
   }), req.body);
   const telefoneGestor = d.telefoneGestor ? normalizarTelefone(d.telefoneGestor) : null;
   if (d.telefoneGestor && !telefoneGestor) return res.status(400).json({ erro: 'Telefone do gestor inválido.' });
-  res.json(await criarOrganizacao({ ...d, telefoneGestor }));
+  const org = await criarOrganizacao({ ...d, telefoneGestor });
+  await registrar(req.userId!, 'criar_equipe', { tipo: 'organizacao', id: org.id }, { depois: { nome: d.nome, tipo: d.tipo, assentosBase: d.assentosBase } });
+  res.json(org);
 }));
 
 rotas.put('/api/admin/organizacoes/:id', exigirUsuario, exigirAdmin, h(async (req, res) => {
   const d = z.object({ nome: z.string().trim().min(2).max(120).optional(), assentosBase: z.coerce.number().int().min(1).max(500).optional() }).parse(req.body);
-  res.json(await alterarOrganizacao(String(req.params.id), d));
+  const id = String(req.params.id);
+  const { data: antes } = await supabaseAdmin().from('organizacoes').select('nome, assentos_base').eq('id', id).maybeSingle();
+  const r = await alterarOrganizacao(id, d);
+  await registrar(req.userId!, 'mudar_pacote', { tipo: 'organizacao', id }, { antes, depois: d });
+  res.json(r);
 }));
 
 rotas.post('/api/admin/organizacoes/:id/liberar', exigirUsuario, exigirAdmin, h(async (req, res) => {
   const { ate } = validar<{ ate: string }>(z.object({ ate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida.') }), req.body);
-  res.json(await liberarManualmente(String(req.params.id), ate));
+  const r = await liberarManualmente(String(req.params.id), ate);
+  await registrar(req.userId!, 'liberar_equipe', { tipo: 'organizacao', id: String(req.params.id) }, { depois: { ate } });
+  res.json(r);
+}));
+
+/** O administrador também trabalha como gestor: cria a própria Clemente Team (ele é o dono). */
+rotas.post('/api/admin/minha-equipe', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  const d = validar<{ nome: string; telefone?: string | null }>(z.object({
+    nome: z.string().trim().min(2, 'Informe o nome da equipe.').max(120),
+    telefone: z.string().optional().nullable(),
+  }), req.body);
+  const telefoneGestor = d.telefone ? normalizarTelefone(d.telefone) : null;
+  if (d.telefone && !telefoneGestor) return res.status(400).json({ erro: 'Telefone inválido.' });
+  const { data: eu } = await supabaseAdmin().from('profiles').select('email').eq('id', req.userId!).maybeSingle();
+  if (!eu?.email) return res.status(400).json({ erro: 'A sua conta não tem e-mail.' });
+  const org = await criarOrganizacao({ nome: d.nome, tipo: 'clemente', emailGestor: eu.email, telefoneGestor, assentosBase: 5 });
+  await registrar(req.userId!, 'criar_equipe', { tipo: 'organizacao', id: org.id }, { depois: { nome: d.nome, tipo: 'clemente' } });
+  res.json(org);
+}));
+
+// ---------------- Gestão de Negócio: visão geral e usuários (admin) ----------------
+
+rotas.get('/api/admin/visao', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  const dias = [7, 30, 90, 365].includes(Number(req.query.dias)) ? Number(req.query.dias) : 30;
+  res.json(await visaoGeral(dias));
+}));
+
+rotas.get('/api/admin/usuarios', exigirUsuario, exigirAdmin, h(async (_req, res) => {
+  res.json({ usuarios: await listarUsuarios() });
+}));
+
+rotas.get('/api/admin/usuarios/:id', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  res.json(await fichaDoUsuario(String(req.params.id)));
+}));
+
+const motivoSchema = z.string().trim().min(3, 'Escreva o motivo (fica registrado na auditoria).').max(300);
+const dataSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida.');
+
+rotas.post('/api/admin/usuarios/:id/liberar', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  const d = validar<{ nivel: 'usuario' | 'pro'; ate: string; motivo: string }>(z.object({ nivel: z.enum(['usuario', 'pro']), ate: dataSchema, motivo: motivoSchema }), req.body);
+  res.json(await liberarPlano(req.userId!, String(req.params.id), d));
+}));
+
+rotas.post('/api/admin/usuarios/:id/encerrar', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  const d = validar<{ motivo: string }>(z.object({ motivo: motivoSchema }), req.body);
+  res.json(await encerrarLiberacao(req.userId!, String(req.params.id), d.motivo));
+}));
+
+rotas.post('/api/admin/usuarios/:id/teste', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  const d = validar<{ ate: string; motivo: string }>(z.object({ ate: dataSchema, motivo: motivoSchema }), req.body);
+  res.json(await estenderTeste(req.userId!, String(req.params.id), d));
 }));
 
 // ---------------- Pedido de cidade (landing, sem login) ----------------

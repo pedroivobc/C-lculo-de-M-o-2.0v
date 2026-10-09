@@ -49,7 +49,7 @@ interface ContaValor {
   perfil: Perfil | null;
   assinatura: Assinatura | null;
   equipe: Equipe | null;
-  /** Assinatura própria ativa, ou equipe com o plano em dia. */
+  /** Assinatura própria ativa, equipe com o plano em dia, ou administrador. */
   ativa: boolean;
   carregando: boolean;
   /** `silencioso` atualiza sem a tela de carregamento (usado na espera da confirmação do WhatsApp). */
@@ -88,7 +88,8 @@ export function ContaProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { if (!loading) recarregar(); }, [loading, recarregar]);
 
-  const ativa = equipe ? equipeLiberada : !!assinatura && assinatura.status === 'ativa'
+  // Administrador: acesso completo, sem assinatura (o banco também libera em situacao_acesso).
+  const ativa = perfil?.papel === 'admin' ? true : equipe ? equipeLiberada : !!assinatura && assinatura.status === 'ativa'
     && (!assinatura.current_period_end || new Date(assinatura.current_period_end) > new Date());
 
   return (

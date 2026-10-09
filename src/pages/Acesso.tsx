@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase, supabaseConfigurado } from '@/lib/supabase';
 import { api } from '@/lib/api';
 import { useConta } from '@/hooks/useConta';
@@ -358,7 +358,9 @@ export function Verificar() {
 export function Configurar() {
   const [params] = useSearchParams();
   const navegar = useNavigate();
-  const seguir = () => navegar(`/assinar${params.toString() ? `?${params}` : ''}`);
+  const { perfil } = useConta();
+  // O administrador não assina: segue direto para o app.
+  const seguir = () => navegar(perfil?.papel === 'admin' ? '/app' : `/assinar${params.toString() ? `?${params}` : ''}`);
   return (
     <Moldura etapa={3} largo>
       <div>
@@ -377,6 +379,8 @@ export function Assinar() {
   const { perfil } = useConta();
   const plano = PLANOS[nivel];
   const valor = preco(nivel, periodo);
+
+  if (perfil?.papel === 'admin') return <Navigate to="/app" replace />;
 
   return (
     <Moldura etapa={4}>

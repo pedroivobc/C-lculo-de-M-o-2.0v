@@ -38,7 +38,7 @@ const nomeMes = (mes: string) => new Date(`${mes}-15T12:00:00`).toLocaleDateStri
 
 /** Minha equipe: o gestor da imobiliária cuida dos usuários e acompanha os orçamentos de todos. */
 export default function Equipe() {
-  const { equipe } = useConta();
+  const { equipe, perfil } = useConta();
   const [aba, setAba] = useState<Aba>('usuarios');
   const [mes, setMes] = useState(mesAtual());
   const [resumo, setResumo] = useState<Resumo | null>(null);
@@ -49,6 +49,7 @@ export default function Equipe() {
   }, [mes]);
   useEffect(() => { if (equipe?.funcao === 'gestor') carregar(); }, [carregar, equipe?.funcao]);
 
+  if (!equipe && perfil?.papel === 'admin') return <CriarMinhaEquipe />;
   if (equipe?.funcao !== 'gestor') return <Aviso tom="vermelho">Área restrita ao gestor da equipe.</Aviso>;
 
   const o = resumo?.organizacao;
@@ -384,6 +385,47 @@ function RelatorioMes({ mes }: { mes: string }) {
           </Cartao>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** O administrador ainda sem equipe: cria a própria Clemente Team (ele é o gestor, sem cobrança). */
+function CriarMinhaEquipe() {
+  const { perfil, recarregar } = useConta();
+  const [nome, setNome] = useState('Clemente Team');
+  const [telefone, setTelefone] = useState(perfil?.whatsapp_e164 ? '' : perfil?.telefone ?? '');
+  const [ocupado, setOcupado] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  async function criar() {
+    setOcupado(true); setErro(null);
+    try {
+      await api('/api/admin/minha-equipe', { corpo: { nome, telefone: telefone || null } });
+      await recarregar({ silencioso: true });
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : String(e));
+    } finally { setOcupado(false); }
+  }
+
+  return (
+    <div className="flex max-w-xl flex-col gap-6">
+      <header className="flex flex-col gap-1">
+        <span className="rotulo-secao">Minha equipe</span>
+        <h1 className="text-[28px] font-bold leading-[34px]">Monte a sua equipe</h1>
+        <p className="text-suave">Você fica como gestor de uma Clemente Team: cadastra colaboradores com nome e telefone, acompanha os orçamentos de todos, e todos saem com a sua logo e as suas cores. Não há cobrança.</p>
+      </header>
+      <Cartao titulo="Nova equipe">
+        <div className="flex flex-col gap-4">
+          <Campo rotulo="Nome da equipe" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={120} />
+          {!perfil?.whatsapp_e164 && (
+            <Campo rotulo="Seu telefone" type="tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} dica="Com DDD. É o seu número na lista da equipe." />
+          )}
+          {erro && <Aviso tom="vermelho">{erro}</Aviso>}
+          <Botao onClick={criar} disabled={ocupado || nome.trim().length < 2 || (!perfil?.whatsapp_e164 && telefone.replace(/\D/g, '').length < 10)}>
+            {ocupado ? 'Criando…' : 'Criar minha equipe'}
+          </Botao>
+        </div>
+      </Cartao>
     </div>
   );
 }

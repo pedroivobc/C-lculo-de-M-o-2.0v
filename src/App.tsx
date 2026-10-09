@@ -16,6 +16,8 @@ const BancoPrivado = lazy(() => import('@/pages/app/Financiamento').then((m) => 
 const Correcao = lazy(() => import('@/pages/app/Correcao'));
 const AdminTabelas = lazy(() => import('@/pages/app/AdminTabelas'));
 const AdminGestao = lazy(() => import('@/pages/app/AdminGestao'));
+const AdminUsuarios = lazy(() => import('@/pages/app/AdminUsuarios'));
+const AdminEquipes = lazy(() => import('@/pages/app/AdminEquipes'));
 const Equipe = lazy(() => import('@/pages/app/Equipe'));
 const Doacao = lazy(() => import('@/pages/app/Doacao'));
 const Historico = lazy(() => import('@/pages/app/Historico'));
@@ -46,10 +48,10 @@ function Protegido({ children, exigirWhatsapp = false }: { children: ReactNode; 
   return <>{children}</>;
 }
 
-/** O administrador só vê a gestão do negócio: a página inicial dele é o painel. */
-function InicioPorPerfil() {
+/** Gestão de Negócio: só o administrador; os demais voltam para o início. */
+function SoAdmin({ children }: { children: ReactNode }) {
   const { perfil } = useConta();
-  return perfil?.papel === 'admin' ? <Navigate to="/app/admin/gestao" replace /> : <Inicio />;
+  return perfil && perfil.papel !== 'admin' ? <Navigate to="/app" replace /> : <>{children}</>;
 }
 
 export default function App() {
@@ -68,13 +70,15 @@ export default function App() {
             <Route path="/configurar" element={<Protegido><Configurar /></Protegido>} />
             <Route path="/assinar" element={<Protegido><Assinar /></Protegido>} />
             <Route path="/app" element={<Protegido exigirWhatsapp><AppLayout /></Protegido>}>
-              <Route index element={<InicioPorPerfil />} />
+              <Route index element={<Inicio />} />
               <Route path="escrituras" element={<Escrituras />} />
               <Route path="financiamento-caixa" element={<FinanciamentoCaixa />} />
               <Route path="banco-privado" element={<BancoPrivado />} />
               <Route path="correcao" element={<Correcao />} />
-              <Route path="admin/tabelas" element={<AdminTabelas />} />
-              <Route path="admin/gestao" element={<AdminGestao />} />
+              <Route path="admin/tabelas" element={<SoAdmin><AdminTabelas /></SoAdmin>} />
+              <Route path="admin/gestao" element={<SoAdmin><AdminGestao /></SoAdmin>} />
+              <Route path="admin/usuarios" element={<SoAdmin><AdminUsuarios /></SoAdmin>} />
+              <Route path="admin/equipes" element={<SoAdmin><AdminEquipes /></SoAdmin>} />
               <Route path="equipe" element={<Equipe />} />
               <Route path="doacao" element={<Doacao />} />
               <Route path="historico" element={<Historico />} />
