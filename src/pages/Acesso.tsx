@@ -416,7 +416,7 @@ export function Assinar() {
             <span className="rounded-full bg-tinta px-2.5 py-0.5 text-xs font-bold text-white">{vagas === 1 ? 'Última vaga' : `Restam ${vagas} vagas`}</span>
           </span>
           <span className="numero text-[26px] font-extrabold">{LANCAMENTO_TEXTO}/mês</span>
-          <span className="text-texto">Plano {PLANOS[OFERTA_LANCAMENTO.nivel].nome} anual, cobrado mês a mês, para os {OFERTA_LANCAMENTO.vagas} primeiros corretores. {OFERTA_LANCAMENTO.diasTeste} dias para testar com o cartão cadastrado; a primeira cobrança é no {OFERTA_LANCAMENTO.diasTeste + 1}º dia. Fidelidade de 12 meses, com cancelamento grátis nos {DIAS_ARREPENDIMENTO} primeiros dias.</span>
+          <span className="text-texto">Plano {PLANOS[OFERTA_LANCAMENTO.nivel].nome} anual, cobrado mês a mês, para os {OFERTA_LANCAMENTO.vagas} primeiros corretores, com benefícios exclusivos de fundador. {OFERTA_LANCAMENTO.diasTeste} dias para testar com o cartão cadastrado; a primeira cobrança é no {OFERTA_LANCAMENTO.diasTeste + 1}º dia. Fidelidade de 12 meses, com cancelamento grátis nos {DIAS_ARREPENDIMENTO} primeiros dias.</span>
           <Botao onClick={() => irPara('/api/assinatura/lancamento', {}, 'lancamento')} disabled={!!indo} className="min-h-[52px] text-base">
             {indo === 'lancamento' ? 'Abrindo o pagamento…' : `Garantir por ${LANCAMENTO_TEXTO}/mês`}
           </Botao>

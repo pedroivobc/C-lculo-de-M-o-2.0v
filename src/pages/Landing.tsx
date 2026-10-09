@@ -231,7 +231,7 @@ export default function Landing() {
             <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border-2 border-tinta bg-amarelo-claro p-6 shadow-[8px_8px_0_#101828]">
               <div className="flex max-w-[640px] flex-col gap-1">
                 <span className="text-xl font-[850]">{OFERTA_LANCAMENTO.nome}: {LANCAMENTO_TEXTO}/mês</span>
-                <span className="text-texto">Plano {PLANOS[OFERTA_LANCAMENTO.nivel].nome} anual, cobrado mês a mês, para os {OFERTA_LANCAMENTO.vagas} primeiros corretores. {OFERTA_LANCAMENTO.diasTeste} dias de teste com o cartão cadastrado, fidelidade de 12 meses e cancelamento grátis nos 7 primeiros dias. {vagas === 1 ? 'Resta 1 vaga.' : `Restam ${vagas} vagas.`}</span>
+                <span className="text-texto">Plano {PLANOS[OFERTA_LANCAMENTO.nivel].nome} anual, cobrado mês a mês, para os {OFERTA_LANCAMENTO.vagas} primeiros corretores, com benefícios exclusivos de fundador. {OFERTA_LANCAMENTO.diasTeste} dias de teste com o cartão cadastrado, fidelidade de 12 meses e cancelamento grátis nos 7 primeiros dias. {vagas === 1 ? 'Resta 1 vaga.' : `Restam ${vagas} vagas.`}</span>
               </div>
               <BotaoLink to="/cadastro?oferta=lancamento" className="min-h-14 px-6 text-[17px]">Garantir minha vaga</BotaoLink>
             </div>

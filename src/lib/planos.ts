@@ -31,13 +31,13 @@ export function preco(nivel: Nivel, periodo: Periodo) {
 }
 
 /**
- * Oferta de lançamento: plano anual a R$ 9,90/mês, só para os primeiros corretores.
- * Teste de 3 dias com o cartão já cadastrado (a Stripe cobra no 4º dia), fidelidade de 12 meses
- * e o preço mantido enquanto a assinatura continuar.
+ * Plano Fundador (oferta de lançamento): Pró anual a R$ 9,90/mês, só para os primeiros corretores.
+ * Teste de 3 dias com o cartão já cadastrado (a Stripe cobra no 4º dia) e fidelidade de 12 meses.
+ * A renovação depois do 1º ano ainda não foi definida: não prometer preço no site.
  */
 export const OFERTA_LANCAMENTO = {
-  nome: 'Oferta de lançamento (anual)',
-  nivel: 'usuario' as Nivel,
+  nome: 'Plano Fundador',
+  nivel: 'pro' as Nivel,
   mensalCentavos: 990,
   vagas: 20,
   diasTeste: 3,
