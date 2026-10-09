@@ -1,6 +1,7 @@
 /**
  * Planos e preços. Fonte única para o site, o servidor e a cobrança na Stripe.
- * Não existe plano mensal: os planos são trimestral (preço cheio), semestral (10% off) e anual (20% off).
+ * Não existe plano mensal: os planos são trimestral (preço cheio), semestral e anual (mais barato por mês).
+ * O preço por mês de cada período é fixo, terminado em ,90; o desconto mostrado é calculado sobre o trimestral.
  * No cartão, todo plano é cobrado mês a mês, com fidelidade do período; depois renova no mesmo plano.
  * No Pix, só o anual, pago de uma vez.
  */
@@ -8,11 +9,19 @@ export type Nivel = 'usuario' | 'pro';
 export type Periodo = 'trimestral' | 'semestral' | 'anual';
 export type Forma = 'cartao' | 'pix';
 
-export const PLANOS: Record<Nivel, { nome: string; mensalCentavos: number; resumo: string }> = {
-  usuario: { nome: 'Starter', mensalCentavos: 2990, resumo: 'Orçamento em PDF com a marca Orça.ai, só no site' },
-  pro: { nome: 'Pró', mensalCentavos: 3990, resumo: 'Orçamento com a sua logo, as suas cores e o seu contato' },
+/** `mensalCentavos` é o preço cheio (trimestral); `porMes` é quanto sai por mês em cada período. */
+export const PLANOS: Record<Nivel, { nome: string; mensalCentavos: number; porMes: Record<Periodo, number>; resumo: string }> = {
+  usuario: {
+    nome: 'Starter', mensalCentavos: 1290, porMes: { trimestral: 1290, semestral: 1190, anual: 990 },
+    resumo: 'Orçamento em PDF com a marca Orça.ai, só no site',
+  },
+  pro: {
+    nome: 'Pró', mensalCentavos: 2490, porMes: { trimestral: 2490, semestral: 2190, anual: 1990 },
+    resumo: 'Orçamento com a sua logo, as suas cores e o seu contato',
+  },
 };
 
+/** `desconto` vale só para o plano de equipe; os planos individuais têm o preço de cada período em PLANOS. */
 export const PERIODOS: Record<Periodo, { nome: string; meses: number; desconto: number; cobranca: string }> = {
   trimestral: { nome: 'Trimestral', meses: 3, desconto: 0, cobranca: 'fidelidade de 3 meses' },
   semestral: { nome: 'Semestral', meses: 6, desconto: 0.1, cobranca: 'fidelidade de 6 meses' },
@@ -22,13 +31,20 @@ export const ORDEM_PERIODOS: Periodo[] = ['trimestral', 'semestral', 'anual'];
 
 const brl = (centavos: number) => (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+/** Desconto de um período sobre o preço cheio (trimestral), de 0 a 1. */
+const descontoDe = (nivel: Nivel, periodo: Periodo) => 1 - PLANOS[nivel].porMes[periodo] / PLANOS[nivel].porMes.trimestral;
+
 /** Preço de um plano num período: total cobrado e quanto sai por mês. Em centavos e já formatado. */
 export function preco(nivel: Nivel, periodo: Periodo) {
-  const { meses, desconto } = PERIODOS[periodo];
-  const total = Math.round(PLANOS[nivel].mensalCentavos * meses * (1 - desconto));
-  const porMes = Math.round(total / meses);
-  return { total, porMes, totalTexto: brl(total), porMesTexto: brl(porMes), descontoTexto: desconto ? `${Math.round(desconto * 100)}% off` : '' };
+  const porMes = PLANOS[nivel].porMes[periodo];
+  const total = porMes * PERIODOS[periodo].meses;
+  const desconto = Math.round(descontoDe(nivel, periodo) * 100);
+  return { total, porMes, totalTexto: brl(total), porMesTexto: brl(porMes), descontoTexto: desconto ? `${desconto}% off` : '' };
 }
+
+/** Maior desconto do período entre os planos, para o seletor ("até 23% off"). Em %. */
+export const descontoMaximo = (periodo: Periodo) =>
+  Math.round(Math.max(...(Object.keys(PLANOS) as Nivel[]).map((n) => descontoDe(n, periodo))) * 100);
 
 /**
  * Plano Fundador (oferta de lançamento): Pró anual a R$ 9,90/mês, só para os primeiros corretores.
