@@ -79,7 +79,7 @@ export default function Landing() {
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-center gap-x-4 gap-y-1 px-6 py-2.5">
           <span className="flex items-center gap-2">
             <span aria-hidden="true" className="h-0 w-0 border-x-[5px] border-b-[9px] border-x-transparent border-b-[#ff5a62]" />
-            Disponível em <strong>Juiz de Fora (MG)</strong>. Outras cidades mineiras em breve.
+            Começando por <strong>Juiz de Fora (MG)</strong>. Novas cidades em breve.
           </span>
           <a href="#cidades" className="font-bold text-marca-texto">Peça a sua cidade</a>
         </div>
@@ -108,7 +108,7 @@ export default function Landing() {
               <span className="rounded-full bg-tinta px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-white">Cálculo na Mão</span>
               <span>é o <strong className="text-acao">Orça.ai</strong></span>
             </a>
-            <span className="rotulo-secao">Para corretores e despachantes de Juiz de Fora</span>
+            <span className="rotulo-secao">Para corretores e despachantes</span>
             <h1 className="text-[38px] font-[850] leading-[42px] sm:text-[60px] sm:leading-[62px]">
               Orçamento de escritura e ITBI <span className="marca-texto">em 10 segundos.</span>
             </h1>
