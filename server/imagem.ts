@@ -23,7 +23,7 @@ export async function gerarJpegOrcamento(r: Resultado, meta: MetaOrcamento, esti
     const { width = 1, height = 1 } = await sharp(estilo.logoPng).metadata();
     alturaLogo = Math.min(130, (520 * height) / width);
     const w = (alturaLogo * width) / height;
-    t.push(`<image x="${P}" y="${y}" width="${w}" height="${alturaLogo}" href="data:image/png;base64,${estilo.logoPng.toString('base64')}"/>`);
+    t.push(`<image x="${P}" y="${y}" width="${w}" height="${alturaLogo}" preserveAspectRatio="xMinYMin meet" href="data:image/png;base64,${estilo.logoPng.toString('base64')}"/>`);
   } else if (!estilo.personalizado) {
     t.push(`<g transform="translate(${P} ${y})">${lockupOrcaiSvg(64)}</g>`);
   }

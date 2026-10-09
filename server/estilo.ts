@@ -43,7 +43,8 @@ async function baixarLogo(caminho: string): Promise<Buffer | undefined> {
   if (cache && Date.now() - cache.em < 10 * 60_000) return cache.png;
   const { data, error } = await supabaseAdmin().storage.from('logos').download(caminho);
   if (error || !data) return undefined;
-  const original = Buffer.from(await data.arrayBuffer());
+  // Aplica a orientação gravada no arquivo (EXIF): sem isso, uma logo salva de lado no celular sai girada ou torta.
+  const original = await sharp(Buffer.from(await data.arrayBuffer())).rotate().png().toBuffer();
   // Corta a margem vazia em volta (fundo branco ou transparente): sem isso, uma logo com sobra ocupa
   // o espaço do cabeçalho e o desenho fica pequeno no orçamento.
   const recortada = await sharp(original).trim({ threshold: 12 }).toBuffer().catch(() => original);
