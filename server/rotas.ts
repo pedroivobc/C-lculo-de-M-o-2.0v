@@ -14,7 +14,7 @@ import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, salva
 import { comLocalidade, configuracaoDoUsuario, correcaoLiberada } from './estilo';
 import { gerarCsv } from './exportar';
 import { identificar, processarMensagem } from './agente/conversa';
-import { abrirCadastroDeCartao, abrirCheckout, abrirPortal, cancelarAssinatura, ErroAssinatura, lerEvento, tratarEvento } from './pagamento';
+import { abrirCadastroDeCartao, abrirCheckout, abrirCheckoutLancamento, abrirPortal, vagasDoLancamento, cancelarAssinatura, ErroAssinatura, lerEvento, tratarEvento } from './pagamento';
 
 export const rotas = Router();
 
@@ -174,6 +174,18 @@ rotas.post('/api/assinatura/checkout', limiteAssinatura, exigirUsuario, h(regra(
   }).refine((v) => v.forma === 'cartao' || v.periodo === 'anual', { message: 'O Pix vale só para o plano anual.' }).parse(req.body);
   res.json({ url: await abrirCheckout(req.userId!, nivel, periodo, forma) });
 })));
+
+/** Oferta de lançamento: R$ 9,90/mês, 3 dias de teste com cartão, só para os primeiros 20. */
+rotas.post('/api/assinatura/lancamento', limiteAssinatura, exigirUsuario, h(regra(async (req, res) => {
+  res.json({ url: await abrirCheckoutLancamento(req.userId!) });
+})));
+
+const limiteOferta = rateLimit({ windowMs: 15 * 60_000, limit: 60, standardHeaders: true, legacyHeaders: false });
+/** Público: quantas vagas da oferta de lançamento ainda restam (site e landing). */
+rotas.get('/api/oferta', limiteOferta, h(async (_req, res) => {
+  res.set('Cache-Control', 'public, max-age=60');
+  res.json({ vagas: await vagasDoLancamento() });
+}));
 
 /** Cadastra o cartão sem cobrar (libera o teste grátis). */
 rotas.post('/api/assinatura/cartao', limiteAssinatura, exigirUsuario, h(async (req, res) => {

@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useConta } from '@/hooks/useConta';
 import { Lockup } from '@/components/marca/Logo';
 import { Aviso, Botao, Campo } from '@/components/ui/Campos';
-import { A_PARTIR_DE, AGENTE_WHATSAPP, DIAS_TESTE, formasDoPeriodo, lerPeriodo, PERIODOS, PLANOS, preco, type Forma, type Nivel, type Periodo } from '@/lib/config';
+import { A_PARTIR_DE, AGENTE_WHATSAPP, DIAS_TESTE, formasDoPeriodo, LANCAMENTO_TEXTO, OFERTA_LANCAMENTO, lerPeriodo, PERIODOS, PLANOS, preco, type Forma, type Nivel, type Periodo } from '@/lib/config';
 import { SeletorPeriodo } from '@/components/ui/SeletorPeriodo';
 import { telefoneBonito } from '@/lib/formato';
 import { cpfValido, mascararCpf, soDigitosCpf } from '@/lib/cpf';
@@ -376,7 +376,8 @@ export function Assinar() {
   const [periodo, setPeriodo] = useState<Periodo>(lerPeriodo(params.get('plano')));
   const [forma, setForma] = useState<Forma>('cartao');
   const [temCartao, setTemCartao] = useState<boolean | null>(null);
-  const [indo, setIndo] = useState<'assinar' | 'cartao' | null>(null);
+  const [indo, setIndo] = useState<'assinar' | 'cartao' | 'lancamento' | null>(null);
+  const [vagas, setVagas] = useState(0);
   const [erro, setErro] = useState('');
   const { ativa } = useConta();
   const valor = preco(nivel, periodo);
@@ -386,10 +387,11 @@ export function Assinar() {
   useEffect(() => {
     supabase.rpc('minha_situacao_acesso').maybeSingle<{ tem_cartao: boolean }>()
       .then(({ data }) => setTemCartao(data?.tem_cartao ?? false));
+    api<{ vagas: number }>('/api/oferta', { publico: true }).then((r) => setVagas(r.vagas)).catch(() => setVagas(0));
   }, []);
 
   /** Abre a página de pagamento da Stripe (o cartão é digitado lá, não aqui). */
-  async function irPara(caminho: string, corpo: unknown, qual: 'assinar' | 'cartao') {
+  async function irPara(caminho: string, corpo: unknown, qual: 'assinar' | 'cartao' | 'lancamento') {
     setErro('');
     setIndo(qual);
     try {
@@ -407,6 +409,19 @@ export function Assinar() {
         <h2 className="text-[28px] font-bold leading-[34px]">Escolha seu plano</h2>
         <p className="text-suave">Os dois têm calculadoras, agente no WhatsApp, histórico e exportação.</p>
       </div>
+      {vagas > 0 && !ativa && (
+        <div className="flex flex-col gap-2 rounded-2xl border-2 border-tinta bg-amarelo-claro p-4 shadow-[4px_4px_0_#101828]">
+          <span className="flex items-center justify-between gap-2">
+            <span className="text-base font-bold">{OFERTA_LANCAMENTO.nome}</span>
+            <span className="rounded-full bg-tinta px-2.5 py-0.5 text-xs font-bold text-white">{vagas === 1 ? 'Última vaga' : `Restam ${vagas} vagas`}</span>
+          </span>
+          <span className="numero text-[26px] font-extrabold">{LANCAMENTO_TEXTO}/mês</span>
+          <span className="text-texto">Plano {PLANOS[OFERTA_LANCAMENTO.nivel].nome} para os {OFERTA_LANCAMENTO.vagas} primeiros corretores. {OFERTA_LANCAMENTO.diasTeste} dias para testar com o cartão cadastrado; a primeira cobrança é no {OFERTA_LANCAMENTO.diasTeste + 1}º dia. Fidelidade de 1 mês, e o preço continua enquanto você assinar.</span>
+          <Botao onClick={() => irPara('/api/assinatura/lancamento', {}, 'lancamento')} disabled={!!indo} className="min-h-[52px] text-base">
+            {indo === 'lancamento' ? 'Abrindo o pagamento…' : `Garantir por ${LANCAMENTO_TEXTO}/mês`}
+          </Botao>
+        </div>
+      )}
       <div role="group" aria-label="Plano" className="flex flex-col gap-2.5">
         {(['pro', 'usuario'] as const).map((n) => (
           <button key={n} type="button" aria-pressed={nivel === n} onClick={() => setNivel(n)}

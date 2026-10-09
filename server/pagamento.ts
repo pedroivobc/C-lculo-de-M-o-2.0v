@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { config } from './config';
 import { supabaseAdmin } from './supabase';
 import { enviarTexto } from './evolution';
-import { cobranca, PERIODOS, PLANOS, type Forma, type Nivel, type Periodo } from '../src/lib/planos';
+import { cobranca, OFERTA_LANCAMENTO, PERIODOS, PLANOS, type Forma, type Nivel, type Periodo } from '../src/lib/planos';
 
 /**
  * Cobrança pela Stripe, sempre no Checkout da própria Stripe (o número do cartão nunca passa por aqui).
@@ -86,6 +86,35 @@ export async function precoDaStripe(nivel: Nivel, periodo: Periodo, forma: Forma
     metadata: { nivel, periodo, forma },
   });
   precosEmCache.set(chave, novo.id);
+  return novo.id;
+}
+
+const CHAVE_LANCAMENTO = 'orcai_lancamento_cartao';
+
+/** Preço mensal da oferta de lançamento (mesma lógica de precoDaStripe). */
+async function precoLancamento(): Promise<string> {
+  const emCache = precosEmCache.get(CHAVE_LANCAMENTO);
+  if (emCache) return emCache;
+  const s = stripe();
+  const { data } = await s.prices.list({ lookup_keys: [CHAVE_LANCAMENTO], active: true, limit: 1 });
+  if (data[0] && data[0].unit_amount === OFERTA_LANCAMENTO.mensalCentavos) {
+    precosEmCache.set(CHAVE_LANCAMENTO, data[0].id);
+    return data[0].id;
+  }
+  const produto = `orcai_${OFERTA_LANCAMENTO.nivel}`;
+  await s.products.create({ id: produto, name: `Orça.ai ${PLANOS[OFERTA_LANCAMENTO.nivel].nome}`, description: PLANOS[OFERTA_LANCAMENTO.nivel].resumo })
+    .catch((e) => { if ((e as Stripe.errors.StripeError).code !== 'resource_already_exists') throw e; });
+  const novo = await s.prices.create({
+    product: produto,
+    currency: 'brl',
+    unit_amount: OFERTA_LANCAMENTO.mensalCentavos,
+    lookup_key: CHAVE_LANCAMENTO,
+    transfer_lookup_key: true,
+    nickname: OFERTA_LANCAMENTO.nome,
+    recurring: { interval: 'month', interval_count: 1 },
+    metadata: { nivel: OFERTA_LANCAMENTO.nivel, periodo: 'lancamento', forma: 'cartao' },
+  });
+  precosEmCache.set(CHAVE_LANCAMENTO, novo.id);
   return novo.id;
 }
 
@@ -187,6 +216,44 @@ export async function abrirCheckout(userId: string, nivel: Nivel, periodo: Perio
   return s.url!;
 }
 
+/**
+ * Vagas da oferta de lançamento que ainda restam. Conta quem cadastrou o cartão e está no teste ou assinando;
+ * quem desiste no teste (assinatura cancelada) devolve a vaga.
+ */
+export async function vagasDoLancamento(): Promise<number> {
+  const { count, error } = await supabaseAdmin().from('subscriptions').select('id', { count: 'exact', head: true })
+    .eq('plan', 'lancamento').in('status', ['ativa', 'atrasada', 'pendente']);
+  if (error) throw new Error(error.message);
+  return Math.max(0, OFERTA_LANCAMENTO.vagas - (count ?? 0));
+}
+
+/** Checkout da oferta de lançamento: cartão, 3 dias de teste e depois R$ 9,90 por mês. */
+export async function abrirCheckoutLancamento(userId: string): Promise<string> {
+  if (await vagasDoLancamento() <= 0) throw new ErroAssinatura('As vagas da oferta de lançamento acabaram. Veja os outros planos.');
+  const db = supabaseAdmin();
+  const { data: ja } = await db.from('subscriptions').select('id').eq('user_id', userId).eq('plan', 'lancamento').limit(1).maybeSingle();
+  if (ja) throw new ErroAssinatura('A oferta de lançamento vale uma vez por conta.');
+  if (await assinaturaVigente(userId)) throw new ErroAssinatura('Você já tem uma assinatura. Para trocar de plano, fale com o suporte.');
+  const metadata = { user_id: userId, nivel: OFERTA_LANCAMENTO.nivel, periodo: 'lancamento', forma: 'cartao' };
+  const s = await stripe().checkout.sessions.create({
+    customer: await clienteDoUsuario(userId),
+    mode: 'subscription',
+    locale: 'pt-BR',
+    payment_method_types: ['card'],
+    payment_method_collection: 'always', // o cartão é exigido mesmo no teste
+    line_items: [{ price: await precoLancamento(), quantity: 1 }],
+    metadata,
+    subscription_data: {
+      metadata,
+      trial_period_days: OFERTA_LANCAMENTO.diasTeste,
+      trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
+    },
+    success_url: `${config.appUrl}/app/conta?assinatura=ok`,
+    cancel_url: `${config.appUrl}/assinar`,
+  });
+  return s.url!;
+}
+
 /** Cadastra o cartão sem cobrar (libera o teste grátis). */
 export async function abrirCadastroDeCartao(userId: string): Promise<string> {
   const s = await stripe().checkout.sessions.create({
@@ -233,6 +300,13 @@ export async function cancelarAssinatura(userId: string): Promise<{ cancelaEm: s
   const vigente = await assinaturaVigente(userId);
   if (!vigente || vigente.forma_pagamento !== 'cartao' || !vigente.gateway_subscription_id) {
     throw new ErroAssinatura('Não há assinatura no cartão para cancelar. O plano anual no Pix simplesmente não renova.');
+  }
+  // Desistir no teste grátis: encerra no fim do teste, sem nenhuma cobrança.
+  const atual = await stripe().subscriptions.retrieve(vigente.gateway_subscription_id);
+  if (atual.status === 'trialing' && atual.trial_end) {
+    await stripe().subscriptions.update(atual.id, { cancel_at_period_end: true });
+    await sincronizarAssinatura(atual.id);
+    return { cancelaEm: new Date(atual.trial_end * 1000).toISOString() };
   }
   const quando = dataDoCancelamento(
     vigente.fidelidade_ate ? new Date(vigente.fidelidade_ate) : null,
@@ -356,7 +430,11 @@ export async function sincronizarAssinatura(id: string) {
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
   const userId = sub.metadata?.user_id || await usuarioDoCliente(customerId);
   if (!userId) return;
+  const lancamento = sub.metadata?.periodo === 'lancamento';
   const periodo = (['trimestral', 'semestral', 'anual'] as const).find((p) => p === sub.metadata?.periodo) ?? 'trimestral';
+  // Fidelidade conta a partir do fim do teste (oferta de lançamento: 1 mês pago).
+  const inicioPago = new Date((sub.trial_end ?? sub.start_date) * 1000);
+  const mesesFidelidade = lancamento ? OFERTA_LANCAMENTO.fidelidadeMeses : PERIODOS[periodo].meses;
   const nivel = sub.metadata?.nivel === 'pro' ? 'pro' : 'usuario';
   const fimDoMes = sub.items.data[0]?.current_period_end;
   const status = statusDaStripe(sub.status);
@@ -365,7 +443,7 @@ export async function sincronizarAssinatura(id: string) {
 
   const { error } = await db.from('subscriptions').upsert({
     user_id: userId,
-    plan: periodo,
+    plan: lancamento ? 'lancamento' : periodo,
     nivel,
     status,
     gateway: GATEWAY,
@@ -373,8 +451,9 @@ export async function sincronizarAssinatura(id: string) {
     gateway_subscription_id: sub.id,
     forma_pagamento: 'cartao',
     current_period_end: fimDoMes ? new Date(fimDoMes * 1000).toISOString() : null,
-    fidelidade_ate: somarMeses(new Date(sub.start_date * 1000), PERIODOS[periodo].meses).toISOString(),
-    cancela_em: sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString() : null,
+    fidelidade_ate: somarMeses(inicioPago, mesesFidelidade).toISOString(),
+    cancela_em: sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString()
+      : sub.cancel_at_period_end && fimDoMes ? new Date(fimDoMes * 1000).toISOString() : null,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'gateway_subscription_id' });
   if (error) throw new Error(`Falha ao gravar a assinatura: ${error.message}`);

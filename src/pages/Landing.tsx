@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Plus } from 'lucide-react';
 import { calcular, type Resultado } from '@/lib/calc';
 import { api } from '@/lib/api';
-import { A_PARTIR_DE, PERIODOS, PLANOS, preco, type Periodo } from '@/lib/config';
+import { A_PARTIR_DE, LANCAMENTO_TEXTO, OFERTA_LANCAMENTO, PERIODOS, PLANOS, preco, type Periodo } from '@/lib/config';
 import { SeletorPeriodo } from '@/components/ui/SeletorPeriodo';
 import { Lockup } from '@/components/marca/Logo';
 import { Orcamento } from '@/components/ui/Orcamento';
@@ -72,6 +72,8 @@ export default function Landing() {
   const [ato, setAto] = useState<Ato>('escritura');
   const [periodo, setPeriodo] = useState<Periodo>('anual');
   const resultado = useMemo(() => simular(ato, centavos / 100), [ato, centavos]);
+  const [vagas, setVagas] = useState(0);
+  useEffect(() => { api<{ vagas: number }>('/api/oferta', { publico: true }).then((r) => setVagas(r.vagas)).catch(() => setVagas(0)); }, []);
 
   return (
     <div className="min-h-screen text-[15px] leading-[22px]">
@@ -225,6 +227,15 @@ export default function Landing() {
             </div>
             <SeletorPeriodo periodo={periodo} onChange={setPeriodo} className="w-full max-w-[460px] text-[15px]" />
           </div>
+          {vagas > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border-2 border-tinta bg-amarelo-claro p-6 shadow-[8px_8px_0_#101828]">
+              <div className="flex max-w-[640px] flex-col gap-1">
+                <span className="text-xl font-[850]">{OFERTA_LANCAMENTO.nome}: {LANCAMENTO_TEXTO}/mês</span>
+                <span className="text-texto">Plano {PLANOS[OFERTA_LANCAMENTO.nivel].nome} para os {OFERTA_LANCAMENTO.vagas} primeiros corretores. {OFERTA_LANCAMENTO.diasTeste} dias de teste com o cartão cadastrado, fidelidade de 1 mês e o preço mantido enquanto você assinar. {vagas === 1 ? 'Resta 1 vaga.' : `Restam ${vagas} vagas.`}</span>
+              </div>
+              <BotaoLink to="/cadastro?oferta=lancamento" className="min-h-14 px-6 text-[17px]">Garantir minha vaga</BotaoLink>
+            </div>
+          )}
           <div className="grid gap-6 md:grid-cols-2">
             {(['usuario', 'pro'] as const).map((nivel) => {
               const p = PLANOS[nivel];

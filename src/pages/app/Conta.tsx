@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useConta } from '@/hooks/useConta';
 import { Aviso, Botao, BotaoLink, Campo, Cartao } from '@/components/ui/Campos';
 import { telefoneBonito } from '@/lib/formato';
-import { lerPeriodo, PERIODOS, PLANOS, preco } from '@/lib/config';
+import { LANCAMENTO_TEXTO, lerPeriodo, OFERTA_LANCAMENTO, PERIODOS, PLANOS, preco } from '@/lib/config';
 import { ConfiguracaoOrcamento } from '@/components/conta/ConfiguracaoOrcamento';
 import { Indicacao } from '@/components/conta/Indicacao';
 
@@ -29,6 +29,7 @@ export default function Conta() {
     if (!error) recarregar();
   }
 
+  const lancamento = assinatura?.plan === 'lancamento';
   const [ocupado, setOcupado] = useState<'portal' | 'cancelar' | null>(null);
   const [avisoPlano, setAvisoPlano] = useState<{ tom: 'verde' | 'vermelho'; texto: string } | null>(null);
 
@@ -54,10 +55,7 @@ export default function Conta() {
 
   async function cancelar() {
     if (!assinatura) return;
-    const fidelidade = assinatura.fidelidade_ate && new Date(assinatura.fidelidade_ate) > new Date();
-    const pergunta = fidelidade
-      ? `Sua fidelidade vai até ${data(assinatura.fidelidade_ate!)}. As mensalidades seguem até lá e o acesso termina nessa data. Cancelar?`
-      : 'O acesso continua até o fim do mês já pago, sem novas cobranças. Cancelar?';
+    const pergunta = 'No teste grátis, a assinatura termina no fim do teste e nada é cobrado. Depois dele, as mensalidades seguem até o fim da fidelidade e o acesso termina ali. Cancelar?';
     if (!window.confirm(pergunta)) return;
     setOcupado('cancelar');
     try {
@@ -109,7 +107,7 @@ export default function Conta() {
         <div className="flex flex-col gap-6">
           <section className="flex flex-col gap-3 rounded-2xl border-2 border-tinta bg-white p-6 shadow-[6px_6px_0_#101828]">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-lg font-bold">{assinatura ? `${PLANOS[assinatura.nivel ?? 'usuario'].nome} ${PERIODOS[lerPeriodo(assinatura.plan)].nome.toLowerCase()}` : 'Sem plano'}</h2>
+              <h2 className="text-lg font-bold">{!assinatura ? 'Sem plano' : lancamento ? `${PLANOS[assinatura.nivel ?? 'usuario'].nome}, ${OFERTA_LANCAMENTO.nome.toLowerCase()}` : `${PLANOS[assinatura.nivel ?? 'usuario'].nome} ${PERIODOS[lerPeriodo(assinatura.plan)].nome.toLowerCase()}`}</h2>
               <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ativa ? 'bg-ok-claro text-ok' : 'bg-amarelo-claro text-amarelo-texto'}`}>{ativa ? 'Ativo' : SITUACAO[assinatura?.status ?? ''] ?? 'Inativo'}</span>
             </div>
             {voltouDoPagamento && !ativa && <Aviso tom="azul">Pagamento recebido pela Stripe. Estamos ativando a sua assinatura; no Pix pode levar alguns minutos.</Aviso>}
@@ -118,7 +116,7 @@ export default function Conta() {
                 {assinatura.forma_pagamento === 'pix' ? (
                   <span className="numero text-[32px] font-black">{preco(assinatura.nivel ?? 'usuario', 'anual').totalTexto}<span className="text-sm font-medium text-suave"> no Pix, por 12 meses</span></span>
                 ) : (
-                  <span className="numero text-[32px] font-black">{preco(assinatura.nivel ?? 'usuario', lerPeriodo(assinatura.plan)).porMesTexto}<span className="text-sm font-medium text-suave">/mês no cartão</span></span>
+                  <span className="numero text-[32px] font-black">{lancamento ? LANCAMENTO_TEXTO : preco(assinatura.nivel ?? 'usuario', lerPeriodo(assinatura.plan)).porMesTexto}<span className="text-sm font-medium text-suave">/mês no cartão</span></span>
                 )}
                 {assinatura.current_period_end && <span className="text-suave">{assinatura.forma_pagamento === 'pix' ? 'Pago até' : 'Mês pago até'} {data(assinatura.current_period_end)}</span>}
                 {assinatura.forma_pagamento === 'cartao' && assinatura.fidelidade_ate && !assinatura.cancela_em && new Date(assinatura.fidelidade_ate) > new Date() && (

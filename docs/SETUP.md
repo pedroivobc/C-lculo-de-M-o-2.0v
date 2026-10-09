@@ -156,7 +156,8 @@ Não existe plano mensal. No cartão, todo plano (trimestral, semestral, anual) 
 3. **Webhook:** Desenvolvedores > Webhooks > Adicionar destino, URL `https://SEU_DOMINIO/api/webhooks/stripe`, versão mais recente da API, eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`. Copiar o segredo (`whsec_...`) para `STRIPE_WEBHOOK_SECRET`.
 4. Aplicar a migração `20261016000000_stripe.sql` no Supabase e rodar `docker compose up -d --build`.
 5. Produtos e preços são criados sozinhos na primeira assinatura (lookup keys `orcai_<nivel>_<periodo>_<forma>`). Mudou um valor em `planos.ts`, o preço novo vale para quem assinar depois.
-6. Teste com o cartão `4242 4242 4242 4242`. Com tudo certo, `EXIGIR_ASSINATURA=true`.
+6. **Oferta de lançamento** (`OFERTA_LANCAMENTO` em `src/lib/planos.ts`): R$ 9,90/mês no Essencial para os 20 primeiros, 3 dias de teste com o cartão já cadastrado (a Stripe cobra no 4º dia), fidelidade de 1 mês e preço mantido enquanto assinar. Conta como vaga quem está no teste ou assinando; quem desiste no teste devolve a vaga. Quando as vagas acabam, a oferta some do site.
+7. Teste com o cartão `4242 4242 4242 4242`. Com tudo certo, `EXIGIR_ASSINATURA=true`.
 
 ## 5. Primeiro assinante (teste de ponta a ponta)
 

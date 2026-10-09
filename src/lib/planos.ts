@@ -30,6 +30,21 @@ export function preco(nivel: Nivel, periodo: Periodo) {
   return { total, porMes, totalTexto: brl(total), porMesTexto: brl(porMes), descontoTexto: desconto ? `${Math.round(desconto * 100)}% off` : '' };
 }
 
+/**
+ * Oferta de lançamento: a única cobrança mensal, só para os primeiros corretores.
+ * Teste de 3 dias com o cartão já cadastrado (a Stripe cobra no 4º dia), fidelidade de 1 mês pago
+ * e o preço mantido enquanto a assinatura continuar.
+ */
+export const OFERTA_LANCAMENTO = {
+  nome: 'Oferta de lançamento',
+  nivel: 'usuario' as Nivel,
+  mensalCentavos: 990,
+  vagas: 20,
+  diasTeste: 3,
+  fidelidadeMeses: 1,
+};
+export const LANCAMENTO_TEXTO = brl(OFERTA_LANCAMENTO.mensalCentavos);
+
 /** Formas aceitas em cada período: Pix só no anual. */
 export const formasDoPeriodo = (periodo: Periodo): Forma[] => (periodo === 'anual' ? ['cartao', 'pix'] : ['cartao']);
 

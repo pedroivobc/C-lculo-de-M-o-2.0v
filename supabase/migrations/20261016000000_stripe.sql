@@ -2,6 +2,11 @@
 -- Cartão: todo plano é cobrado mês a mês, com fidelidade de 3, 6 ou 12 meses; depois renova no mesmo plano.
 -- Pix: só no anual, pago de uma vez (a renovação é um novo Pix).
 -- Não existe plano mensal: 'mensal' continua no check só para assinaturas antigas.
+-- Exceção: 'lancamento', a oferta de R$ 9,90/mês para os 20 primeiros (teste de 3 dias com cartão, fidelidade de 1 mês).
+
+alter table public.subscriptions drop constraint if exists subscriptions_plan_check;
+alter table public.subscriptions add constraint subscriptions_plan_check
+  check (plan in ('mensal', 'trimestral', 'semestral', 'anual', 'lancamento'));
 
 alter table public.subscriptions alter column gateway set default 'stripe';
 alter table public.subscriptions

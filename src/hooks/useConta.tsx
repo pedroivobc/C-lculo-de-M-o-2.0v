@@ -29,7 +29,7 @@ export interface Perfil {
 
 export interface Assinatura {
   /** 'mensal' só em assinaturas antigas; hoje: trimestral, semestral ou anual. */
-  plan: 'mensal' | 'trimestral' | 'semestral' | 'anual';
+  plan: 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'lancamento';
   nivel: 'usuario' | 'pro';
   status: 'pendente' | 'ativa' | 'atrasada' | 'cancelada';
   current_period_end: string | null;
