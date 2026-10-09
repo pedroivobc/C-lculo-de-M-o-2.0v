@@ -22,6 +22,17 @@ export const config = {
     key: env('EVOLUTION_API_KEY'),
     instancia: env('EVOLUTION_INSTANCE', 'agente'),
   },
+  /**
+   * Opções do menu como botões (até 3) ou lista (até 10) do WhatsApp em vez de texto numerado.
+   * Ligar (sim) depois de testar no número do agente: na conexão por QR code, alguns aparelhos não mostram botões.
+   */
+  whatsappBotoes: /^(sim|true|1)$/i.test(env('WHATSAPP_BOTOES')),
+  /** Chatwoot: quando o corretor pede um atendente, a conversa é aberta e marcada lá. Opcional. */
+  chatwoot: {
+    url: env('CHATWOOT_URL').replace(/\/$/, ''),
+    token: env('CHATWOOT_API_TOKEN'),
+    conta: env('CHATWOOT_ACCOUNT_ID'),
+  },
 };
 
 export function exigirConfig(...chaves: (keyof typeof config)[]) {

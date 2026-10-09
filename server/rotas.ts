@@ -14,6 +14,7 @@ import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, salva
 import { comLocalidade, configuracaoDoUsuario, correcaoLiberada } from './estilo';
 import { gerarCsv } from './exportar';
 import { identificar, processarMensagem } from './agente/conversa';
+import { envioDe } from './agente/whatsapp';
 import {
   alterarMembro, alterarOrganizacao, criarOrganizacao, ErroEquipe, gestaoDoNegocio, incluirMembro, liberarManualmente,
   orcamentosDaEquipe, relatorioDaEquipe, removerMembro, resumoEquipe, type DadosMembro, type NovaOrganizacao,
@@ -51,7 +52,9 @@ rotas.post('/api/agente/mensagem', exigirAgente, h(async (req, res) => {
   const telefone = m.remoteJid ? telefoneDoJid(m.remoteJid) : normalizarTelefone(m.telefone ?? '');
   if (!telefone) return res.json({ status: 'ignorada', respostas: [] }); // grupo, broadcast ou número inválido
   const temAnexo = Boolean(m.midia || m.temMidia);
-  res.json(await processarMensagem({ telefone, texto: m.texto, messageId: m.messageId, nome: m.nome, temAnexo }));
+  const r = await processarMensagem({ telefone, texto: m.texto, messageId: m.messageId, nome: m.nome, temAnexo });
+  // Cada resposta leva também o envio pronto para a Evolution (texto, botões, lista ou arquivo).
+  res.json({ ...r, respostas: r.respostas.map((x) => ({ ...x, envio: envioDe(x, config.whatsappBotoes) })) });
 }));
 
 rotas.get('/api/agente/identificar', exigirAgente, h(async (req, res) => {

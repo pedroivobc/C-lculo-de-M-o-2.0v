@@ -12,6 +12,7 @@ import { codigoDoUsuario, DIAS_TESTE, DIAS_TESTE_INDICACAO, linkDeIndicacao } fr
 import { arquivoDoOrcamento, buscarPorSeq, numeroCalculo, salvarCalculo, type CalculoSalvo } from '../historico';
 import { comLocalidade, configuracaoDoUsuario, type Configuracao } from '../estilo';
 import { usaWhatsapp, type Papel } from '../../src/lib/planos';
+import { pedirAtendente } from '../chatwoot';
 
 export interface MensagemRecebida {
   telefone: string;              // E.164
@@ -190,6 +191,9 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
       const salvo = await salvarCalculo({ userId: assinante.userId, resultado, entrada: dados, origem: 'whatsapp', descricao: p.acao.endereco });
       respostas.push(...await entregar(salvo, p.acao.formato, estilo));
       estado = { ...estado, ultimo: salvo.seq };
+    } else if (p.acao?.tipo === 'atendente') {
+      const nota = `🙋 ${assinante.nome ?? 'O corretor'} pediu para falar com uma pessoa. O robô fica pausado nesta conversa até ele escrever "menu".${estado.ultimo ? ` Último orçamento: ${numeroCalculo(estado.ultimo)}.` : ''}`;
+      await pedirAtendente(msg.telefone, nota).catch((e) => console.error('Chatwoot: não deu para abrir a conversa', e));
     } else if (p.acao?.tipo === 'reenviar' || p.acao?.tipo === 'detalhar') {
       const salvo = await buscarPorSeq(assinante.userId, p.acao.seq);
       if (!salvo) throw new Error('Não encontrei esse orçamento. Vamos fazer um novo?');
@@ -202,7 +206,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
     estado = { tela: 'menu', id: 'inicio', ultimo: estado.ultimo };
     mensagens = [telaAtual(estado, ctxMenu)];
   }
-  respostas.push(...mensagens.map((m): Resposta => ({ tipo: 'texto', texto: m.texto, opcoes: m.opcoes })));
+  respostas.push(...mensagens.map((m): Resposta => ({ tipo: 'texto', texto: m.texto, corpo: m.corpo, opcoes: m.opcoes })));
   await salvarSessao(msg.telefone, assinante.userId, estado);
   return responder(msg.telefone, assinante.userId, 'ok', respostas);
 }
@@ -210,7 +214,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
 /** Registra as mensagens de saída (texto) e devolve a resposta para o n8n. */
 async function responder(telefone: string, userId: string, status: string, respostas: Resposta[]) {
   const texto = respostas.map((r) => (r.tipo === 'texto' ? r.texto : `[${r.nomeArquivo}]`)).join('\n\n');
-  await registrar(telefone, userId, 'saida', 'texto', texto);
+  if (texto) await registrar(telefone, userId, 'saida', 'texto', texto); // com atendente, o robô não responde
   return { status, respostas };
 }
 
@@ -224,14 +228,16 @@ async function entregar(salvo: CalculoSalvo, formato: FormatoEntrega, estilo: Co
 
 // ---------------- Sessão do menu ----------------
 
-/** Depois de 30 minutos parada, a conversa recomeça do menu inicial. */
+/** Depois de 30 minutos parada, a conversa recomeça do menu inicial. Com uma pessoa atendendo, o robô fica quieto por até 8 horas. */
 const SESSAO_MINUTOS = 30;
+const ATENDENTE_HORAS = 8;
 
 async function lerSessao(telefone: string): Promise<Estado | null> {
   const db = supabaseAdmin();
   const { data } = await db.from('whatsapp_sessoes').select('estado, updated_at').eq('whatsapp_e164', telefone).maybeSingle();
   if (!data) return null;
-  if (Date.now() - new Date(data.updated_at).getTime() > SESSAO_MINUTOS * 60_000) {
+  const limite = (data.estado as Estado)?.tela === 'atendente' ? ATENDENTE_HORAS * 60 : SESSAO_MINUTOS;
+  if (Date.now() - new Date(data.updated_at).getTime() > limite * 60_000) {
     await db.from('whatsapp_sessoes').delete().eq('whatsapp_e164', telefone); // não guarda valores de conversa parada
     return null;
   }

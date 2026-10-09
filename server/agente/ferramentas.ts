@@ -7,8 +7,8 @@ import { salvarArquivo, supabaseAdmin, urlAssinada } from '../supabase';
 
 /** O que o n8n deve mandar de volta pelo WhatsApp. */
 export type Resposta =
-  /** `opcoes` acompanha os menus: hoje vira texto numerado; na API oficial pode virar botões. */
-  | { tipo: 'texto'; texto: string; opcoes?: { id: string; titulo: string }[] }
+  /** `opcoes` acompanha os menus: vira botões ou lista com WHATSAPP_BOTOES ligado (./whatsapp.ts); `corpo` é o texto sem a lista numerada. */
+  | { tipo: 'texto'; texto: string; corpo?: string; opcoes?: { id: string; titulo: string; descricao?: string }[] }
   | { tipo: 'documento'; url: string; nomeArquivo: string; mimetype: string; legenda?: string };
 // Imagens (JPEG) também vão como 'documento' na resposta; o n8n escolhe mediatype 'image' pelo mimetype.
 
