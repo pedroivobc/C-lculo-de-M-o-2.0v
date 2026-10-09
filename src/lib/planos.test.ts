@@ -19,3 +19,12 @@ describe('plano de equipe', () => {
     for (const p of ['admin', 'teams', 'pro', 'trial', 'clemente'] as const) expect(usaWhatsapp(p)).toBe(true);
   });
 });
+
+describe('cobrança da equipe', () => {
+  it('não tem plano mensal: só trimestral, semestral (10% off) e anual (20% off)', () => {
+    const p = precoEquipe(5, 5);
+    expect(Object.keys(p.periodos)).toEqual(['trimestral', 'semestral', 'anual']);
+    expect(p.periodos.trimestral.total).toBe(EQUIPE.fixoMensalCentavos * 3);
+    expect(p.periodos.anual.total).toBe(Math.round(EQUIPE.fixoMensalCentavos * 12 * 0.8));
+  });
+});

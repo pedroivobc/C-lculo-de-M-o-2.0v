@@ -45,12 +45,19 @@ export const EQUIPE = {
   resumo: 'Para imobiliárias: todos com recursos do Pro, a logo e as cores da imobiliária',
 };
 
-/** Mensalidade de uma equipe com `usuarios` ativos. Clemente Team não é cobrada. */
+/**
+ * Valor de uma equipe com `usuarios` ativos. Como nos planos individuais, o preço base é por mês e a cobrança
+ * é trimestral, semestral (10% off) ou anual (20% off): não existe plano mensal. Clemente Team não é cobrada.
+ */
 export function precoEquipe(usuarios: number, assentosBase: number = EQUIPE.assentosBase) {
   const adicionais = Math.max(0, usuarios - assentosBase);
   const mensal = EQUIPE.fixoMensalCentavos + adicionais * EQUIPE.adicionalMensalCentavos;
+  const periodos = Object.fromEntries(ORDEM_PERIODOS.map((p) => {
+    const total = Math.round(mensal * PERIODOS[p].meses * (1 - PERIODOS[p].desconto));
+    return [p, { total, totalTexto: brl(total) }];
+  })) as Record<Periodo, { total: number; totalTexto: string }>;
   return {
-    adicionais, mensal, mensalTexto: brl(mensal),
+    adicionais, mensal, mensalTexto: brl(mensal), periodos,
     fixoTexto: brl(EQUIPE.fixoMensalCentavos), adicionalTexto: brl(EQUIPE.adicionalMensalCentavos),
   };
 }

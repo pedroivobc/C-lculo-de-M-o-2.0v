@@ -20,7 +20,7 @@ interface Membro {
 interface Resumo {
   organizacao: { id: string; nome: string; tipo: 'teams' | 'clemente'; assentosBase: number; ativa: boolean };
   membros: Membro[];
-  mensalidade: { adicionais: number; mensal: number; mensalTexto: string; fixoTexto: string; adicionalTexto: string } | null;
+  mensalidade: { adicionais: number; mensal: number; mensalTexto: string; fixoTexto: string; adicionalTexto: string; periodos: Record<'trimestral' | 'semestral' | 'anual', { totalTexto: string }> } | null;
   linkCadastro: string;
 }
 interface OrcamentoEquipe { id: string; seq: number; tipo: string; origem: 'site' | 'whatsapp'; descricao: string | null; total: number; created_at: string; userId: string; usuario: string }
@@ -74,8 +74,10 @@ export default function Equipe() {
         <div className="grid gap-4 sm:grid-cols-3">
           <Numero rotulo="Usuários" valor={o?.tipo === 'clemente' ? String(usados) : `${usados} de ${o?.assentosBase}`} nota={o?.tipo === 'clemente' ? 'Equipe interna' : resumo.mensalidade?.adicionais ? `${resumo.mensalidade.adicionais} a mais que o pacote` : 'dentro do pacote'} />
           <Numero rotulo="Orçamentos no mês" valor={String(resumo.membros.reduce((s, m) => s + m.orcamentosMes, 0))} nota="de toda a equipe" />
-          <Numero rotulo="Mensalidade" valor={resumo.mensalidade?.mensalTexto ?? 'Sem cobrança'}
-            nota={resumo.mensalidade ? `${resumo.mensalidade.fixoTexto} por ${o?.assentosBase} usuários + ${resumo.mensalidade.adicionalTexto} por usuário a mais` : 'Clemente Team'} />
+          <Numero rotulo="Valor por mês" valor={resumo.mensalidade?.mensalTexto ?? 'Sem cobrança'}
+            nota={resumo.mensalidade
+              ? `${resumo.mensalidade.fixoTexto} por ${o?.assentosBase} usuários + ${resumo.mensalidade.adicionalTexto} por usuário a mais. Cobrança: ${resumo.mensalidade.periodos.trimestral.totalTexto} no trimestral, ${resumo.mensalidade.periodos.semestral.totalTexto} no semestral ou ${resumo.mensalidade.periodos.anual.totalTexto} no anual.`
+              : 'Clemente Team'} />
         </div>
       )}
 

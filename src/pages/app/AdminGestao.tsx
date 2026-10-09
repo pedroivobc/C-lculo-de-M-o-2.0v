@@ -65,7 +65,7 @@ export default function AdminGestao() {
           <div className="grid gap-4 sm:grid-cols-3">
             <Numero rotulo="Orçamentos no mês" valor={String(g.orcamentosMes)} nota={`${g.orcamentosMesWhatsapp} pelo WhatsApp`} />
             <Numero rotulo="Equipes" valor={String(g.organizacoes.length)} nota={`${g.organizacoes.reduce((s, o) => s + o.usuarios, 0)} usuários em equipes`} />
-            <Numero rotulo="Mensalidade das equipes" valor={brl(g.receitaEquipesMensal / 100)} nota="Teams ativas, valores provisórios" />
+            <Numero rotulo="Equipes: valor por mês" valor={brl(g.receitaEquipesMensal / 100)} nota="Teams ativas, base mensal dos planos trimestral, semestral e anual (valores provisórios)" />
           </div>
 
           <Cartao titulo="Contas por perfil">
