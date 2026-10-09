@@ -3,7 +3,7 @@ import { brl, type Resultado } from '../src/lib/calc';
 import { config } from './config';
 import type { Estilo } from './estilo';
 import { ESTILO_PADRAO } from './pdf';
-import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContato, linhaDeContexto, linhaDoEndereco, lockupOrcaiSvg, SUAVE, TEXTO, TINTA, tituloDoDocumento, type MetaOrcamento } from './documento';
+import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContato, linhasDeContexto, linhaDoEndereco, lockupOrcaiSvg, SUAVE, TEXTO, TINTA, tituloDoDocumento, type MetaOrcamento } from './documento';
 
 const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const FONTE = `font-family="'DejaVu Sans', Arial, sans-serif"`;
@@ -51,11 +51,10 @@ export async function gerarJpegOrcamento(r: Resultado, meta: MetaOrcamento, esti
     const linha = linhaDoEndereco(r, meta.endereco);
     t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="23" font-weight="700" fill="${TEXTO}">${esc(linha.length > 72 ? `${linha.slice(0, 71)}…` : linha)}</text>`);
   }
-  const contexto = linhaDeContexto(r, brl, !!meta.endereco);
-  if (contexto) {
-    y += 40;
+  linhasDeContexto(r, brl, !!meta.endereco).forEach((contexto, i) => {
+    y += i ? 32 : 40;
     t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="22" fill="${SUAVE}">${esc(contexto)}</text>`);
-  }
+  });
 
   // Cabeçalho da tabela.
   y += 60;
