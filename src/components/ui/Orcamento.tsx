@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { Linha, Resultado } from '@/lib/calc';
 import { brl } from '@/lib/formato';
-import { MUNICIPIOS } from '@/lib/calc';
+import { MUNICIPIOS, textoDasBases } from '@/lib/calc';
 import { cn } from '@/lib/utils';
 
 /**
@@ -24,7 +24,7 @@ export function Orcamento({ titulo, resultado, rotuloTotal = 'Total estimado', c
         <div className={cn('mb-1 flex flex-col gap-0.5 border-b-[1.5px] border-dashed border-borda pb-3')}>
           <h2 className={cn('font-extrabold', compacto ? 'text-base' : 'text-lg')}>Orçamento · {titulo}</h2>
           <span className="numero text-[13px] text-suave">
-            {resultado?.bases.length ? `Base de cálculo ${resultado.bases.map(brl).join(' + ')}${nomeCidade ? ` · ${nomeCidade} (MG)` : ''}` : 'Preencha os valores ao lado'}
+            {resultado?.bases.length ? `Base de cálculo: ${textoDasBases(resultado, brl)}${nomeCidade ? ` · ${nomeCidade} (MG)` : ''}` : 'Preencha os valores ao lado'}
           </span>
         </div>
         {temDetalhes && (
