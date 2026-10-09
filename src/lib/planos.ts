@@ -6,7 +6,7 @@ export type Nivel = 'usuario' | 'pro';
 export type Periodo = 'trimestral' | 'semestral' | 'anual';
 
 export const PLANOS: Record<Nivel, { nome: string; mensalCentavos: number; resumo: string }> = {
-  usuario: { nome: 'Essencial', mensalCentavos: 2990, resumo: 'Orçamento em PDF com a marca Orça.ai' },
+  usuario: { nome: 'Essencial', mensalCentavos: 2990, resumo: 'Orçamento em PDF com a marca Orçaí' },
   pro: { nome: 'Pró', mensalCentavos: 3990, resumo: 'Orçamento com a sua logo, as suas cores e o seu contato' },
 };
 

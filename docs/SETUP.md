@@ -27,14 +27,14 @@ Nos dois casos:
 |---|---|---|
 | `admin` | à mão, no SQL Editor | tudo; não precisa de cartão nem assinatura |
 | `pro` | assinatura ativa com `nivel = 'pro'` (Pró: R$ 39,90/mês; trimestral, semestral ou anual) | usar o sistema; orçamento com a própria logo e cor |
-| `usuario` | assinatura ativa com `nivel = 'usuario'` (Essencial: R$ 29,90/mês; trimestral, semestral ou anual) | usar o sistema; orçamento com a marca Orça.ai |
+| `usuario` | assinatura ativa com `nivel = 'usuario'` (Essencial: R$ 29,90/mês; trimestral, semestral ou anual) | usar o sistema; orçamento com a marca Orçaí |
 | `trial` | todo cadastro novo | 3 dias a partir da validação do cartão; orçamento como no Pró (logo e cor) |
 
 ### Configuração do orçamento (etapa 3 do cadastro)
 
 Depois de confirmar o WhatsApp, a pessoa define: **estado** (hoje só MG; os outros registram interesse), **cidade** (Juiz de Fora, com a regra da prefeitura, ou "Outra cidade de MG" com nome e **alíquota do ITBI**), **nome no topo**, **logo** (PNG/JPG/WEBP até 2 MB, bucket `logos`), **cor** e **formato** (PDF ou imagem JPEG). Tudo fica em `profiles` (`uf`, `municipio_padrao`, `cidade_nome`, `itbi_percentual`, `pdf_header`, `pdf_logo_path`, `cor_primaria`, `formato_orcamento`, `configurado_em`) e pode ser mudado em **Conta**.
 
-Todos podem guardar logo e cor; quem decide se aparecem é o plano (`situacao_acesso.personaliza_orcamento`: pro, trial e admin). No Essencial, o orçamento sai com a marca Orça.ai e a configuração fica guardada para quando a pessoa passar para o Pró.
+Todos podem guardar logo e cor; quem decide se aparecem é o plano (`situacao_acesso.personaliza_orcamento`: pro, trial e admin). No Essencial, o orçamento sai com a marca Orçaí e a configuração fica guardada para quando a pessoa passar para o Pró.
 
 O agente e o site usam a cidade e a alíquota do perfil em todo cálculo de ITBI e mandam o orçamento no formato escolhido. Pelo WhatsApp, a imagem chega como foto na conversa (o n8n troca `mediatype` para `image` quando o arquivo é JPEG).
 
@@ -90,7 +90,7 @@ protegido (Vercel Authentication), o n8n não passa: use o domínio de produçã
 Use um chip **só para o agente** (não o seu WhatsApp pessoal).
 
 **Número novo, antes de conectar:**
-- Ative o chip no app **WhatsApp Business** do celular, com nome *Orça.ai Imob*, foto (o símbolo da marca) e descrição curta.
+- Ative o chip no app **WhatsApp Business** do celular, com nome *Orçaí Imob*, foto (o símbolo da marca) e descrição curta.
 - Use o número normalmente por 1 ou 2 dias (algumas conversas de ida e volta) antes de ligar o agente. Números recém-criados que já começam respondendo em volume são os mais bloqueados.
 - O número só **responde**: o agente nunca puxa conversa (até a confirmação do cadastro é o corretor quem envia o código). Não use listas de transmissão nem disparos por ele.
 - Deixe o celular carregado e com internet: a Evolution funciona como um "aparelho conectado" dele.

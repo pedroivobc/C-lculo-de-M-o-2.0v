@@ -1,5 +1,5 @@
 /** Configurações públicas do front (VITE_*). */
-export const MARCA = 'Orça.ai Imob';
+export const MARCA = 'Orçaí Imob';
 
 /** Número do agente no WhatsApp, só dígitos com DDI (ex.: 5532988887777). */
 export const AGENTE_WHATSAPP = (import.meta.env.VITE_AGENTE_WHATSAPP ?? '').replace(/\D/g, '');

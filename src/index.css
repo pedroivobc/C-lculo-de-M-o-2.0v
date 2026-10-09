@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Instrument+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* Identidade Orça.ai (ver página "Marca" do canvas) */
+/* Identidade Orçaí (ver página "Marca" do canvas) */
 @theme {
   --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;

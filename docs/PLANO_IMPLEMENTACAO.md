@@ -1,7 +1,7 @@
-# Orça.ai Imob — plano de implementação do SaaS + agente WhatsApp
+# Orçaí Imob — plano de implementação do SaaS + agente WhatsApp
 
 > **Status (out/2026)** — feito: fórmulas extraídas para `src/lib/calc/` com testes de referência; esquema novo do Supabase (`supabase/migrations/`); API com o agente do WhatsApp (Gemini com ferramentas), verificação do número, histórico, PDF e exportação CSV; Docker Compose com Evolution API + n8n; workflow do n8n; chave do Gemini fora do navegador; perfis não são mais públicos. Passo a passo para subir: [SETUP.md](SETUP.md).
-> Feito também: front novo com a identidade Orça.ai (landing com calculadora ao vivo, cadastro com confirmação do WhatsApp, 7 calculadoras com o orçamento picotado, histórico com exportação, agente e conta), web e celular, usando a mesma lib de cálculo do servidor.
+> Feito também: front novo com a identidade Orçaí (landing com calculadora ao vivo, cadastro com confirmação do WhatsApp, 7 calculadoras com o orçamento picotado, histórico com exportação, agente e conta), web e celular, usando a mesma lib de cálculo do servidor.
 > Feito também: perfis admin/pro/usuario/trial e cartão obrigatório no banco (`supabase/migrations/20261006000000_perfis_e_acesso.sql`); o agente já respeita a regra.
 
 > Feito também: etapa "Seu orçamento" no cadastro (`supabase/migrations/20261007000000_configuracao_orcamento.sql`): estado, cidade e alíquota do ITBI (outras cidades de MG com alíquota informada pelo assinante), logo, cor e formato PDF ou imagem JPEG (`server/imagem.ts`, com sharp). O teste de 3 dias mostra o orçamento como no Pró.
@@ -9,15 +9,15 @@
 > **Mudança (out/2026):** o **Valor Venal saiu do produto** (calculadora, leitura do espelho do IPTU, rota `/api/iptu/extrair`, tabelas `landValues`/`factors`). As menções a IPTU e valor venal abaixo ficam como histórico. O campo "valor venal" também saiu: a prefeitura mudou o motor de cálculo e a base passa a ser o valor declarado. O orçamento agora mostra **Escritura** (lavratura + arquivamento) e **Registro** (ato de registro + prenotação + certidão de inteiro teor + averbação de inscrição municipal + averbação de dados pessoais), pela Tabela 4 de 2026, conferida com o relatório final do 3º RI de Juiz de Fora (protocolo 229.352: registro R$ 5.110,00).
 > Falta: pagamento (Asaas ou Mercado Pago) com tokenização do cartão e webhook de assinatura; telas de cartão, upload de logo/cores do Pro e painel admin; PDF do Pro com logo e paleta — por enquanto a ativação é manual e o app não bloqueia sem assinatura (`VITE_EXIGIR_ASSINATURA`); verificar INPI, domínio (orcai.com.br) e @ antes de lançar.
 
-Design de referência (web e mobile, todas as telas): canvas **Orça.ai Imob** no claude.ai (páginas Marca, Web e Mobile).
+Design de referência (web e mobile, todas as telas): canvas **Orçaí Imob** no claude.ai (páginas Marca, Web e Mobile).
 
-**Marca:** Orça.ai é a marca-mãe; cada segmento é uma vertical com etiqueta (Orça.ai Imob primeiro). O símbolo, a paleta e a voz são compartilhados; no código, o nome da vertical vem de `MARCA_NOME`.
+**Marca:** Orçaí é a marca-mãe; cada segmento é uma vertical com etiqueta (Orçaí Imob primeiro). O símbolo, a paleta e a voz são compartilhados; no código, o nome da vertical vem de `MARCA_NOME`.
 
 ## 1. O que vamos colocar no ar
 
 - **Site/app** (web e mobile responsivo): landing, cadastro com WhatsApp, assinatura, calculadoras, histórico com exportação, agente, conta.
 - **Assinatura** (anual = 10 mensalidades, "2 meses grátis"), Pix ou cartão:
-  - **Essencial** (`nivel = 'usuario'`): R$ 29,90/mês, cobrado por trimestre (R$ 89,70), semestre (R$ 161,46, 10% off) ou ano (R$ 287,04, 20% off). Orçamento com a marca Orça.ai.
+  - **Essencial** (`nivel = 'usuario'`): R$ 29,90/mês, cobrado por trimestre (R$ 89,70), semestre (R$ 161,46, 10% off) ou ano (R$ 287,04, 20% off). Orçamento com a marca Orçaí.
   - **Pró** (`nivel = 'pro'`): R$ 39,90/mês, cobrado por trimestre (R$ 119,70), semestre (R$ 215,46, 10% off) ou ano (R$ 383,04, 20% off). Orçamento com a logo e as cores do assinante.
   - Preços de vitrine em `src/lib/config.ts` (`PLANOS`); os valores cobrados ficam no gateway.
 - **Agente no WhatsApp**: número próprio conectado na Evolution API, orquestrado pelo n8n. O cliente assinante manda mensagem do número cadastrado, o agente identifica a conta, calcula **chamando a nossa API** (nunca "de cabeça"), salva o cálculo no histórico, devolve o resumo + PDF e exporta quando pedido.

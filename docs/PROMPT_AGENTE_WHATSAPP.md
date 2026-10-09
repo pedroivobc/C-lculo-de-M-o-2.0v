@@ -1,12 +1,12 @@
-# Tarefa: colocar no ar o agente de WhatsApp do Orça.ai Imob (Evolution API + n8n numa VPS)
+# Tarefa: colocar no ar o agente de WhatsApp do Orçaí Imob (Evolution API + n8n numa VPS)
 
 ## Contexto
 
-O Orça.ai Imob é um SaaS de orçamentos de cartório e ITBI para corretores (Juiz de Fora/MG). Partes:
+O Orçaí Imob é um SaaS de orçamentos de cartório e ITBI para corretores (Juiz de Fora/MG). Partes:
 
 - **Site + API (Express)**: já rodam na **Vercel**. Endereço de teste (Preview):
   `https://c-lculo-de-m-o-2-0v-git-claude-a-3615f0-pedroivo-7089s-projects.vercel.app`
-  Teste: `GET /api/saude` responde `{"ok":true,"marca":"Orça.ai Imob"}`.
+  Teste: `GET /api/saude` responde `{"ok":true,"marca":"Orçaí Imob"}`.
 - **Banco**: Supabase (já configurado; você não precisa mexer nele).
 - **Falta subir** (é a sua tarefa): **Evolution API v2** (WhatsApp via Baileys, número comum, sem API oficial) e **n8n**, numa VPS com Docker, e ligar os dois à API da Vercel.
 
