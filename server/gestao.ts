@@ -11,7 +11,7 @@ import { supabaseAdmin } from './supabase';
  * - Assinatura vigente numa data: criada até ela, não pendente, dentro de current_period_end e, se cancelada,
  *   cancelada depois dela (updated_at). 'atrasada' segue vigente (carência).
  * - Paga = gateway diferente de 'manual'. Liberações manuais e testes não entram em MRR nem em assinantes.
- * - MRR: valor mensal equivalente do plano no período contratado (trimestral, semestral 10% off, anual 20% off).
+ * - MRR: valor mensal equivalente do plano no período contratado (preço por mês do período em src/lib/planos.ts).
  *   Teams usa o tamanho atual da equipe (não há histórico de usuários por data).
  * - Contas de administrador ficam fora das contagens de usuários e assinantes.
  * - Receita recebida e custo de IA ainda não existem no banco: saem como null ("Não disponível"), nunca como zero.

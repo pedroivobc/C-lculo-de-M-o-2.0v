@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cobranca, EQUIPE, formasDoPeriodo, PERIODOS, preco, precoEquipe, usaWhatsapp, type Nivel, type Periodo } from './planos';
+import { cobranca, descontoMaximo, EQUIPE, formasDoPeriodo, PERIODOS, preco, precoEquipe, usaWhatsapp, type Nivel, type Periodo } from './planos';
 
 describe('cobrança', () => {
   it('as parcelas do cartão somam o total do período', () => {
@@ -11,12 +11,21 @@ describe('cobrança', () => {
   });
 
   it('cobra os valores combinados', () => {
-    expect(cobranca('usuario', 'trimestral', 'cartao').centavos).toBe(2990);
-    expect(cobranca('usuario', 'semestral', 'cartao').centavos).toBe(2691);
-    expect(cobranca('usuario', 'anual', 'cartao').centavos).toBe(2392);
-    expect(cobranca('pro', 'anual', 'cartao').centavos).toBe(3192);
-    expect(cobranca('usuario', 'anual', 'pix').centavos).toBe(28704);
-    expect(cobranca('pro', 'anual', 'pix').centavos).toBe(38304);
+    expect(cobranca('usuario', 'trimestral', 'cartao').centavos).toBe(1290);
+    expect(cobranca('usuario', 'semestral', 'cartao').centavos).toBe(1190);
+    expect(cobranca('usuario', 'anual', 'cartao').centavos).toBe(990);
+    expect(cobranca('pro', 'trimestral', 'cartao').centavos).toBe(2490);
+    expect(cobranca('pro', 'semestral', 'cartao').centavos).toBe(2190);
+    expect(cobranca('pro', 'anual', 'cartao').centavos).toBe(1990);
+    expect(cobranca('usuario', 'anual', 'pix').centavos).toBe(11880);
+    expect(cobranca('pro', 'anual', 'pix').centavos).toBe(23880);
+  });
+
+  it('mostra o desconto sobre o trimestral', () => {
+    expect(preco('usuario', 'anual').descontoTexto).toBe('23% off');
+    expect(preco('pro', 'anual').descontoTexto).toBe('20% off');
+    expect(preco('pro', 'trimestral').descontoTexto).toBe('');
+    expect(descontoMaximo('semestral')).toBe(12);
   });
 
   it('Pix só no anual', () => {

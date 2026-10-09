@@ -10,7 +10,7 @@ export const AGENTE_WHATSAPP = (import.meta.env.VITE_AGENTE_WHATSAPP ?? '').repl
  */
 export const EXIGIR_ASSINATURA = import.meta.env.VITE_EXIGIR_ASSINATURA === 'true';
 
-export { A_PARTIR_DE, DIAS_ARREPENDIMENTO, EQUIPE, LANCAMENTO_TEXTO, NOME_PAPEL, OFERTA_LANCAMENTO, ORDEM_PERIODOS, PERIODOS, PLANOS, UNLIMITED, cobranca, formasDoPeriodo, lerPeriodo, preco, precoEquipe, usaWhatsapp, type Forma, type Nivel, type Papel, type Periodo } from './planos';
+export { A_PARTIR_DE, DIAS_ARREPENDIMENTO, EQUIPE, LANCAMENTO_TEXTO, NOME_PAPEL, OFERTA_LANCAMENTO, ORDEM_PERIODOS, PERIODOS, PLANOS, UNLIMITED, cobranca, descontoMaximo, formasDoPeriodo, lerPeriodo, preco, precoEquipe, usaWhatsapp, type Forma, type Nivel, type Papel, type Periodo } from './planos';
 
 /** Teste grátis: 3 dias; com cupom de indicação, 5. Depois, o acesso bloqueia até assinar. */
 export const DIAS_TESTE = 3;
