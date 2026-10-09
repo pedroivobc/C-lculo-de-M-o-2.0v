@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useConta } from '@/hooks/useConta';
 import { Lockup } from '@/components/marca/Logo';
 import { Aviso, Botao, Campo } from '@/components/ui/Campos';
-import { A_PARTIR_DE, AGENTE_WHATSAPP, lerPeriodo, PERIODOS, PLANOS, preco, type Nivel, type Periodo } from '@/lib/config';
+import { A_PARTIR_DE, AGENTE_WHATSAPP, DIAS_TESTE, formasDoPeriodo, lerPeriodo, PERIODOS, PLANOS, preco, type Forma, type Nivel, type Periodo } from '@/lib/config';
 import { SeletorPeriodo } from '@/components/ui/SeletorPeriodo';
 import { telefoneBonito } from '@/lib/formato';
 import { cpfValido, mascararCpf, soDigitosCpf } from '@/lib/cpf';
@@ -374,9 +374,32 @@ export function Assinar() {
   const [params] = useSearchParams();
   const [nivel, setNivel] = useState<Nivel>(params.get('nivel') === 'usuario' ? 'usuario' : 'pro');
   const [periodo, setPeriodo] = useState<Periodo>(lerPeriodo(params.get('plano')));
-  const { perfil } = useConta();
-  const plano = PLANOS[nivel];
+  const [forma, setForma] = useState<Forma>('cartao');
+  const [temCartao, setTemCartao] = useState<boolean | null>(null);
+  const [indo, setIndo] = useState<'assinar' | 'cartao' | null>(null);
+  const [erro, setErro] = useState('');
+  const { ativa } = useConta();
   const valor = preco(nivel, periodo);
+  const formas = formasDoPeriodo(periodo);
+  const formaValida: Forma = formas.includes(forma) ? forma : 'cartao';
+
+  useEffect(() => {
+    supabase.rpc('minha_situacao_acesso').maybeSingle<{ tem_cartao: boolean }>()
+      .then(({ data }) => setTemCartao(data?.tem_cartao ?? false));
+  }, []);
+
+  /** Abre a página de pagamento da Stripe (o cartão é digitado lá, não aqui). */
+  async function irPara(caminho: string, corpo: unknown, qual: 'assinar' | 'cartao') {
+    setErro('');
+    setIndo(qual);
+    try {
+      const { url } = await api<{ url: string }>(caminho, { corpo });
+      window.location.assign(url);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : String(e));
+      setIndo(null);
+    }
+  }
 
   return (
     <Moldura etapa={4}>
@@ -398,11 +421,39 @@ export function Assinar() {
         ))}
       </div>
       <SeletorPeriodo periodo={periodo} onChange={setPeriodo} className="text-sm" />
-      <p className="text-suave">Cobrança de <strong className="text-tinta">{valor.totalTexto}</strong> {PERIODOS[periodo].cobranca}{valor.descontoTexto ? ` (${valor.descontoTexto})` : ''}.</p>
-      <Aviso tom="azul">
-        O pagamento online (Pix e cartão) entra na próxima etapa. Por enquanto a ativação é feita pela equipe: chame no WhatsApp e informe o plano {plano.nome} {PERIODOS[periodo].nome.toLowerCase()}{perfil?.email ? ` e o e-mail ${perfil.email}` : ''}.
-      </Aviso>
-      <Link to="/app" className="inline-flex min-h-[52px] items-center justify-center rounded-xl bg-acao text-base font-bold text-white no-underline">Ir para o app</Link>
+      {formas.length > 1 && (
+        <div role="group" aria-label="Forma de pagamento" className="grid grid-cols-2 gap-1 rounded-xl bg-cinza p-1 text-sm">
+          {formas.map((f) => (
+            <button key={f} type="button" aria-pressed={formaValida === f} onClick={() => setForma(f)}
+              className={cn('min-h-12 rounded-[9px] px-1 font-bold', formaValida === f ? 'bg-white text-tinta shadow-sm' : 'text-suave')}>
+              {f === 'cartao' ? 'Cartão, mês a mês' : 'Pix, à vista'}
+            </button>
+          ))}
+        </div>
+      )}
+      <p className="text-suave">
+        {formaValida === 'pix'
+          ? <>Pagamento único de <strong className="text-tinta">{valor.totalTexto}</strong> no Pix, válido por 12 meses{valor.descontoTexto ? ` (${valor.descontoTexto})` : ''}.</>
+          : <><strong className="text-tinta">{valor.porMesTexto}</strong> por mês no cartão, {PERIODOS[periodo].cobranca}{valor.descontoTexto ? ` (${valor.descontoTexto})` : ''}. Depois, renova mês a mês até você cancelar.</>}
+      </p>
+      {erro && <Aviso tom="vermelho">{erro}</Aviso>}
+      {ativa ? (
+        <Aviso tom="verde">Sua assinatura está ativa. Para trocar de plano, fale com o suporte.</Aviso>
+      ) : (
+        <Botao onClick={() => irPara('/api/assinatura/checkout', { nivel, periodo, forma: formaValida }, 'assinar')} disabled={!!indo} className="min-h-[52px] text-base">
+          {indo === 'assinar' ? 'Abrindo o pagamento…' : `Assinar o ${PLANOS[nivel].nome}`}
+        </Botao>
+      )}
+      {temCartao === false && !ativa && (
+        <div className="flex flex-col gap-2 rounded-xl bg-nevoa p-4">
+          <span className="text-suave">Quer testar antes? Cadastre um cartão de crédito (nada é cobrado agora) e use grátis por {DIAS_TESTE} dias. O cartão é pedido mesmo para quem vai pagar no Pix.</span>
+          <Botao variante="secundario" onClick={() => irPara('/api/assinatura/cartao', {}, 'cartao')} disabled={!!indo}>
+            {indo === 'cartao' ? 'Abrindo…' : 'Cadastrar cartão e testar grátis'}
+          </Botao>
+        </div>
+      )}
+      <span className="text-xs text-suave">O pagamento é feito na página segura da Stripe. Não guardamos o número do cartão.</span>
+      <Link to="/app" className="text-center font-bold text-acao">Ir para o app</Link>
     </Moldura>
   );
 }

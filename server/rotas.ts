@@ -14,6 +14,7 @@ import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, salva
 import { comLocalidade, configuracaoDoUsuario, correcaoLiberada } from './estilo';
 import { gerarCsv } from './exportar';
 import { identificar, processarMensagem } from './agente/conversa';
+import { abrirCadastroDeCartao, abrirCheckout, abrirPortal, cancelarAssinatura, ErroAssinatura, lerEvento, tratarEvento } from './pagamento';
 
 export const rotas = Router();
 
@@ -149,6 +150,64 @@ rotas.post('/api/conta/cpf', limiteCodigo, exigirUsuario, h(async (req, res) => 
   if (error) return res.status(error.code === '23505' ? 409 : 500).json({ erro: error.code === '23505' ? 'Este CPF já tem uma conta.' : error.message });
   res.json({ ok: true });
 }));
+
+// ---------------- Assinatura (Stripe) ----------------
+
+const limiteAssinatura = rateLimit({ windowMs: 15 * 60_000, limit: 20, standardHeaders: true, legacyHeaders: false });
+
+/** Erro de regra (já assina, Pix fora do anual) vira 409 com a mensagem; o resto segue para o 500. */
+const regra = (fn: (req: Request, res: Response) => Promise<unknown>) => async (req: Request, res: Response) => {
+  try {
+    await fn(req, res);
+  } catch (e) {
+    if (e instanceof ErroAssinatura) return res.status(409).json({ erro: e.message });
+    throw e;
+  }
+};
+
+/** Abre o Checkout da Stripe. Corpo: { nivel, periodo, forma }. Pix só no anual. */
+rotas.post('/api/assinatura/checkout', limiteAssinatura, exigirUsuario, h(regra(async (req, res) => {
+  const { nivel, periodo, forma } = z.object({
+    nivel: z.enum(['usuario', 'pro']),
+    periodo: z.enum(['trimestral', 'semestral', 'anual']),
+    forma: z.enum(['cartao', 'pix']),
+  }).refine((v) => v.forma === 'cartao' || v.periodo === 'anual', { message: 'O Pix vale só para o plano anual.' }).parse(req.body);
+  res.json({ url: await abrirCheckout(req.userId!, nivel, periodo, forma) });
+})));
+
+/** Cadastra o cartão sem cobrar (libera o teste grátis). */
+rotas.post('/api/assinatura/cartao', limiteAssinatura, exigirUsuario, h(async (req, res) => {
+  res.json({ url: await abrirCadastroDeCartao(req.userId!) });
+}));
+
+/** Portal da Stripe: trocar cartão e ver faturas. */
+rotas.post('/api/assinatura/portal', limiteAssinatura, exigirUsuario, h(async (req, res) => {
+  res.json({ url: await abrirPortal(req.userId!) });
+}));
+
+/** Agenda o cancelamento (vale no fim da fidelidade ou do mês já pago). */
+rotas.post('/api/assinatura/cancelar', limiteAssinatura, exigirUsuario, h(regra(async (req, res) => {
+  res.json(await cancelarAssinatura(req.userId!));
+})));
+
+/** Eventos da Stripe (montado em app.ts com o corpo bruto, antes do express.json). */
+export async function webhookStripe(req: Request, res: Response) {
+  let evento;
+  try {
+    evento = lerEvento(req.body as Buffer, req.header('stripe-signature') ?? '');
+  } catch (e) {
+    console.error('Webhook Stripe recusado:', e instanceof Error ? e.message : e);
+    return res.status(400).json({ erro: 'Assinatura do webhook inválida.' });
+  }
+  try {
+    await tratarEvento(evento);
+    res.json({ ok: true });
+  } catch (e) {
+    // 500 faz a Stripe tentar de novo mais tarde.
+    console.error(`Webhook Stripe ${evento.type} (${evento.id}):`, e);
+    res.status(500).json({ erro: 'Falha ao processar o evento.' });
+  }
+}
 
 // ---------------- Cupom de indicação ----------------
 

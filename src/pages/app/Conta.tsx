@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { useConta } from '@/hooks/useConta';
 import { Aviso, Botao, BotaoLink, Campo, Cartao } from '@/components/ui/Campos';
 import { telefoneBonito } from '@/lib/formato';
 import { lerPeriodo, PERIODOS, PLANOS, preco } from '@/lib/config';
 import { ConfiguracaoOrcamento } from '@/components/conta/ConfiguracaoOrcamento';
 import { Indicacao } from '@/components/conta/Indicacao';
+
+const SITUACAO: Record<string, string> = { pendente: 'Aguardando pagamento', atrasada: 'Pagamento atrasado', cancelada: 'Cancelado' };
+const data = (iso: string) => new Date(iso).toLocaleDateString('pt-BR');
 
 export default function Conta() {
   const { perfil, assinatura, ativa, recarregar } = useConta();
@@ -23,6 +27,47 @@ export default function Conta() {
     const { error } = await supabase.from('profiles').update({ full_name: nome.trim() || null }).eq('id', perfil.id);
     setAviso(error ? { tom: 'vermelho', texto: error.message } : { tom: 'verde', texto: 'Alterações salvas.' });
     if (!error) recarregar();
+  }
+
+  const [ocupado, setOcupado] = useState<'portal' | 'cancelar' | null>(null);
+  const [avisoPlano, setAvisoPlano] = useState<{ tom: 'verde' | 'vermelho'; texto: string } | null>(null);
+
+  // Volta do Checkout: o webhook da Stripe pode levar alguns segundos para ativar.
+  const [params] = useSearchParams();
+  const voltouDoPagamento = params.get('assinatura') === 'ok';
+  useEffect(() => {
+    if (!voltouDoPagamento || ativa) return;
+    let vezes = 0;
+    const t = setInterval(() => { if (++vezes > 10) clearInterval(t); recarregar({ silencioso: true }); }, 3000);
+    return () => clearInterval(t);
+  }, [voltouDoPagamento, ativa, recarregar]);
+
+  async function abrir(caminho: string) {
+    setOcupado('portal');
+    try {
+      window.location.assign((await api<{ url: string }>(caminho, { corpo: {} })).url);
+    } catch (e) {
+      setAvisoPlano({ tom: 'vermelho', texto: e instanceof Error ? e.message : String(e) });
+      setOcupado(null);
+    }
+  }
+
+  async function cancelar() {
+    if (!assinatura) return;
+    const fidelidade = assinatura.fidelidade_ate && new Date(assinatura.fidelidade_ate) > new Date();
+    const pergunta = fidelidade
+      ? `Sua fidelidade vai até ${data(assinatura.fidelidade_ate!)}. As mensalidades seguem até lá e o acesso termina nessa data. Cancelar?`
+      : 'O acesso continua até o fim do mês já pago, sem novas cobranças. Cancelar?';
+    if (!window.confirm(pergunta)) return;
+    setOcupado('cancelar');
+    try {
+      const { cancelaEm } = await api<{ cancelaEm: string }>('/api/assinatura/cancelar', { corpo: {} });
+      setAvisoPlano({ tom: 'verde', texto: `Cancelamento agendado para ${data(cancelaEm)}.` });
+      await recarregar({ silencioso: true });
+    } catch (e) {
+      setAvisoPlano({ tom: 'vermelho', texto: e instanceof Error ? e.message : String(e) });
+    }
+    setOcupado(null);
   }
 
   async function sair() {
@@ -65,12 +110,33 @@ export default function Conta() {
           <section className="flex flex-col gap-3 rounded-2xl border-2 border-tinta bg-white p-6 shadow-[6px_6px_0_#101828]">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-lg font-bold">{assinatura ? `${PLANOS[assinatura.nivel ?? 'usuario'].nome} ${PERIODOS[lerPeriodo(assinatura.plan)].nome.toLowerCase()}` : 'Sem plano'}</h2>
-              <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ativa ? 'bg-ok-claro text-ok' : 'bg-amarelo-claro text-amarelo-texto'}`}>{ativa ? 'Ativo' : assinatura?.status ?? 'Inativo'}</span>
+              <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ativa ? 'bg-ok-claro text-ok' : 'bg-amarelo-claro text-amarelo-texto'}`}>{ativa ? 'Ativo' : SITUACAO[assinatura?.status ?? ''] ?? 'Inativo'}</span>
             </div>
+            {voltouDoPagamento && !ativa && <Aviso tom="azul">Pagamento recebido pela Stripe. Estamos ativando a sua assinatura; no Pix pode levar alguns minutos.</Aviso>}
             {assinatura ? (
               <>
-                <span className="numero text-[32px] font-black">{preco(assinatura.nivel ?? 'usuario', lerPeriodo(assinatura.plan)).totalTexto}<span className="text-sm font-medium text-suave"> {PERIODOS[lerPeriodo(assinatura.plan)].cobranca}</span></span>
-                {assinatura.current_period_end && <span className="text-suave">Válido até {new Date(assinatura.current_period_end).toLocaleDateString('pt-BR')}</span>}
+                {assinatura.forma_pagamento === 'pix' ? (
+                  <span className="numero text-[32px] font-black">{preco(assinatura.nivel ?? 'usuario', 'anual').totalTexto}<span className="text-sm font-medium text-suave"> no Pix, por 12 meses</span></span>
+                ) : (
+                  <span className="numero text-[32px] font-black">{preco(assinatura.nivel ?? 'usuario', lerPeriodo(assinatura.plan)).porMesTexto}<span className="text-sm font-medium text-suave">/mês no cartão</span></span>
+                )}
+                {assinatura.current_period_end && <span className="text-suave">{assinatura.forma_pagamento === 'pix' ? 'Pago até' : 'Mês pago até'} {data(assinatura.current_period_end)}</span>}
+                {assinatura.forma_pagamento === 'cartao' && assinatura.fidelidade_ate && !assinatura.cancela_em && new Date(assinatura.fidelidade_ate) > new Date() && (
+                  <span className="text-suave">Fidelidade até {data(assinatura.fidelidade_ate)}</span>
+                )}
+                {assinatura.cancela_em && <Aviso tom="amarelo">Cancelamento agendado: o acesso termina em {data(assinatura.cancela_em)}.</Aviso>}
+                {assinatura.status === 'atrasada' && <Aviso tom="vermelho">O último pagamento não passou. Atualize o cartão para não perder o acesso.</Aviso>}
+                {assinatura.forma_pagamento === 'cartao' && (
+                  <Botao variante="secundario" onClick={() => abrir('/api/assinatura/portal')} disabled={!!ocupado}>{ocupado === 'portal' ? 'Abrindo…' : 'Trocar cartão e ver faturas'}</Botao>
+                )}
+                {assinatura.forma_pagamento === 'pix' && ativa && <BotaoLink to={`/assinar?nivel=${assinatura.nivel}&plano=anual`} variante="secundario">Renovar no Pix</BotaoLink>}
+                {!ativa && <BotaoLink to="/assinar">Assinar de novo</BotaoLink>}
+                {assinatura.forma_pagamento === 'cartao' && ativa && !assinatura.cancela_em && (
+                  <button type="button" onClick={cancelar} disabled={!!ocupado} className="self-start text-sm font-bold text-suave underline">
+                    {ocupado === 'cancelar' ? 'Cancelando…' : 'Cancelar assinatura'}
+                  </button>
+                )}
+                {avisoPlano && <Aviso tom={avisoPlano.tom}>{avisoPlano.texto}</Aviso>}
               </>
             ) : (
               <BotaoLink to="/assinar">Ver planos</BotaoLink>

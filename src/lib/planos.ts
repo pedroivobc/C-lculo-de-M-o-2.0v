@@ -1,9 +1,12 @@
 /**
- * Planos e preços. Fonte única para o site, o servidor e (quando entrar) a cobrança no gateway.
- * O preço base é mensal; a cobrança é trimestral (sem desconto), semestral (10%) ou anual (20%).
+ * Planos e preços. Fonte única para o site, o servidor e a cobrança na Stripe.
+ * Não existe plano mensal: os planos são trimestral (preço cheio), semestral (10% off) e anual (20% off).
+ * No cartão, todo plano é cobrado mês a mês, com fidelidade do período; depois renova no mesmo plano.
+ * No Pix, só o anual, pago de uma vez.
  */
 export type Nivel = 'usuario' | 'pro';
 export type Periodo = 'trimestral' | 'semestral' | 'anual';
+export type Forma = 'cartao' | 'pix';
 
 export const PLANOS: Record<Nivel, { nome: string; mensalCentavos: number; resumo: string }> = {
   usuario: { nome: 'Essencial', mensalCentavos: 2990, resumo: 'Orçamento em PDF com a marca Orça.ai' },
@@ -11,9 +14,9 @@ export const PLANOS: Record<Nivel, { nome: string; mensalCentavos: number; resum
 };
 
 export const PERIODOS: Record<Periodo, { nome: string; meses: number; desconto: number; cobranca: string }> = {
-  trimestral: { nome: 'Trimestral', meses: 3, desconto: 0, cobranca: 'a cada 3 meses' },
-  semestral: { nome: 'Semestral', meses: 6, desconto: 0.1, cobranca: 'a cada 6 meses' },
-  anual: { nome: 'Anual', meses: 12, desconto: 0.2, cobranca: 'por ano' },
+  trimestral: { nome: 'Trimestral', meses: 3, desconto: 0, cobranca: 'fidelidade de 3 meses' },
+  semestral: { nome: 'Semestral', meses: 6, desconto: 0.1, cobranca: 'fidelidade de 6 meses' },
+  anual: { nome: 'Anual', meses: 12, desconto: 0.2, cobranca: 'fidelidade de 12 meses' },
 };
 export const ORDEM_PERIODOS: Periodo[] = ['trimestral', 'semestral', 'anual'];
 
@@ -25,6 +28,21 @@ export function preco(nivel: Nivel, periodo: Periodo) {
   const total = Math.round(PLANOS[nivel].mensalCentavos * meses * (1 - desconto));
   const porMes = Math.round(total / meses);
   return { total, porMes, totalTexto: brl(total), porMesTexto: brl(porMes), descontoTexto: desconto ? `${Math.round(desconto * 100)}% off` : '' };
+}
+
+/** Formas aceitas em cada período: Pix só no anual. */
+export const formasDoPeriodo = (periodo: Periodo): Forma[] => (periodo === 'anual' ? ['cartao', 'pix'] : ['cartao']);
+
+/**
+ * O que a Stripe cobra: no cartão, a parcela mensal (preço por mês do período) durante a fidelidade;
+ * no Pix, o total do ano de uma vez. Em centavos.
+ */
+export function cobranca(nivel: Nivel, periodo: Periodo, forma: Forma) {
+  if (forma === 'pix' && periodo !== 'anual') throw new Error('O Pix vale só para o plano anual.');
+  const p = preco(nivel, periodo);
+  return forma === 'pix'
+    ? { centavos: p.total, texto: `${p.totalTexto} à vista no Pix`, recorrente: false as const }
+    : { centavos: p.porMes, texto: `${p.porMesTexto}/mês no cartão, ${PERIODOS[periodo].cobranca}`, recorrente: true as const };
 }
 
 /** Período válido vindo de URL ou banco; o padrão é o anual. */

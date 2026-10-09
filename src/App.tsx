@@ -33,14 +33,15 @@ function Carregando() {
  * A identidade é confirmada pelo e-mail (Supabase Auth). O WhatsApp é opcional: só serve para usar o agente.
  */
 function Protegido({ children, exigirWhatsapp = false }: { children: ReactNode; exigirWhatsapp?: boolean }) {
-  const { user, perfil, ativa, carregando } = useConta();
+  const { user, perfil, ativa, liberado, carregando } = useConta();
   const local = useLocation();
   if (carregando) return <Carregando />;
   if (!user) return <Navigate to="/entrar" replace state={{ de: local.pathname }} />;
   // CPF único por conta: sem ele, nada além da tela de CPF.
   if (perfil && !perfil.cpf && local.pathname !== '/cpf') return <Navigate to={`/cpf${local.search}`} replace />;
   if (exigirWhatsapp && perfil && !perfil.configurado_em) return <Navigate to="/configurar" replace />;
-  if (exigirWhatsapp && EXIGIR_ASSINATURA && !ativa) return <Navigate to="/assinar" replace />;
+  // Teste grátis em dia também entra; a conta continua acessível para pagar ou trocar o cartão.
+  if (exigirWhatsapp && EXIGIR_ASSINATURA && !ativa && !liberado && local.pathname !== '/app/conta') return <Navigate to="/assinar" replace />;
   return <>{children}</>;
 }
 

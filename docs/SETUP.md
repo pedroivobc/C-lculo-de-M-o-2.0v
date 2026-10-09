@@ -147,6 +147,17 @@ Se você já tinha importado uma versão anterior, apague o workflow antigo e im
 
 **A conversa** é por menus numerados (`server/agente/menu.ts`): o corretor responde 1, 2, 3… e uma pergunta por vez, com "0 Voltar ao menu anterior" em toda tela. No fim escolhe receber em imagem, PDF ou mensagem escrita. Quem escreve o pedido por extenso no menu inicial (*"escritura de 350 mil"*) é atendido pelo agente com IA, se `GEMINI_API_KEY` estiver preenchida. Depois de 30 minutos parada, a conversa recomeça do menu. O roteiro completo sai de `npx tsx scripts/modelo-whatsapp.ts pasta-de-saida`.
 
+## 4a. Pagamento (Stripe)
+
+Não existe plano mensal. No cartão, todo plano (trimestral, semestral, anual) é cobrado mês a mês com fidelidade de 3, 6 ou 12 meses e depois renova no mesmo plano. O Pix vale só para o anual, pago de uma vez. Valores em `src/lib/planos.ts`.
+
+1. **Chave:** no `.env` do servidor, `STRIPE_SECRET_KEY=sk_test_...` (teste) e depois `sk_live_...` (produção).
+2. **Pix:** no painel da Stripe, Configurações > Formas de pagamento, ativar o Pix.
+3. **Webhook:** Desenvolvedores > Webhooks > Adicionar destino, URL `https://SEU_DOMINIO/api/webhooks/stripe`, versão mais recente da API, eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`. Copiar o segredo (`whsec_...`) para `STRIPE_WEBHOOK_SECRET`.
+4. Aplicar a migração `20261016000000_stripe.sql` no Supabase e rodar `docker compose up -d --build`.
+5. Produtos e preços são criados sozinhos na primeira assinatura (lookup keys `orcai_<nivel>_<periodo>_<forma>`). Mudou um valor em `planos.ts`, o preço novo vale para quem assinar depois.
+6. Teste com o cartão `4242 4242 4242 4242`. Com tudo certo, `EXIGIR_ASSINATURA=true`.
+
 ## 5. Primeiro assinante (teste de ponta a ponta)
 
 No `infra/.env`, preencha `AGENTE_WHATSAPP` (número do chip do agente, com DDI) para o app mostrar o botão "Abrir conversa".
