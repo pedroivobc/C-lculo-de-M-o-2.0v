@@ -1,4 +1,4 @@
-import { brl, type Resultado } from '../../src/lib/calc';
+import { brl, textoDasBases, type Resultado } from '../../src/lib/calc';
 import { config } from '../config';
 import type { Estilo } from '../estilo';
 import { linhaDeContato, linhaDoEndereco, tituloDoDocumento, type MetaOrcamento } from '../documento';
@@ -16,7 +16,8 @@ export function orcamentoEmTexto(r: Resultado, meta: MetaOrcamento, estilo: Pick
   l.push(tituloDoDocumento(r));
   if (meta.endereco) l.push(`📍 ${linhaDoEndereco(r, meta.endereco)}`);
   else if (r.municipioNome && r.municipio !== 'n/a') l.push(`📍 Imóvel em ${r.municipioNome} (MG)`);
-  if (r.bases.length) l.push(`Base de cálculo: ${r.bases.filter((b) => b > 0).map(brl).join(' + ')}`);
+  const bases = textoDasBases(r, brl);
+  if (bases) l.push(`Base de cálculo: ${bases}`);
   l.push('');
   for (const linha of r.linhas) {
     l.push(`▪️ ${linha.rotulo}: *${brl(linha.valor)}*`);
