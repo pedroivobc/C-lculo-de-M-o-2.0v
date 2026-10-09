@@ -21,9 +21,9 @@ export async function gerarJpegOrcamento(r: Resultado, meta: MetaOrcamento, esti
   let alturaLogo = 64;
   if (estilo.logoPng) {
     const { width = 1, height = 1 } = await sharp(estilo.logoPng).metadata();
-    alturaLogo = Math.min(96, (420 * height) / width);
+    alturaLogo = Math.min(130, (520 * height) / width);
     const w = (alturaLogo * width) / height;
-    t.push(`<image x="${P}" y="${y}" width="${w}" height="${alturaLogo}" href="data:image/png;base64,${estilo.logoPng.toString('base64')}"/>`);
+    t.push(`<image x="${P}" y="${y}" width="${w}" height="${alturaLogo}" preserveAspectRatio="xMinYMin meet" href="data:image/png;base64,${estilo.logoPng.toString('base64')}"/>`);
   } else if (!estilo.personalizado) {
     t.push(`<g transform="translate(${P} ${y})">${lockupOrcaiSvg(64)}</g>`);
   }
@@ -32,7 +32,7 @@ export async function gerarJpegOrcamento(r: Resultado, meta: MetaOrcamento, esti
   t.push(`<text x="${D}" y="${y + 88}" ${FONTE} font-size="20" fill="${SUAVE}" text-anchor="end">${meta.data.toLocaleDateString('pt-BR')}</text>`);
   y += Math.max(alturaLogo, 92);
   if (estilo.personalizado || estilo.logoPng) {
-    y += 34;
+    y += estilo.logoPng ? 46 : 34;
     t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="24" font-weight="700" fill="${TINTA}">${esc(estilo.cabecalho)}</text>`);
     const contato = linhaDeContato(estilo);
     if (contato) {

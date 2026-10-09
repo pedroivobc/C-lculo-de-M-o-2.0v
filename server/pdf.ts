@@ -24,7 +24,7 @@ export async function gerarPdfOrcamento(r: Resultado, meta: MetaOrcamento, estil
   let alturaLogo = 12;
   if (estilo.logoPng) {
     const { width = 1, height = 1 } = await sharp(estilo.logoPng).metadata();
-    alturaLogo = Math.min(18, (70 * height) / width);
+    alturaLogo = Math.min(24, (95 * height) / width);
     doc.addImage(new Uint8Array(estilo.logoPng), 'PNG', L, y, (alturaLogo * width) / height, alturaLogo);
   } else if (!estilo.personalizado) {
     doc.addImage(new Uint8Array(await logoOrcaiPng()), 'PNG', L, y, (12 * LARGURA_LOCKUP) / 64, 12);
@@ -37,7 +37,7 @@ export async function gerarPdfOrcamento(r: Resultado, meta: MetaOrcamento, estil
   doc.text(meta.data.toLocaleDateString('pt-BR'), R, y + 15, { align: 'right' });
   y += Math.max(alturaLogo, 16);
   if (estilo.personalizado || estilo.logoPng) {
-    y += 7;
+    y += estilo.logoPng ? 9 : 7;
     doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...rgb(TINTA));
     doc.text(estilo.cabecalho, L, y);
     const contato = linhaDeContato(estilo);
