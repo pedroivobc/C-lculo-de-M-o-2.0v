@@ -141,11 +141,26 @@ Os nomes exatos dos campos variam um pouco entre versões da Evolution v2; se al
 
 O workflow não guarda segredos: lê `APP_INTERNAL_URL`, `AGENT_API_KEY`, `EVOLUTION_*` das variáveis de ambiente do container (já definidas no `docker-compose.yml`).
 
-Fluxo: *Evolution: mensagem recebida* → *Filtrar e extrair* (ignora grupos, mensagens enviadas pelo próprio número, áudios e figurinhas; aceita texto e respostas de botão ou lista) → *Perguntar ao agente* (`POST /api/agente/mensagem`) → *Uma resposta por vez* → *Enviar pelo WhatsApp (em ordem)*: texto pelo `sendText`, imagem/PDF/planilha pelo `sendMedia`, uma por vez, na ordem em que o servidor mandou (o orçamento chega antes do menu seguinte).
+Fluxo: *Evolution: mensagem recebida* → *Filtrar e extrair* (ignora grupos, mensagens enviadas pelo próprio número, áudios e figurinhas; aceita texto e respostas de botão ou lista) → *Perguntar ao agente* (`POST /api/agente/mensagem`) → *Uma resposta por vez* → *Enviar pelo WhatsApp (em ordem)*: cada resposta já vem do servidor com `envio.rota` (`sendText`, `sendButtons`, `sendList` ou `sendMedia`) e `envio.corpo`, e o n8n só repassa para a Evolution, uma por vez, na ordem em que o servidor mandou (o orçamento chega antes do menu seguinte). Com um servidor anterior (sem `envio`), o nó cai no envio antigo: texto por `sendText` e arquivo por `sendMedia`.
 
 Se você já tinha importado uma versão anterior, apague o workflow antigo e importe o arquivo de novo.
 
-**A conversa** é por menus numerados (`server/agente/menu.ts`): o corretor responde 1, 2, 3… e uma pergunta por vez, com "0 Voltar ao menu anterior" em toda tela. No fim escolhe receber em imagem, PDF ou mensagem escrita. Quem escreve o pedido por extenso no menu inicial (*"escritura de 350 mil"*) é atendido pelo agente com IA, se `GEMINI_API_KEY` estiver preenchida. Depois de 30 minutos parada, a conversa recomeça do menu. O roteiro completo sai de `npx tsx scripts/modelo-whatsapp.ts pasta-de-saida`.
+**A conversa** começa com *"Olá, {nome}! 👋 Qual tipo de cálculo iremos fazer hoje?"* e as opções Compra e venda, Financiamento, Doação e Correção contratual (só para Juiz de Fora), e segue por menus (`server/agente/menu.ts`): o corretor responde 1, 2, 3… e uma pergunta por vez, com "0 Voltar ao menu anterior" em toda tela. No fim escolhe receber em imagem, PDF ou mensagem escrita. Quem escreve o pedido por extenso no menu inicial (*"escritura de 350 mil"*) é atendido pelo agente com IA, se `GEMINI_API_KEY` estiver preenchida. Depois de 30 minutos parada, a conversa recomeça do menu. O roteiro completo sai de `npx tsx scripts/modelo-whatsapp.ts pasta-de-saida`.
+
+### Botões e lista no WhatsApp
+
+Com `WHATSAPP_BOTOES=sim` no `.env` do app, as opções saem como **botões** (telas com até 3 opções curtas, como Sim/Não/Voltar) ou **lista** com o botão "Ver opções" (até 10 opções, como o menu inicial). Com a variável vazia, vai o texto numerado de sempre. Digitar o número continua funcionando nos dois casos, e a resposta do botão chega ao servidor como o número da opção.
+
+Na conexão por QR code (`WHATSAPP-BAILEYS`), o WhatsApp não garante botões e listas para números comuns: em alguns aparelhos a mensagem não aparece. Ligue a variável, teste no seu celular (Android e iPhone, se puder) e volte para vazio se algo não aparecer. Na API oficial da Meta (`WHATSAPP-BUSINESS` na Evolution), botões e listas são suportados.
+
+### Chatwoot: passar para uma pessoa
+
+O corretor pode escrever *atendente* a qualquer momento, ou escolher *Falar com um atendente* no menu depois do orçamento. O robô avisa que vai chamar alguém e **fica quieto naquela conversa** até o corretor escrever *menu* (ou por 8 horas sem mensagens).
+
+1. Ligue a integração nativa da Evolution com o Chatwoot na instância do agente (painel `/manager` → Chatwoot, ou `POST /chatwoot/set/<instância>`), para as conversas aparecerem no Chatwoot e as respostas da equipe saírem pelo mesmo número. Deixe a importação de contatos e mensagens como preferir.
+2. No `.env` do app, preencha `CHATWOOT_URL`, `CHATWOOT_API_TOKEN` (Chatwoot → Perfil → Token de acesso) e `CHATWOOT_ACCOUNT_ID` (o número na URL do Chatwoot, `/app/accounts/<id>`).
+
+Com isso, quando o corretor pede um atendente, o servidor abre a conversa no Chatwoot, põe a etiqueta **atendente** e deixa uma nota privada com o nome dele e o último orçamento. Sem essas variáveis, o robô pausa do mesmo jeito; só não marca nada no Chatwoot.
 
 ## 4a. Pagamento (Stripe)
 
@@ -154,7 +169,7 @@ Não existe plano mensal. No cartão, todo plano (trimestral, semestral, anual) 
 1. **Chave:** no `.env` do servidor, `STRIPE_SECRET_KEY=sk_test_...` (teste) e depois `sk_live_...` (produção).
 2. **Pix:** no painel da Stripe, Configurações > Formas de pagamento, ativar o Pix.
 3. **Webhook:** Desenvolvedores > Webhooks > Adicionar destino, URL `https://SEU_DOMINIO/api/webhooks/stripe`, versão mais recente da API, eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`. Copiar o segredo (`whsec_...`) para `STRIPE_WEBHOOK_SECRET`.
-4. Aplicar a migração `20261016000000_stripe.sql` no Supabase e rodar `docker compose up -d --build`.
+4. Aplicar a migração `20261018000000_stripe.sql` no Supabase e rodar `docker compose up -d --build`.
 5. Produtos e preços são criados sozinhos na primeira assinatura (lookup keys `orcai_<nivel>_<periodo>_<forma>`). Mudou um valor em `planos.ts`, o preço novo vale para quem assinar depois.
 6. **Oferta de lançamento** (`OFERTA_LANCAMENTO` em `src/lib/planos.ts`): Plano Fundador: Pró anual a R$ 9,90/mês para os 20 primeiros (renovação depois do 1º ano ainda a definir), 3 dias de teste com o cartão já cadastrado (a Stripe cobra no 4º dia), fidelidade de 12 meses. Conta como vaga quem está no teste ou assinando; quem desiste devolve a vaga. Em qualquer plano, nos 7 primeiros dias o cancelamento é imediato e o valor pago é estornado (CDC, art. 49). Quando as vagas acabam, a oferta some do site.
 7. Teste com o cartão `4242 4242 4242 4242`. Com tudo certo, `EXIGIR_ASSINATURA=true`.

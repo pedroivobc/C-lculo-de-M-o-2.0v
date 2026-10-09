@@ -2,9 +2,10 @@ import { timingSafeEqual } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 import { config } from './config';
 import { supabaseAdmin } from './supabase';
+import { vinculoDoUsuario, type Organizacao } from './equipe';
 
 declare module 'express-serve-static-core' {
-  interface Request { userId?: string }
+  interface Request { userId?: string; organizacao?: Organizacao }
 }
 
 /** Rotas do site: exige o token do Supabase Auth (Authorization: Bearer <jwt>). */
@@ -43,5 +44,13 @@ export function exigirAgente(req: Request, res: Response, next: NextFunction) {
 export async function exigirAdmin(req: Request, res: Response, next: NextFunction) {
   const { data } = await supabaseAdmin().from('profiles').select('papel').eq('id', req.userId!).maybeSingle();
   if (data?.papel !== 'admin') return res.status(403).json({ erro: 'Área restrita ao administrador.' });
+  next();
+}
+
+/** Rotas da equipe: gestor de uma organização (usar depois de exigirUsuario). Deixa a organização em req.organizacao. */
+export async function exigirGestor(req: Request, res: Response, next: NextFunction) {
+  const v = await vinculoDoUsuario(req.userId!).catch(() => null);
+  if (!v || v.funcao !== 'gestor') return res.status(403).json({ erro: 'Área restrita ao gestor da equipe.' });
+  req.organizacao = v.organizacao;
   next();
 }

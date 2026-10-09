@@ -11,7 +11,8 @@ import { anoBaseIncc } from '../../src/lib/calc/correcao';
 
 export type FormatoEntrega = 'jpeg' | 'pdf' | 'texto';
 
-interface Opcao { rotulo: string; vai: string } // vai: id de menu ou 'fluxo:<id>'
+/** vai: id de menu, 'fluxo:<id>' ou uma ação ('reenviar', 'detalhar', 'atendente'). descricao: linha de apoio nos botões/lista. */
+interface Opcao { rotulo: string; vai: string; descricao?: string }
 interface Menu { titulo: string; opcoes: Opcao[]; voltar?: string }
 
 type TipoPergunta = 'valor' | 'valorOuZero' | 'ano' | 'simnao';
@@ -78,23 +79,16 @@ export const FLUXOS: Record<string, Fluxo> = {
 
 export const MENUS: Record<string, Menu> = {
   inicio: {
-    titulo: 'O que você quer orçar?',
-    opcoes: [
-      { rotulo: 'Escritura', vai: 'escritura' },
-      { rotulo: 'Financiamento', vai: 'financiamento' },
-      { rotulo: 'Atualizar valor de contrato', vai: 'fluxo:correcao' },
-    ],
-  },
-  escritura: {
-    titulo: '*Escritura*\nQual é o tipo?', voltar: 'inicio',
+    titulo: 'Qual tipo de cálculo iremos fazer hoje?',
     opcoes: [
       { rotulo: 'Compra e venda', vai: 'compra_venda' },
+      { rotulo: 'Financiamento', vai: 'financiamento' },
       { rotulo: 'Doação', vai: 'doacao' },
-      { rotulo: 'Renúncia de usufruto', vai: 'fluxo:renuncia' },
+      { rotulo: 'Correção contratual', vai: 'fluxo:correcao' },
     ],
   },
   compra_venda: {
-    titulo: '*Compra e venda*\nQual é o tipo?', voltar: 'escritura',
+    titulo: '*Compra e venda*\nQual é o tipo?', voltar: 'inicio',
     opcoes: [
       { rotulo: 'Compra e venda simples', vai: 'fluxo:cv_simples' },
       { rotulo: 'Compra e venda com vínculo', vai: 'fluxo:cv_vinculo' },
@@ -102,10 +96,11 @@ export const MENUS: Record<string, Menu> = {
     ],
   },
   doacao: {
-    titulo: '*Doação*\nQual é o tipo?', voltar: 'escritura',
+    titulo: '*Doação*\nQual é o tipo?', voltar: 'inicio',
     opcoes: [
       { rotulo: 'Doação simples', vai: 'fluxo:doacao_simples' },
       { rotulo: 'Doação com usufruto', vai: 'fluxo:doacao_usufruto' },
+      { rotulo: 'Renúncia de usufruto', vai: 'fluxo:renuncia' },
     ],
   },
   financiamento: {
@@ -120,17 +115,17 @@ export const MENUS: Record<string, Menu> = {
   caixa: {
     titulo: '*Caixa*\nQual é a modalidade?', voltar: 'financiamento',
     opcoes: [
-      { rotulo: 'SBPE (financiamento comum)', vai: 'fluxo:caixa_sbpe' },
+      { rotulo: 'SBPE', descricao: 'Financiamento comum', vai: 'fluxo:caixa_sbpe' },
       { rotulo: 'Minha Casa Minha Vida', vai: 'fluxo:caixa_mcmv' },
       { rotulo: 'SFI', vai: 'fluxo:caixa_sfi' },
       { rotulo: 'FGTS', vai: 'fluxo:caixa_fgts' },
-      { rotulo: 'Home equity (empréstimo com o imóvel de garantia)', vai: 'fluxo:caixa_egi' },
+      { rotulo: 'Home equity', descricao: 'Empréstimo com o imóvel de garantia', vai: 'fluxo:caixa_egi' },
     ],
   },
   ...Object.fromEntries(Object.entries(BANCOS).map(([id, nome]) => [id, {
     titulo: `*${nome}*\nQual é a modalidade?`, voltar: 'financiamento',
     opcoes: [
-      { rotulo: 'SBPE (financiamento comum)', vai: `fluxo:${id}_sbpe` },
+      { rotulo: 'SBPE', descricao: 'Financiamento comum', vai: `fluxo:${id}_sbpe` },
       { rotulo: 'SFI', vai: `fluxo:${id}_sfi` },
     ],
   }])),
@@ -140,6 +135,7 @@ export const MENUS: Record<string, Menu> = {
       { rotulo: 'Fazer outro orçamento', vai: 'inicio' },
       { rotulo: 'Receber em outro formato', vai: 'reenviar' },
       { rotulo: 'Ver os valores detalhados', vai: 'detalhar' },
+      { rotulo: 'Falar com um atendente', vai: 'atendente' },
     ],
   },
 };
@@ -157,7 +153,9 @@ export type Tela =
   | { tela: 'pergunta'; fluxo: string; i: number; dados: Record<string, unknown>; origem: string }
   /** Pergunta se o corretor quer o endereço do imóvel no orçamento e, se sim, pede o texto. */
   | { tela: 'endereco'; etapa: 'pergunta' | 'digitar'; fluxo: string; dados: Record<string, unknown>; origem: string }
-  | { tela: 'formato'; fluxo?: string; dados?: Record<string, unknown>; origem?: string; reenvio?: boolean; endereco?: string };
+  | { tela: 'formato'; fluxo?: string; dados?: Record<string, unknown>; origem?: string; reenvio?: boolean; endereco?: string }
+  /** Conversa passada para uma pessoa (Chatwoot): o robô fica quieto até o corretor escrever "menu". */
+  | { tela: 'atendente'; desde: string };
 
 export type Estado = Tela & {
   /** Número (seq) do último orçamento feito nesta conversa. */
@@ -166,14 +164,20 @@ export type Estado = Tela & {
   custos?: Partial<Custos>;
 };
 
-export interface MensagemMenu { texto: string; opcoes?: { id: string; titulo: string }[] }
+/**
+ * `texto` é a mensagem completa com as opções numeradas (funciona em qualquer WhatsApp).
+ * `corpo` é o mesmo texto sem a lista, para quando as opções vão como botões ou lista (./whatsapp.ts).
+ */
+export interface MensagemMenu { texto: string; corpo?: string; opcoes?: { id: string; titulo: string; descricao?: string }[] }
 
 export type Acao =
   | { tipo: 'calcular'; calculo: TipoCalculo; dados: Record<string, unknown>; formato: FormatoEntrega; titulo: string; endereco?: string }
   | { tipo: 'reenviar'; seq: number; formato: FormatoEntrega }
   | { tipo: 'detalhar'; seq: number }
   /** Texto livre no menu inicial (ex.: "escritura de 350 mil"): vai para o agente com IA, se houver. */
-  | { tipo: 'livre' };
+  | { tipo: 'livre' }
+  /** Pediu para falar com uma pessoa: avisa a equipe no Chatwoot. */
+  | { tipo: 'atendente' };
 
 export interface Passo { estado: Estado; mensagens: MensagemMenu[]; acao?: Acao }
 
@@ -251,11 +255,15 @@ function lerSimNao(texto: string): boolean | null {
 const NUM = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
 const VOLTAR = `${NUM[0]} Voltar ao menu anterior`;
 
-function mensagemMenu(titulo: string, rotulos: string[], comVoltar: boolean, prefixo = ''): MensagemMenu {
-  const linhas = rotulos.map((r, i) => `${NUM[i + 1]} ${r}`);
+type Rotulo = string | { rotulo: string; descricao?: string };
+
+function mensagemMenu(titulo: string, rotulos: Rotulo[], comVoltar: boolean, prefixo = ''): MensagemMenu {
+  const itens = rotulos.map((r) => (typeof r === 'string' ? { rotulo: r } : r));
+  const linhas = itens.map((r, i) => `${NUM[i + 1]} ${r.rotulo}${r.descricao ? ` · ${r.descricao[0].toLowerCase()}${r.descricao.slice(1)}` : ''}`);
   return {
     texto: `${prefixo}${titulo}\n\n${linhas.join('\n')}${comVoltar ? `\n\n${VOLTAR}` : ''}\n\n_Responda com o número da opção._`,
-    opcoes: [...rotulos.map((r, i) => ({ id: String(i + 1), titulo: r })), ...(comVoltar ? [{ id: '0', titulo: 'Voltar' }] : [])],
+    corpo: `${prefixo}${titulo}`,
+    opcoes: [...itens.map((r, i) => ({ id: String(i + 1), titulo: r.rotulo, descricao: r.descricao })), ...(comVoltar ? [{ id: '0', titulo: 'Voltar' }] : [])],
   };
 }
 
@@ -264,14 +272,15 @@ export const MUNICIPIO_CORRECAO = 'mg-juiz-de-fora';
 
 /** O menu como esta pessoa vê: no inicial, a correção contratual só para Juiz de Fora. */
 export function menuDe(id: string, ctx?: ContextoMenu): Menu {
-  const m = MENUS[id];
+  const m = MENUS[id] ?? MENUS.inicio; // sessão salva com um menu que não existe mais
+  if (!MENUS[id]) return menuDe('inicio', ctx);
   if (id !== 'inicio' || ctx?.municipio === MUNICIPIO_CORRECAO) return m;
   return { ...m, opcoes: m.opcoes.filter((o) => o.vai !== 'fluxo:correcao') };
 }
 
 const telaMenu = (id: string, prefixo = '', ctx?: ContextoMenu) => {
   const m = menuDe(id, ctx);
-  return mensagemMenu(m.titulo, m.opcoes.map((o) => o.rotulo), !!m.voltar, prefixo);
+  return mensagemMenu(m.titulo, m.opcoes.map((o) => ({ rotulo: o.rotulo, descricao: o.descricao })), !!m.voltar, prefixo);
 };
 
 function telaPergunta(f: Fluxo, i: number, prefixo = '', dados: Record<string, unknown> = {}): MensagemMenu {
@@ -282,7 +291,8 @@ function telaPergunta(f: Fluxo, i: number, prefixo = '', dados: Record<string, u
   const exemplo = p.tipo === 'ano' ? ''
     : base ? `\nDigite o valor ou a cota em %.\n_Ex.: ${Math.round(base * 0.8)} ou 80% (= ${brl(Math.round(base * 0.8 * 100) / 100)})_`
     : '\n_Pode digitar só os números: 350000 vira R$ 350.000,00_';
-  return { texto: `${prefixo}*${p.titulo}*${passo}\n${p.texto}${exemplo}\n\n${VOLTAR}`, opcoes: [{ id: '0', titulo: 'Voltar' }] };
+  const pergunta = `${prefixo}*${p.titulo}*${passo}\n${p.texto}${exemplo}`;
+  return { texto: `${pergunta}\n\n${VOLTAR}`, corpo: pergunta, opcoes: [{ id: '0', titulo: 'Voltar' }] };
 }
 
 /** Resposta já entendida, como o corretor vai vê-la: R$ 350.000,00, Sim, 2015. */
@@ -295,7 +305,7 @@ function comoTexto(p: Pergunta, valor: unknown): string {
 
 /** Certidões e honorários que vão entrar no orçamento em andamento. */
 function custosEmUso(e: Estado, ctx: ContextoMenu): Custos | null {
-  if (e.tela === 'menu') return null;
+  if (e.tela === 'menu' || e.tela === 'atendente') return null;
   if (e.tela === 'formato' && (e.reenvio || !e.fluxo)) return null;
   const f = FLUXOS[e.fluxo!];
   const base = custosDoCalculo(f.calculo, ctx.custosPadrao ?? null, e.dados ?? {});
@@ -305,10 +315,11 @@ function custosEmUso(e: Estado, ctx: ContextoMenu): Custos | null {
 function telaFormato(ctx: ContextoMenu, e?: Estado, prefixo = ''): MensagemMenu {
   const c = e ? custosEmUso(e, ctx) : null;
   const custos = c ? `Certidões: *${brl(c.certidoes)}*\nHonorários: *${brl(c.honorarios)}*\n_Para mudar só neste orçamento, escreva_ *honorarios 900* _ou_ *certidoes 350*\n\n` : '';
-  return mensagemMenu(`${custos}*Como você quer receber o orçamento?*`, FORMATOS.map((f) => f.id === ctx.formatoPadrao ? `${f.rotulo} · seu padrão` : f.rotulo), true, prefixo);
+  return mensagemMenu(`${custos}*Como você quer receber o orçamento?*`, FORMATOS.map((f) => ({ rotulo: f.rotulo, descricao: f.id === ctx.formatoPadrao ? 'Seu padrão' : undefined })), true, prefixo);
 }
 
-const saudacao = (nome?: string | null) => `Olá${nome ? `, ${nome.split(' ')[0]}` : ''}! 👋 Eu faço o orçamento da documentação do imóvel.\n\n`;
+/** Boas-vindas de toda conversa nova: "Olá, Pedro! 👋 Qual tipo de cálculo iremos fazer hoje?" */
+const saudacao = (nome?: string | null) => `Olá${nome ? `, ${nome.split(' ')[0]}` : ''}! 👋 `;
 
 // ---------------- Transições ----------------
 
@@ -316,11 +327,13 @@ const EXEMPLO_ENDERECO = 'Rua Halfeld, 100, apto 201 · Centro';
 
 function telaEndereco(etapa: 'pergunta' | 'digitar', prefixo = ''): MensagemMenu {
   if (etapa === 'pergunta') return mensagemMenu('*Endereço do imóvel*\nQuer colocar o endereço do imóvel no orçamento?', ['Sim', 'Não'], true, prefixo);
-  return { texto: `${prefixo}*Endereço do imóvel*\nDigite o endereço como quer que apareça no orçamento.\n_Ex.: ${EXEMPLO_ENDERECO}_\n\n${VOLTAR}`, opcoes: [{ id: '0', titulo: 'Voltar' }] };
+  const pergunta = `${prefixo}*Endereço do imóvel*\nDigite o endereço como quer que apareça no orçamento.\n_Ex.: ${EXEMPLO_ENDERECO}_`;
+  return { texto: `${pergunta}\n\n${VOLTAR}`, corpo: pergunta, opcoes: [{ id: '0', titulo: 'Voltar' }] };
 }
 
 /** Re-mostra a tela atual (usado quando a resposta não foi entendida). */
 export function telaAtual(e: Estado, ctx: ContextoMenu, prefixo = ''): MensagemMenu {
+  if (e.tela === 'atendente') return telaMenu('inicio', prefixo, ctx);
   if (e.tela === 'menu') return telaMenu(e.id, prefixo, ctx);
   if (e.tela === 'pergunta') return telaPergunta(FLUXOS[e.fluxo], e.i, prefixo, e.dados);
   if (e.tela === 'endereco') return telaEndereco(e.etapa, prefixo);
@@ -338,9 +351,21 @@ function irPara(destino: string, origem: string, ultimo: number | undefined, ctx
   return { estado: { tela: 'menu', id: destino, ultimo }, mensagens: [telaMenu(destino, '', ctx)] };
 }
 
+const PALAVRAS_ATENDENTE = /^(atendente|atendimento|humano|pessoa|falar com (um |uma )?(atendente|pessoa|humano))$/;
+export const TEXTO_ATENDENTE = 'Certo! Vou chamar alguém da nossa equipe para falar com você por aqui. 🙋\n\n_Quando quiser voltar aos orçamentos automáticos, escreva_ *menu*.';
+
 function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): Passo {
   const t = semAcento(texto ?? '');
   const ultimo = estado?.ultimo;
+
+  // Com uma pessoa atendendo, o robô não responde nada; só "menu" devolve a conversa a ele.
+  if (estado?.tela === 'atendente') {
+    if (t !== 'menu') return { estado, mensagens: [] };
+    return { estado: { tela: 'menu', id: 'inicio', ultimo }, mensagens: [telaMenu('inicio', saudacao(ctx.nome), ctx)] };
+  }
+  if (PALAVRAS_ATENDENTE.test(t)) {
+    return { estado: { tela: 'atendente', desde: new Date().toISOString(), ultimo }, mensagens: [{ texto: TEXTO_ATENDENTE }], acao: { tipo: 'atendente' } };
+  }
 
   if (!estado || PALAVRAS_INICIO.some((p) => t === p || t.startsWith(`${p} `) || t.startsWith(`${p},`) || t.startsWith(`${p}!`))) {
     // Conversa nova: se já veio um número válido do menu inicial, segue direto.
@@ -369,6 +394,9 @@ function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): P
     if (opcao.vai === 'reenviar') {
       if (!ultimo) return irPara('inicio', 'inicio', undefined, ctx);
       return { estado: { tela: 'formato', reenvio: true, ultimo }, mensagens: [telaFormato(ctx)] };
+    }
+    if (opcao.vai === 'atendente') {
+      return { estado: { tela: 'atendente', desde: new Date().toISOString(), ultimo }, mensagens: [{ texto: TEXTO_ATENDENTE }], acao: { tipo: 'atendente' } };
     }
     if (opcao.vai === 'detalhar') {
       if (!ultimo) return irPara('inicio', 'inicio', undefined, ctx);

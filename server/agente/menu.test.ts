@@ -32,24 +32,25 @@ const RESPOSTA: Record<string, string> = { simnao: '1', ano: '2015', valor: '350
 describe('menu do WhatsApp', () => {
   it('começa com saudação e o menu inicial', () => {
     const p = conversa('oi');
-    expect(p.mensagens[0].texto).toContain('Olá, Pedro!');
-    expect(p.mensagens[0].texto).toContain('1️⃣ Escritura');
-    expect(p.mensagens[0].texto).toContain('2️⃣ Financiamento');
+    expect(p.mensagens[0].texto).toMatch(/^Olá, Pedro! 👋 Qual tipo de cálculo iremos fazer hoje\?/);
+    expect(p.mensagens[0].texto).toMatch(/1️⃣ Compra e venda\n2️⃣ Financiamento\n3️⃣ Doação\n4️⃣ Correção contratual/);
+    expect(p.mensagens[0].opcoes?.map((o) => o.titulo)).toEqual(['Compra e venda', 'Financiamento', 'Doação', 'Correção contratual']);
+    expect(p.mensagens[0].corpo).toBe('Olá, Pedro! 👋 Qual tipo de cálculo iremos fazer hoje?');
   });
 
   it('correção contratual só aparece para Juiz de Fora', () => {
-    expect(conversa('oi').mensagens[0].texto).toContain('3️⃣ Atualizar valor de contrato');
+    expect(conversa('oi').mensagens[0].texto).toContain('4️⃣ Correção contratual');
     const bh: ContextoMenu = { ...ctx, municipio: 'mg-belo-horizonte' };
     const p = passo(null, 'oi', bh);
-    expect(p.mensagens[0].texto).not.toContain('Atualizar valor de contrato');
-    expect(passo(p.estado, '3', bh).mensagens[0].texto).toContain('Não entendi');
+    expect(p.mensagens[0].texto).not.toContain('Correção contratual');
+    expect(passo(p.estado, '4', bh).mensagens[0].texto).toContain('Não entendi');
   });
 
-  it('escritura → compra e venda → tipos, com "voltar" no fim', () => {
-    const p = conversa('oi', '1', '1');
+  it('compra e venda → tipos, com "voltar" no fim', () => {
+    const p = conversa('oi', '1');
     expect(p.mensagens[0].texto).toMatch(/1️⃣ Compra e venda simples\n2️⃣ Compra e venda com vínculo\n3️⃣ Compra e venda com interveniência\n\n0️⃣ Voltar ao menu anterior/);
-    expect(conversa('oi', '1', '1', '0').estado).toMatchObject({ tela: 'menu', id: 'escritura' });
-    expect(conversa('oi', '1', '1', '0', '0').estado).toMatchObject({ tela: 'menu', id: 'inicio' });
+    expect(conversa('oi', '1', '0').estado).toMatchObject({ tela: 'menu', id: 'inicio' });
+    expect(conversa('oi', '3').mensagens[0].texto).toMatch(/1️⃣ Doação simples\n2️⃣ Doação com usufruto\n3️⃣ Renúncia de usufruto/);
   });
 
   it('todo fluxo chega a um cálculo válido', () => {
@@ -74,9 +75,9 @@ describe('menu do WhatsApp', () => {
 
   it('mostra cada valor entendido em reais', () => {
     expect(conversa('oi', '2', '1', '1', '400000').mensagens[0].texto).toMatch(/^✅ Valor do imóvel: \*R\$\s400\.000,00\*/);
-    expect(conversa('oi', '1', '1', '1', '350000').mensagens[0].texto).toMatch(/^✅ Valor do imóvel: \*R\$\s350\.000,00\*\n\n\*Endereço do imóvel\*/);
-    expect(conversa('oi', '1', '1', '1', '350000', '2').mensagens[0].texto).toMatch(/^Certidões: \*R\$\s400,00\*\nHonorários: \*R\$\s700,00\*/);
-    expect(conversa('oi', '1', '2', '1', '350000', 'não sei').mensagens[0].texto).toContain('✅ Avaliação da Fazenda: *ainda não tem*');
+    expect(conversa('oi', '1', '1', '350000').mensagens[0].texto).toMatch(/^✅ Valor do imóvel: \*R\$\s350\.000,00\*\n\n\*Endereço do imóvel\*/);
+    expect(conversa('oi', '1', '1', '350000', '2').mensagens[0].texto).toMatch(/^Certidões: \*R\$\s400,00\*\nHonorários: \*R\$\s700,00\*/);
+    expect(conversa('oi', '3', '1', '350000', 'não sei').mensagens[0].texto).toContain('✅ Avaliação da Fazenda: *ainda não tem*');
   });
 
   it('financiado pode ser o valor ou a cota em % do imóvel', () => {
@@ -186,5 +187,23 @@ describe('leitura das respostas', () => {
     expect(lerOpcao('2)', op)).toBe(2);
     expect(lerOpcao('Escritura', op)).toBe(1);
     expect(lerOpcao('compra', ['Compra e venda simples', 'Compra e venda com vínculo'])).toBeNull();
+  });
+});
+
+describe('atendimento por uma pessoa', () => {
+  it('"Falar com um atendente" pausa o robô até o corretor escrever menu', () => {
+    const p = conversa('oi', 'atendente');
+    expect(p.acao).toEqual({ tipo: 'atendente' });
+    expect(p.estado.tela).toBe('atendente');
+    expect(passo(p.estado, 'oi, tudo bem?', ctx).mensagens).toEqual([]);
+    expect(passo(p.estado, '1', ctx).mensagens).toEqual([]);
+    const volta = passo(p.estado, 'menu', ctx);
+    expect(volta.estado).toMatchObject({ tela: 'menu', id: 'inicio' });
+    expect(volta.mensagens[0].texto).toContain('Qual tipo de cálculo');
+  });
+
+  it('também aparece no menu depois do orçamento', () => {
+    const depois = passo({ tela: 'menu', id: 'depois', ultimo: 12 }, '4', ctx);
+    expect(depois.acao).toEqual({ tipo: 'atendente' });
   });
 });

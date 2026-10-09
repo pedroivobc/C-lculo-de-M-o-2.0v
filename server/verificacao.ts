@@ -2,6 +2,7 @@ import { createHash, randomInt } from 'node:crypto';
 import { config } from './config';
 import { supabaseAdmin } from './supabase';
 import { variantesTelefone } from './telefone';
+import { vincularPorTelefone } from './equipe';
 
 /**
  * Confirmação do WhatsApp invertida: o site mostra um código e o corretor o envia ao agente.
@@ -65,5 +66,7 @@ export async function confirmarPorMensagem(telefone: string, texto: string | und
   // Grava o número como o WhatsApp o entrega: é assim que o agente vai reconhecê-lo.
   await db.from('profiles').update({ whatsapp_e164: telefone, whatsapp_verified_at: new Date().toISOString() }).eq('id', v.user_id);
   await db.from('phone_verifications').delete().eq('user_id', v.user_id);
+  // Se o gestor de uma equipe cadastrou este telefone, a pessoa entra na equipe agora.
+  await vincularPorTelefone(v.user_id, telefone).catch((e) => console.error('Equipe: falha ao vincular pelo telefone', e));
   return { status: 'confirmado', userId: v.user_id };
 }

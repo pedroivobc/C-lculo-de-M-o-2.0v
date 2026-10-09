@@ -14,7 +14,7 @@ export interface Estilo {
   /** Logo já normalizado em PNG (até 600×240). */
   logoPng?: Buffer;
   formato: Formato;
-  /** true quando logo e cor do assinante aparecem (pro, trial e admin). */
+  /** true quando logo e cor do assinante aparecem (pro, trial, admin e equipes). */
   personalizado: boolean;
   /** Nome, WhatsApp e e-mail do assinante no orçamento (só quando personalizado). */
   contato?: { nome?: string; whatsapp?: string; email?: string };
@@ -50,6 +50,19 @@ async function baixarLogo(caminho: string): Promise<Buffer | undefined> {
   return png;
 }
 
+interface Marca { pdf_header?: string | null; pdf_logo_path?: string | null; cor_primaria?: string | null }
+
+/** Logo, cor e cabeçalho da organização do usuário (os do dono), ou null se ele não está numa equipe. */
+async function marcaDaEquipe(userId: string): Promise<Marca | null> {
+  const db = supabaseAdmin();
+  const { data: v } = await db.from('organizacao_membros')
+    .select('organizacao:organizacoes(nome, dono_id)').eq('user_id', userId).is('removido_em', null).maybeSingle();
+  const org = v?.organizacao as unknown as { nome: string; dono_id: string } | null;
+  if (!org) return null;
+  const { data: dono } = await db.from('profiles').select('pdf_header, pdf_logo_path, cor_primaria').eq('id', org.dono_id).maybeSingle();
+  return { pdf_header: dono?.pdf_header || org.nome, pdf_logo_path: dono?.pdf_logo_path, cor_primaria: dono?.cor_primaria };
+}
+
 /** Lê do perfil a configuração do orçamento e aplica a regra do plano (situacao_acesso.personaliza_orcamento). */
 export async function configuracaoDoUsuario(userId: string): Promise<Configuracao> {
   const db = supabaseAdmin();
@@ -60,11 +73,13 @@ export async function configuracaoDoUsuario(userId: string): Promise<Configuraca
     db.rpc('situacao_acesso', { uid: userId }).maybeSingle<{ personaliza_orcamento: boolean }>(),
   ]);
   const personalizado = !!s?.personaliza_orcamento;
-  const logoPng = personalizado && p?.pdf_logo_path ? await baixarLogo(p.pdf_logo_path).catch(() => undefined) : undefined;
+  // Em equipe, logo, cor e cabeçalho são os do gestor (dono da organização); o contato continua sendo o de quem orçou.
+  const marca = await marcaDaEquipe(userId) ?? { pdf_header: p?.pdf_header, pdf_logo_path: p?.pdf_logo_path, cor_primaria: p?.cor_primaria };
+  const logoPng = personalizado && marca.pdf_logo_path ? await baixarLogo(marca.pdf_logo_path).catch(() => undefined) : undefined;
   return {
     estilo: {
-      cabecalho: p?.pdf_header || config.marca,
-      cor: personalizado && p?.cor_primaria ? p.cor_primaria : COR_MARCA,
+      cabecalho: marca.pdf_header || config.marca,
+      cor: personalizado && marca.cor_primaria ? marca.cor_primaria : COR_MARCA,
       logoPng,
       formato: p?.formato_orcamento === 'jpeg' ? 'jpeg' : 'pdf',
       personalizado,
