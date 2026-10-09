@@ -62,6 +62,9 @@ export function precoEquipe(usuarios: number, assentosBase: number = EQUIPE.asse
   };
 }
 
+/** Plano interno do administrador: acesso completo a tudo, sem cobrança e sem data para acabar (não está à venda). */
+export const UNLIMITED = { nome: 'Unlimited', resumo: 'Acesso completo a tudo, sem cobrança e sem data para acabar' };
+
 /** Os seis perfis de usuário. `usuario` é o Starter (nome antigo no banco). */
 export type Papel = 'admin' | 'teams' | 'usuario' | 'pro' | 'trial' | 'clemente';
 export const NOME_PAPEL: Record<Papel, string> = {

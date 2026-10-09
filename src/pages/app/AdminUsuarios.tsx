@@ -31,12 +31,12 @@ const SITUACAO: Record<Situacao, { nome: string; classe: string; nota: string }>
   inativo: { nome: 'Inativo', classe: 'bg-minas-claro text-minas-texto', nota: 'Sem orçar há mais de 30 dias' },
   nunca: { nome: 'Nunca ativado', classe: 'bg-cinza text-texto', nota: 'Ainda não fez orçamento' },
 };
-const NIVEL: Record<string, string> = { usuario: 'Starter', pro: 'Pró', teams: 'Teams' };
+const NIVEL: Record<string, string> = { usuario: 'Starter', pro: 'Pró', teams: 'Teams', unlimited: 'Unlimited' };
 const data = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : '—');
 const daquiA = (dias: number) => new Date(Date.now() + dias * 86_400_000).toISOString().slice(0, 10);
 
 function textoPlano(u: Pick<Usuario, 'papel' | 'plano' | 'equipe' | 'trial_expira_em'>) {
-  if (u.papel === 'admin') return 'Administrador';
+  if (u.papel === 'admin') return u.plano?.nivel === 'unlimited' && u.plano.vigente ? 'Unlimited' : 'Administrador';
   if (u.equipe) return `Equipe ${u.equipe.nome}`;
   const p = u.plano;
   if (p?.vigente) return `${NIVEL[p.nivel] ?? p.nivel} ${p.manual ? 'liberado' : PERIODOS[p.plan as Periodo]?.nome.toLowerCase() ?? p.plan}${p.ate ? ` até ${data(p.ate)}` : ''}${p.status === 'atrasada' ? ' · atrasada' : ''}`;

@@ -130,7 +130,7 @@ export function AppLayout() {
   const { pathname } = useLocation();
   const telaDeCalculo = CALCULADORAS.some((c) => pathname.startsWith(c.para));
   const calculadoras = useCalculadoras();
-  const { perfil, equipe } = useConta();
+  const { perfil, equipe, assinatura } = useConta();
   const admin = perfil?.papel === 'admin';
   const modoGestao = admin && pathname.startsWith('/app/admin');
   // O administrador trabalha como gestor de equipe; sem equipe ainda, "Minha equipe" mostra como criar a dele.
@@ -163,17 +163,17 @@ export function AppLayout() {
             </nav>
           </>
         )}
-        {!modoGestao && (equipe ? (
+        {!modoGestao && (admin ? (
+          <div className="mt-auto flex flex-col gap-1.5 rounded-2xl border border-dashed border-borda p-3.5">
+            <span className="font-bold">{assinatura?.nivel === 'unlimited' ? 'Plano Unlimited' : 'Administrador'}</span>
+            <span className="text-sm text-suave">{equipe ? equipe.nome : 'Acesso completo, sem cobrança'}</span>
+            <Link to="/app/equipe" className="font-bold text-acao">{equipe ? 'Gerenciar equipe' : 'Montar minha equipe'}</Link>
+          </div>
+        ) : equipe ? (
           <div className="mt-auto flex flex-col gap-1.5 rounded-2xl border border-dashed border-borda p-3.5">
             <span className="font-bold">{equipe.nome}</span>
             <span className="text-sm text-suave">{carregando ? '…' : ativa ? (equipe.tipo === 'clemente' ? 'Clemente Team' : 'Plano Teams ativo') : 'Plano da equipe inativo'}</span>
             {gestor && <Link to="/app/equipe" className="font-bold text-acao">Gerenciar equipe</Link>}
-          </div>
-        ) : admin ? (
-          <div className="mt-auto flex flex-col gap-1.5 rounded-2xl border border-dashed border-borda p-3.5">
-            <span className="font-bold">Administrador</span>
-            <span className="text-sm text-suave">Acesso completo, sem assinatura</span>
-            <Link to="/app/equipe" className="font-bold text-acao">Montar minha equipe</Link>
           </div>
         ) : (
           <div className="mt-auto flex flex-col gap-1.5 rounded-2xl border border-dashed border-borda p-3.5">

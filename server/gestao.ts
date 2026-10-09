@@ -275,7 +275,7 @@ export async function visaoGeral(dias: number, agora = Date.now()) {
     ...perfis.slice(-10).map((p) => ({ tipo: 'Cadastro', texto: nome(p.id), data: p.created_at, destino: `/app/admin/usuarios?id=${p.id}` })),
     ...assinaturas.slice(-10).map((s) => ({
       tipo: s.gateway === 'manual' ? 'Liberação manual' : 'Nova assinatura',
-      texto: `${nome(s.user_id)} · ${s.nivel === 'teams' ? 'Teams' : s.nivel === 'pro' ? 'Pró' : 'Starter'} ${PERIODOS[s.plan as Periodo]?.nome.toLowerCase() ?? s.plan}`,
+      texto: `${nome(s.user_id)} · ${s.nivel === 'unlimited' ? 'Unlimited' : `${s.nivel === 'teams' ? 'Teams' : s.nivel === 'pro' ? 'Pró' : 'Starter'} ${PERIODOS[s.plan as Periodo]?.nome.toLowerCase() ?? s.plan}`}`,
       data: s.created_at, destino: `/app/admin/usuarios?id=${s.user_id}`,
     })),
     ...assinaturas.filter((s) => s.status === 'cancelada').map((s) => ({ tipo: 'Cancelamento', texto: nome(s.user_id), data: s.updated_at, destino: `/app/admin/usuarios?id=${s.user_id}` })),

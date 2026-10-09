@@ -44,6 +44,11 @@ describe('vigência e MRR', () => {
     expect(c.clientes.size).toBe(1);
     expect(c.mrr).toBe(preco('pro', 'anual').porMes);
   });
+  it('Unlimited do administrador não é cobrado nem entra no MRR', () => {
+    const c = carteira([sub({ nivel: 'unlimited', gateway: 'manual', current_period_end: null })], [], AGORA);
+    expect(c.clientes.size).toBe(0);
+    expect(c.mrr).toBe(0);
+  });
 });
 
 describe('indicadores', () => {
