@@ -12,7 +12,7 @@ export const ESTILO_PADRAO: Estilo = { cabecalho: config.marca, cor: COR_MARCA, 
 const rgb = (hex: string) => hexParaRgb(hex);
 
 /**
- * PDF do orçamento (A4), mesmo desenho da imagem: logo no topo (Orçaí, ou a do assinante no Pró e no teste),
+ * PDF do orçamento (A4), mesmo desenho da imagem: logo no topo (Orça.ai, ou a do assinante no Pró e no teste),
  * linhas em tinta e cinza com as partes de Escritura e Registro, total numa faixa. Sem etiquetas coloridas.
  */
 export async function gerarPdfOrcamento(r: Resultado, meta: MetaOrcamento, estilo: Estilo = ESTILO_PADRAO): Promise<Buffer> {

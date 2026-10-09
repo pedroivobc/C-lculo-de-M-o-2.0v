@@ -56,7 +56,7 @@ export function linhaDoEndereco(r: Resultado, endereco: string) {
 /** Dados do orçamento além do cálculo: número, data e, se o assinante quis, o endereço do imóvel. */
 export interface MetaOrcamento { numero: string; data: Date; endereco?: string }
 
-/** Faixa do total: tinta na marca Orçaí; a cor do assinante quando personalizado. Texto branco ou tinta, pelo contraste. */
+/** Faixa do total: tinta na marca Orça.ai; a cor do assinante quando personalizado. Texto branco ou tinta, pelo contraste. */
 export function coresDoTotal(estilo: Estilo): { fundo: string; texto: string } {
   const fundo = estilo.personalizado ? estilo.cor : TINTA;
   const [r, g, b] = hexParaRgb(fundo).map((c) => {
@@ -67,7 +67,7 @@ export function coresDoTotal(estilo: Estilo): { fundo: string; texto: string } {
   return { fundo, texto: luminancia > 0.35 ? TINTA : '#FFFFFF' };
 }
 
-/** Logo da Orçaí (símbolo + "orçaí" + IMOB) em SVG, para a imagem e para virar PNG no PDF. */
+/** Logo da Orça.ai (símbolo + "orça.ai" + IMOB) em SVG, para a imagem e para virar PNG no PDF. */
 export function lockupOrcaiSvg(altura = 64) {
   const e = altura / 64;
   return `<g transform="scale(${e})">
@@ -77,15 +77,15 @@ export function lockupOrcaiSvg(altura = 64) {
     <rect x="23" y="24" width="12" height="3" rx="1.5" fill="#AFC0F5"/>
     <rect x="21" y="32" width="22" height="9" rx="2" fill="#FFD24A"/>
     <rect x="24" y="35" width="16" height="3" rx="1.5" fill="#101828"/>
-    <text x="80" y="46" font-family="'DejaVu Sans', Arial, sans-serif" font-weight="700" font-size="40" letter-spacing="-1.5" fill="${TINTA}">orça<tspan fill="#2342D6">í</tspan></text>
-    <rect x="200" y="20" width="62" height="26" rx="6" fill="${TINTA}"/>
-    <text x="231" y="39" text-anchor="middle" font-family="'DejaVu Sans', Arial, sans-serif" font-weight="700" font-size="15" letter-spacing="1.5" fill="#FFFFFF">IMOB</text>
+    <text x="80" y="46" font-family="'DejaVu Sans', Arial, sans-serif" font-weight="700" font-size="40" letter-spacing="-1.5" fill="${TINTA}">orça<tspan fill="#2342D6">.ai</tspan></text>
+    <rect x="234" y="20" width="62" height="26" rx="6" fill="${TINTA}"/>
+    <text x="265" y="39" text-anchor="middle" font-family="'DejaVu Sans', Arial, sans-serif" font-weight="700" font-size="15" letter-spacing="1.5" fill="#FFFFFF">IMOB</text>
   </g>`;
 }
-export const LARGURA_LOCKUP = 262; // em unidades do símbolo (altura 64)
+export const LARGURA_LOCKUP = 296; // em unidades do símbolo (altura 64)
 
 let lockupPng: Promise<Buffer> | null = null;
-/** PNG da logo Orçaí (alta resolução), feito uma vez. */
+/** PNG da logo Orça.ai (alta resolução), feito uma vez. */
 export function logoOrcaiPng() {
   lockupPng ??= sharp(Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${LARGURA_LOCKUP * 4}" height="256" viewBox="0 0 ${LARGURA_LOCKUP} 64">${lockupOrcaiSvg(64)}</svg>`,

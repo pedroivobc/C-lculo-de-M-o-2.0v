@@ -256,7 +256,7 @@ export default function Landing() {
 
       <footer className="border-t border-linha bg-white">
         <div className="mx-auto flex max-w-[1200px] flex-wrap justify-between gap-x-8 gap-y-3 p-6 text-[13px] text-suave">
-          <span>Orçaí Imob · Juiz de Fora, MG · um produto Clemente Assessoria</span>
+          <span>Orça.ai Imob · Juiz de Fora, MG · um produto Clemente Assessoria</span>
           <span>Valores estimados. Confirme com o cartório e a prefeitura antes do ato.</span>
           <span className="flex gap-5"><Link to="/termos" className="text-suave">Termos de uso</Link><Link to="/privacidade" className="text-suave">Política de privacidade</Link></span>
         </div>

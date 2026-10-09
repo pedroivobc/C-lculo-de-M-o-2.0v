@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 
-/** Símbolo Orçaí: recibo picotado com o total marcado em amarelo. */
+/** Símbolo Orça.ai: recibo picotado com o total marcado em amarelo. */
 export function Simbolo({ tamanho = 36, invertido = false, redondo = false, detalhado = true, className }: {
   tamanho?: number; invertido?: boolean; redondo?: boolean; detalhado?: boolean; className?: string;
 }) {
@@ -22,19 +22,19 @@ export function Simbolo({ tamanho = 36, invertido = false, redondo = false, deta
   );
 }
 
-/** Assinatura "orçaí" + etiqueta da vertical. */
+/** Assinatura "orça.ai" + etiqueta da vertical. */
 export function Lockup({ tamanho = 24, escuro = false, vertical = 'IMOB', comSimbolo = true }: {
   tamanho?: number; escuro?: boolean; vertical?: string | null; comSimbolo?: boolean;
 }) {
   return (
-    <span className="inline-flex items-center gap-2.5" aria-label={vertical ? `Orçaí ${vertical}` : 'Orçaí'} role="img">
+    <span className="inline-flex items-center gap-2.5" aria-label={vertical ? `Orça.ai ${vertical}` : 'Orça.ai'} role="img">
       {comSimbolo && <Simbolo tamanho={Math.round(tamanho * 1.45)} invertido={escuro} />}
       <span className="inline-flex items-center gap-[0.3em]" aria-hidden="true">
         <span
           className={cn('display font-black leading-none', escuro ? 'text-white' : 'text-tinta')}
           style={{ fontSize: tamanho, letterSpacing: '-0.05em' }}
         >
-          orça<span className={escuro ? 'text-marca-texto' : 'text-acao'}>í</span>
+          orça<span className={escuro ? 'text-marca-texto' : 'text-acao'}>.ai</span>
         </span>
         {vertical && (
           <span

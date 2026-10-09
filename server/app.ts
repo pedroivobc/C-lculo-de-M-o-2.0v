@@ -3,7 +3,7 @@ import { config } from "./config";
 import { rotas } from "./rotas";
 import { garantirTabelasCarregadas } from "./tabelas";
 
-/** API do Orçaí (sem o site): usada pelo servidor da VPS (server.ts) e pela função da Vercel (server/vercel.ts). */
+/** API do Orça.ai (sem o site): usada pelo servidor da VPS (server.ts) e pela função da Vercel (server/vercel.ts). */
 export function criarApp() {
   const app = express();
   app.set("trust proxy", 1); // atrás do Caddy/Traefik/Vercel: IP real para o rate limit

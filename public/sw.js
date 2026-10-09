@@ -1,5 +1,5 @@
 /*
- * Service worker do Orçaí Imob (PWA).
+ * Service worker do Orça.ai Imob (PWA).
  * - Páginas: rede primeiro; sem internet, abre o app guardado (as calculadoras funcionam offline).
  * - /assets/*: arquivos com hash no nome, guardados para sempre.
  * - API (/api) e Supabase: nunca guardados (dados da conta e login sempre da rede).

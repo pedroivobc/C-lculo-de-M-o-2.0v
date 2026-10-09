@@ -6,7 +6,7 @@
 
 **🧑 Corretor:** Oi
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 Olá, Pedro! 👋 Eu faço o orçamento da documentação do imóvel.
@@ -22,7 +22,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 1
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 *Escritura*
@@ -39,7 +39,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 1
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 *Compra e venda*
@@ -56,7 +56,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 1
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 *Compra e venda simples*
@@ -70,7 +70,7 @@ _Pode digitar só os números: 350000 vira R$ 350.000,00_
 
 **🧑 Corretor:** 350 mil
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 ✅ Valor do imóvel: *R$ 350.000,00*
@@ -88,7 +88,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 1
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 *Endereço do imóvel*
@@ -100,7 +100,7 @@ _Ex.: Rua Halfeld, 100, apto 201 · Centro_
 
 **🧑 Corretor:** Rua Halfeld, 100, apto 201 · Centro
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 ✅ Endereço: *Rua Halfeld, 100, apto 201 · Centro*
@@ -122,7 +122,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 3
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 *ORÇAMENTO Nº 0143* · 06/10/2026
@@ -139,10 +139,10 @@ Base de cálculo: R$ 350.000,00
 💰 *TOTAL ESTIMADO: R$ 18.743,56*
 
 _Valores estimados com as tabelas vigentes de MG. Confirme com o cartório e a prefeitura antes do ato._
-_Feito com Orçaí Imob_
+_Feito com Orça.ai Imob_
 ```
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 Quer fazer mais alguma coisa?
@@ -160,7 +160,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** Bom dia
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 Olá, Pedro! 👋 Eu faço o orçamento da documentação do imóvel.
@@ -176,7 +176,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 2
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 *Financiamento*
@@ -194,7 +194,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 1
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 *Caixa*
@@ -213,7 +213,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 1
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 *Caixa · SBPE*
@@ -227,7 +227,7 @@ _Pode digitar só os números: 350000 vira R$ 350.000,00_
 
 **🧑 Corretor:** 400000
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 ✅ Valor do imóvel: *R$ 400.000,00*
@@ -242,7 +242,7 @@ _Ex.: 320000 ou 80% (= R$ 320.000,00)_
 
 **🧑 Corretor:** 80%
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 ✅ Valor financiado: *R$ 320.000,00* (80% de R$ 400.000,00)
@@ -260,7 +260,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 1
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 ✅ Primeiro imóvel: *Sim*
@@ -278,7 +278,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 2
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 Certidões: *R$ 260,07*
@@ -298,7 +298,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** honorarios 900
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 ✅ Honorários deste orçamento: *R$ 900,00*
@@ -320,13 +320,13 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 1
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 📎 orcamento-0143.jpg · Orçamento #0143 · Total R$ 19.459,87
 ```
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 Quer fazer mais alguma coisa?
@@ -344,7 +344,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** oi
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 Olá, Pedro! 👋 Eu faço o orçamento da documentação do imóvel.
@@ -360,7 +360,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** quero orçar
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 Não entendi 🙂 Responda só com o *número* de uma opção.
@@ -376,7 +376,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 0
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 Não entendi 🙂 Responda só com o *número* de uma opção.
@@ -392,7 +392,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 1
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 *Escritura*
@@ -409,7 +409,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 2
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 *Doação*
@@ -425,7 +425,7 @@ _Responda com o número da opção._
 
 **🧑 Corretor:** 1
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 *Doação simples*
@@ -439,7 +439,7 @@ _Pode digitar só os números: 350000 vira R$ 350.000,00_
 
 **🧑 Corretor:** 350
 
-**🤖 Orçaí:**
+**🤖 Orça.ai:**
 
 ```
 R$ 350,00 parece baixo. Digite o valor completo, ex.: 350000 para R$ 350.000,00.
