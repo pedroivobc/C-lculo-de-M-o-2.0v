@@ -48,35 +48,79 @@ function AvisoSemSupabase() {
   return supabaseConfigurado ? null : <Aviso tom="vermelho">Supabase não configurado: defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no .env para o login funcionar.</Aviso>;
 }
 
+/** Lê o que o link do e-mail (convite, nova senha) deixou no endereço: o tipo do link ou o erro. */
+function linkDoEmail() {
+  const h = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const q = new URLSearchParams(window.location.search);
+  return { tipo: h.get('type') ?? q.get('type'), erro: h.get('error_code') ?? q.get('error_code') };
+}
+
 export function Entrar() {
   const navegar = useNavigate();
+  // Lido uma vez: o Supabase limpa o endereço assim que troca o link pela sessão.
+  const [link] = useState(linkDoEmail);
+  const [modo, setModo] = useState<'entrar' | 'esqueci' | 'definir'>(link.tipo === 'invite' || link.tipo === 'recovery' ? 'definir' : 'entrar');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [erro, setErro] = useState<string | null>(null);
+  const [confirmacao, setConfirmacao] = useState('');
+  const [erro, setErro] = useState<string | null>(link.erro
+    ? link.erro === 'otp_expired' ? 'Este link expirou ou já foi usado. Digite seu e-mail em "Esqueci a senha" para receber um novo.' : 'Não conseguimos abrir este link. Peça um novo em "Esqueci a senha".'
+    : null);
+  const [ok, setOk] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((evento) => { if (evento === 'PASSWORD_RECOVERY') setModo('definir'); });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  function trocar(m: typeof modo) { setModo(m); setErro(null); setOk(null); }
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
-    setEnviando(true); setErro(null);
+    setEnviando(true); setErro(null); setOk(null);
+    if (modo === 'esqueci') {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/entrar` });
+      setEnviando(false);
+      if (error) return setErro(error.message);
+      return setOk('Se este e-mail tiver conta, você vai receber um link para criar a senha. Confira também o spam.');
+    }
+    if (modo === 'definir') {
+      if (senha !== confirmacao) { setEnviando(false); return setErro('As duas senhas não são iguais.'); }
+      const { error } = await supabase.auth.updateUser({ password: senha });
+      setEnviando(false);
+      if (error) return setErro(error.message.includes('session') ? 'Este link expirou. Peça um novo em "Esqueci a senha".' : error.message);
+      return navegar('/app');
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
     setEnviando(false);
     if (error) return setErro(error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : error.message);
     navegar('/app');
   }
 
+  const titulo = { entrar: ['Entrar', 'Bem-vindo de volta.'], esqueci: ['Esqueci a senha', 'Mandamos um link para você criar uma senha nova.'], definir: ['Crie sua senha', 'É com ela que você vai entrar no site daqui pra frente.'] }[modo];
   return (
     <Moldura>
       <form onSubmit={enviar} className="flex flex-col gap-5">
         <div>
-          <h2 className="text-[28px] font-bold leading-[34px]">Entrar</h2>
-          <p className="text-suave">Bem-vindo de volta.</p>
+          <h2 className="text-[28px] font-bold leading-[34px]">{titulo[0]}</h2>
+          <p className="text-suave">{titulo[1]}</p>
         </div>
         <AvisoSemSupabase />
-        <Campo rotulo="E-mail" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <Campo rotulo="Senha" type="password" required autoComplete="current-password" value={senha} onChange={(e) => setSenha(e.target.value)} />
+        {modo !== 'definir' && <Campo rotulo="E-mail" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />}
+        {modo === 'entrar' && <Campo rotulo="Senha" type="password" required autoComplete="current-password" value={senha} onChange={(e) => setSenha(e.target.value)} />}
+        {modo === 'definir' && <>
+          <Campo rotulo="Nova senha" type="password" required minLength={8} autoComplete="new-password" value={senha} onChange={(e) => setSenha(e.target.value)} dica="Mínimo de 8 caracteres." />
+          <Campo rotulo="Repita a senha" type="password" required minLength={8} autoComplete="new-password" value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} />
+        </>}
         {erro && <Aviso tom="vermelho">{erro}</Aviso>}
-        <Botao type="submit" disabled={enviando} className="min-h-[52px] text-base">{enviando ? 'Entrando…' : 'Entrar'}</Botao>
-        <p className="text-center text-suave">Ainda não tem conta? <Link to="/cadastro" className="font-bold text-acao">Criar conta</Link></p>
+        {ok && <Aviso tom="verde">{ok}</Aviso>}
+        <Botao type="submit" disabled={enviando} className="min-h-[52px] text-base">
+          {enviando ? 'Enviando…' : modo === 'entrar' ? 'Entrar' : modo === 'esqueci' ? 'Mandar link' : 'Salvar senha e entrar'}
+        </Botao>
+        {modo === 'entrar' && <button type="button" onClick={() => trocar('esqueci')} className="text-center font-bold text-acao">Esqueci a senha</button>}
+        {modo === 'esqueci' && <button type="button" onClick={() => trocar('entrar')} className="text-center font-bold text-acao">Voltar para entrar</button>}
+        {modo === 'entrar' && <p className="text-center text-suave">Ainda não tem conta? <Link to="/cadastro" className="font-bold text-acao">Criar conta</Link></p>}
       </form>
     </Moldura>
   );
