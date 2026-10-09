@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Plus } from 'lucide-react';
 import { calcular, type Resultado } from '@/lib/calc';
 import { api } from '@/lib/api';
-import { A_PARTIR_DE, PERIODOS, PLANOS, preco, type Periodo } from '@/lib/config';
+import { A_PARTIR_DE, LANCAMENTO_TEXTO, OFERTA_LANCAMENTO, PERIODOS, PLANOS, preco, type Periodo } from '@/lib/config';
 import { SeletorPeriodo } from '@/components/ui/SeletorPeriodo';
 import { Lockup } from '@/components/marca/Logo';
 import { Orcamento } from '@/components/ui/Orcamento';
@@ -33,7 +33,7 @@ const DUVIDAS = [
   ['Os valores são oficiais?', 'São estimativas feitas com a tabela de emolumentos de MG e as regras de ITBI de Juiz de Fora do ano corrente. Os valores finais são os do cartório e da prefeitura no dia do ato.'],
   ['Meu imóvel é em outra cidade de MG. Serve?', 'Sim. Juiz de Fora já tem a regra de ITBI cadastrada; nas outras cidades de MG você informa a alíquota no cadastro. Peça a sua cidade no formulário acima para ela ganhar a regra completa.'],
   ['Como o agente sabe que sou eu?', 'Pelo número que você confirma no cadastro com um código. Só esse número tem acesso aos seus orçamentos.'],
-  ['Posso cancelar quando quiser?', 'Sim. Você usa até o fim do período pago (trimestre, semestre ou ano) e não é cobrado no seguinte. O seu histórico continua disponível para exportar.'],
+  ['Posso cancelar quando quiser?', 'Sim, pela página da conta. Nos 7 primeiros dias, o cancelamento é imediato e o valor pago volta. Depois disso, no cartão, as mensalidades seguem até o fim da fidelidade (3, 6 ou 12 meses) e param ali. No Pix anual, basta não renovar. O seu histórico continua disponível para exportar.'],
 ];
 
 function PedirCidade() {
@@ -72,6 +72,8 @@ export default function Landing() {
   const [ato, setAto] = useState<Ato>('escritura');
   const [periodo, setPeriodo] = useState<Periodo>('anual');
   const resultado = useMemo(() => simular(ato, centavos / 100), [ato, centavos]);
+  const [vagas, setVagas] = useState(0);
+  useEffect(() => { api<{ vagas: number }>('/api/oferta', { publico: true }).then((r) => setVagas(r.vagas)).catch(() => setVagas(0)); }, []);
 
   return (
     <div className="min-h-screen text-[15px] leading-[22px]">
@@ -119,7 +121,7 @@ export default function Landing() {
               <BotaoLink to="/cadastro" className="min-h-14 px-6 text-[17px]">A partir de {A_PARTIR_DE}/mês</BotaoLink>
               <a href="#whatsapp" className="inline-flex min-h-14 items-center rounded-xl border-[1.5px] border-borda bg-white px-6 text-[17px] font-bold text-tinta no-underline">Ver no WhatsApp</a>
             </div>
-            <span className="text-sm text-suave">Pix ou cartão · cancele quando quiser · emolumentos pela tabela de MG</span>
+            <span className="text-sm text-suave">Cartão mês a mês ou Pix no anual · emolumentos pela tabela de MG</span>
           </div>
 
           <div className="flex min-w-0 flex-1 basis-[420px] flex-col gap-4 rounded-[28px] bg-acao p-4 sm:p-7">
@@ -225,6 +227,15 @@ export default function Landing() {
             </div>
             <SeletorPeriodo periodo={periodo} onChange={setPeriodo} className="w-full max-w-[460px] text-[15px]" />
           </div>
+          {vagas > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border-2 border-tinta bg-amarelo-claro p-6 shadow-[8px_8px_0_#101828]">
+              <div className="flex max-w-[640px] flex-col gap-1">
+                <span className="text-xl font-[850]">{OFERTA_LANCAMENTO.nome}: {LANCAMENTO_TEXTO}/mês</span>
+                <span className="text-texto">Plano {PLANOS[OFERTA_LANCAMENTO.nivel].nome} anual, cobrado mês a mês, para os {OFERTA_LANCAMENTO.vagas} primeiros corretores, com benefícios exclusivos de fundador. {OFERTA_LANCAMENTO.diasTeste} dias de teste com o cartão cadastrado, fidelidade de 12 meses e cancelamento grátis nos 7 primeiros dias. {vagas === 1 ? 'Resta 1 vaga.' : `Restam ${vagas} vagas.`}</span>
+              </div>
+              <BotaoLink to="/cadastro?oferta=lancamento" className="min-h-14 px-6 text-[17px]">Garantir minha vaga</BotaoLink>
+            </div>
+          )}
           <div className="grid gap-6 md:grid-cols-2">
             {(['usuario', 'pro'] as const).map((nivel) => {
               const p = PLANOS[nivel];
@@ -240,7 +251,8 @@ export default function Landing() {
                     <span className="numero text-[52px] font-black leading-[56px]">{v.porMesTexto}</span>
                     <span className="text-[17px] text-suave">por mês</span>
                   </div>
-                  <span className="self-start rounded-lg bg-amarelo-claro px-2.5 py-1 font-bold text-amarelo-texto">{v.totalTexto} {PERIODOS[periodo].cobranca}{v.descontoTexto ? ` · ${v.descontoTexto}` : ''}</span>
+                  <span className="self-start rounded-lg bg-amarelo-claro px-2.5 py-1 font-bold text-amarelo-texto">No cartão, {PERIODOS[periodo].cobranca}{v.descontoTexto ? ` · ${v.descontoTexto}` : ''}</span>
+                  {periodo === 'anual' && <span className="-mt-3 text-suave">ou {v.totalTexto} à vista no Pix</span>}
                   <ul className="flex flex-col gap-2 text-texto">
                     {['Todas as calculadoras', 'Histórico e exportação em planilha', p.resumo, ...(pro ? ['Agente no WhatsApp', 'Escolha da cor do orçamento'] : [])].map((t) => (
                       <li key={t} className="flex gap-2"><Check className="mt-0.5 size-5 shrink-0 text-ok" aria-hidden="true" />{t}</li>
@@ -251,7 +263,7 @@ export default function Landing() {
               );
             })}
           </div>
-          <span className="text-center text-sm text-suave">3 dias grátis para testar (5 com cupom de indicação) · cartão de crédito no cadastro, mesmo pagando no Pix · cancele quando quiser</span>
+          <span className="text-center text-sm text-suave">3 dias grátis para testar (5 com cupom de indicação) · cartão de crédito no cadastro, mesmo pagando no Pix · Pix só no plano anual</span>
         </section>
 
         {/* Dúvidas */}

@@ -17,6 +17,11 @@ export const config = {
   agentKey: env('AGENT_API_KEY'),
   /** Segredo para o hash dos códigos de verificação do WhatsApp. */
   codigoSegredo: env('VERIFICACAO_SEGREDO', env('AGENT_API_KEY')),
+  /** Stripe: chave secreta (sk_test_ no teste, sk_live_ em produção) e segredo do webhook (whsec_). */
+  stripe: {
+    secretKey: env('STRIPE_SECRET_KEY'),
+    webhookSecret: env('STRIPE_WEBHOOK_SECRET'),
+  },
   evolution: {
     url: env('EVOLUTION_API_URL').replace(/\/$/, ''),
     key: env('EVOLUTION_API_KEY'),

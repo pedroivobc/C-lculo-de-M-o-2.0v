@@ -30,10 +30,16 @@ export interface Perfil {
 
 export interface Assinatura {
   /** 'mensal' só em assinaturas antigas; hoje: trimestral, semestral ou anual. */
-  plan: 'mensal' | 'trimestral' | 'semestral' | 'anual';
+  plan: 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'lancamento';
   nivel: 'usuario' | 'pro' | 'teams' | 'unlimited';
   status: 'pendente' | 'ativa' | 'atrasada' | 'cancelada';
   current_period_end: string | null;
+  forma_pagamento: 'cartao' | 'pix' | null;
+  /** Fim da fidelidade (cartão). */
+  fidelidade_ate: string | null;
+  /** Cancelamento agendado. */
+  cancela_em: string | null;
+  criada_em: string | null;
 }
 
 /** Equipe (imobiliária ou Clemente Team) de que a pessoa faz parte. */
@@ -51,6 +57,8 @@ interface ContaValor {
   equipe: Equipe | null;
   /** Assinatura própria ativa, equipe com o plano em dia, ou administrador. */
   ativa: boolean;
+  /** Pode usar o app agora: assinatura ativa, teste grátis em dia ou admin (situacao_acesso no banco). */
+  liberado: boolean;
   carregando: boolean;
   /** `silencioso` atualiza sem a tela de carregamento (usado na espera da confirmação do WhatsApp). */
   recarregar: (opcoes?: { silencioso?: boolean }) => Promise<void>;
@@ -64,36 +72,36 @@ export function ContaProvider({ children }: { children: ReactNode }) {
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [assinatura, setAssinatura] = useState<Assinatura | null>(null);
   const [equipe, setEquipe] = useState<Equipe | null>(null);
-  const [equipeLiberada, setEquipeLiberada] = useState(false);
+  const [liberado, setLiberado] = useState(false);
   const [carregando, setCarregando] = useState(true);
 
   const recarregar = useCallback(async (opcoes: { silencioso?: boolean } = {}) => {
-    if (!user) { setPerfil(null); setAssinatura(null); setEquipe(null); setCarregando(false); return; }
+    if (!user) { setPerfil(null); setAssinatura(null); setEquipe(null); setLiberado(false); setCarregando(false); return; }
     if (!opcoes.silencioso) setCarregando(true);
-    const [p, a, e] = await Promise.all([
+    const [p, a, e, situacao] = await Promise.all([
       supabase.from('profiles').select('id, full_name, email, telefone, whatsapp_e164, whatsapp_verified_at, municipio_padrao, pdf_header, uf, cidade_nome, itbi_percentual, pdf_logo_path, cor_primaria, formato_orcamento, configurado_em, custos_padrao, cpf, papel').eq('id', user.id).maybeSingle(),
-      supabase.from('subscriptions').select('plan, nivel, status, current_period_end').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('subscriptions').select('plan, nivel, status, current_period_end, forma_pagamento, fidelidade_ate, cancela_em, criada_em:created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('organizacao_membros').select('funcao, organizacao:organizacoes(id, nome, tipo)').eq('user_id', user.id).is('removido_em', null).maybeSingle(),
+      supabase.rpc('minha_situacao_acesso').maybeSingle<{ liberado: boolean }>(),
     ]);
     const org = e.data?.organizacao as unknown as Omit<Equipe, 'funcao'> | null;
     const eq = org ? { ...org, funcao: e.data!.funcao as Equipe['funcao'] } : null;
-    // Na equipe, quem diz se o acesso está em dia é o banco (situacao_acesso), não a assinatura da pessoa.
-    const situacao = eq ? await supabase.rpc('minha_situacao_acesso').maybeSingle<{ liberado: boolean }>() : null;
     setPerfil((p.data as Perfil) ?? null);
     setAssinatura((a.data as Assinatura) ?? null);
     setEquipe(eq);
-    setEquipeLiberada(!!situacao?.data?.liberado);
+    setLiberado(!!situacao.data?.liberado);
     setCarregando(false);
   }, [user]);
 
   useEffect(() => { if (!loading) recarregar(); }, [loading, recarregar]);
 
   // Administrador: acesso completo, sem assinatura (o banco também libera em situacao_acesso).
-  const ativa = perfil?.papel === 'admin' ? true : equipe ? equipeLiberada : !!assinatura && assinatura.status === 'ativa'
+  // Na equipe, quem diz se o acesso está em dia é o banco (situacao_acesso), não a assinatura da pessoa.
+  const ativa = perfil?.papel === 'admin' ? true : equipe ? liberado : !!assinatura && assinatura.status === 'ativa'
     && (!assinatura.current_period_end || new Date(assinatura.current_period_end) > new Date());
 
   return (
-    <Contexto.Provider value={{ user, perfil, assinatura, equipe, ativa, carregando: loading || carregando, recarregar }}>
+    <Contexto.Provider value={{ user, perfil, assinatura, equipe, ativa, liberado, carregando: loading || carregando, recarregar }}>
       {children}
     </Contexto.Provider>
   );

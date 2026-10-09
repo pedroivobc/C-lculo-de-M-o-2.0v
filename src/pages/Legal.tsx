@@ -66,7 +66,7 @@ const DADOS: [string, string, string, string][] = [
   ['Orçamentos', 'Os valores que você informa (valor do imóvel, valor financiado, cidade, folhas), o resultado e o arquivo gerado. O endereço do imóvel só entra se você escolher colocá-lo no orçamento.', 'Mostrar o orçamento, guardar o seu histórico e permitir baixar de novo.', 'Até você apagar o orçamento ou encerrar a conta.'],
   ['Conversas com o agente', 'O texto das mensagens trocadas com o agente. Fotos e arquivos não são abertos, lidos nem guardados: registramos só que a mensagem tinha um anexo.', 'Responder com o contexto da conversa e investigar erros.', '30 dias.'],
   ['Verificação do WhatsApp', 'Um código de uso único, guardado só como resumo criptográfico (hash).', 'Confirmar que o número é seu.', 'Até a verificação ou a expiração do código.'],
-  ['Pagamento', 'Quando a cobrança online estiver ativa: o número do cartão vai direto para o gateway de pagamento. Guardamos só o código (token) que o gateway devolve, a bandeira, os 4 últimos dígitos e a validade.', 'Cobrar a assinatura.', 'Enquanto a assinatura existir e pelo prazo exigido pela lei fiscal.'],
+  ['Pagamento', 'O número do cartão vai direto para a Stripe, nossa processadora de pagamentos. Guardamos só o código (token) que o gateway devolve, a bandeira, os 4 últimos dígitos e a validade.', 'Cobrar a assinatura.', 'Enquanto a assinatura existir e pelo prazo exigido pela lei fiscal.'],
   ['Indicação', 'Quem indicou você (pelo cupom) e, para quem indica, o primeiro nome de quem usou o cupom e se já assinou.', 'Dar os dias extras de teste e o mês grátis de quem indicou.', 'Enquanto as contas existirem.'],
   ['Pedido de nova cidade', 'A cidade e, se você quiser, um WhatsApp.', 'Avisar quando a cidade abrir.', 'Até a cidade abrir ou você pedir a exclusão.'],
 ];
@@ -160,7 +160,7 @@ export function Termos() {
       titulo="Termos de uso"
       resumo={<>
         <strong>Em resumo:</strong> o {MARCA} calcula <strong>estimativas</strong> de custos de documentação imobiliária. Não é cartório,
-        prefeitura nem assessoria jurídica: confirme os valores antes do ato. A assinatura é trimestral, semestral ou anual e pode ser cancelada quando você quiser.
+        prefeitura nem assessoria jurídica: confirme os valores antes do ato. A assinatura é trimestral, semestral ou anual; no cartão, pode ser cancelada a qualquer momento e o cancelamento vale ao fim da fidelidade.
       </>}
     >
       <Secao n={1} titulo="Aceite">
@@ -190,10 +190,10 @@ export function Termos() {
 
       <Secao n={5} titulo="Planos, teste e pagamento">
         <Lista itens={[
-          `Cobrança trimestral (preço cheio), semestral (10% de desconto) ou anual (20% de desconto). ${PLANOS.usuario.nome}: ${preco('usuario', 'trimestral').totalTexto} por trimestre, ${preco('usuario', 'semestral').totalTexto} por semestre ou ${preco('usuario', 'anual').totalTexto} por ano. ${PLANOS.pro.nome}: ${preco('pro', 'trimestral').totalTexto}, ${preco('pro', 'semestral').totalTexto} ou ${preco('pro', 'anual').totalTexto}. Os preços vigentes ficam na página de planos.`,
+          `Não há plano mensal. Os planos são trimestral (preço cheio), semestral (10% de desconto) e anual (20% de desconto). No cartão de crédito, todo plano é cobrado mês a mês, com fidelidade de 3, 6 ou 12 meses; terminada a fidelidade, renova no mesmo plano até ser cancelado, e o cancelamento vale ao fim do mês já pago. ${PLANOS.usuario.nome}: ${preco('usuario', 'trimestral').porMesTexto}, ${preco('usuario', 'semestral').porMesTexto} ou ${preco('usuario', 'anual').porMesTexto} por mês. ${PLANOS.pro.nome}: ${preco('pro', 'trimestral').porMesTexto}, ${preco('pro', 'semestral').porMesTexto} ou ${preco('pro', 'anual').porMesTexto} por mês. No Pix, só o plano anual, pago de uma vez: ${preco('usuario', 'anual').totalTexto} (${PLANOS.usuario.nome}) ou ${preco('pro', 'anual').totalTexto} (${PLANOS.pro.nome}). Os preços vigentes ficam na página de planos.`,
           'Novas contas têm 3 dias de teste grátis, ou 5 dias com o cupom de indicação de um assinante. Terminado o teste, o acesso fica bloqueado até você assinar um plano.',
-          'A assinatura é renovada automaticamente no fim de cada período, até você cancelar.',
-          'Você pode cancelar quando quiser. O acesso continua até o fim do período já pago (trimestre, semestre ou ano), e não há cobrança no período seguinte.',
+          'No cartão, a assinatura continua mês a mês depois da fidelidade, até você cancelar. No Pix, o plano anual não renova sozinho: perto do fim, você paga um novo Pix para mais um ano.',
+          'Nos 7 primeiros dias da assinatura (direito de arrependimento, art. 49 do Código de Defesa do Consumidor), o cancelamento é imediato e devolvemos todo o valor pago, no cartão ou no Pix. Depois disso, você pode pedir o cancelamento quando quiser, na página da conta. Durante a fidelidade, as mensalidades seguem até o fim dela; depois, o acesso continua até o fim do mês já pago, sem novas cobranças.',
           'Na primeira contratação, você pode desistir em até 7 dias e receber de volta o valor pago (art. 49 do Código de Defesa do Consumidor).',
           'Mudanças de preço são avisadas com pelo menos 30 dias de antecedência e valem a partir da renovação seguinte.',
         ]} />

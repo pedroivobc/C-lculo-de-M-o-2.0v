@@ -162,6 +162,18 @@ O corretor pode escrever *atendente* a qualquer momento, ou escolher *Falar com 
 
 Com isso, quando o corretor pede um atendente, o servidor abre a conversa no Chatwoot, põe a etiqueta **atendente** e deixa uma nota privada com o nome dele e o último orçamento. Sem essas variáveis, o robô pausa do mesmo jeito; só não marca nada no Chatwoot.
 
+## 4a. Pagamento (Stripe)
+
+Não existe plano mensal. No cartão, todo plano (trimestral, semestral, anual) é cobrado mês a mês com fidelidade de 3, 6 ou 12 meses e depois renova no mesmo plano. O Pix vale só para o anual, pago de uma vez. Valores em `src/lib/planos.ts`.
+
+1. **Chave:** no `.env` do servidor, `STRIPE_SECRET_KEY=sk_test_...` (teste) e depois `sk_live_...` (produção).
+2. **Pix:** no painel da Stripe, Configurações > Formas de pagamento, ativar o Pix.
+3. **Webhook:** Desenvolvedores > Webhooks > Adicionar destino, URL `https://SEU_DOMINIO/api/webhooks/stripe`, versão mais recente da API, eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`. Copiar o segredo (`whsec_...`) para `STRIPE_WEBHOOK_SECRET`.
+4. Aplicar a migração `20261018000000_stripe.sql` no Supabase e rodar `docker compose up -d --build`.
+5. Produtos e preços são criados sozinhos na primeira assinatura (lookup keys `orcai_<nivel>_<periodo>_<forma>`). Mudou um valor em `planos.ts`, o preço novo vale para quem assinar depois.
+6. **Oferta de lançamento** (`OFERTA_LANCAMENTO` em `src/lib/planos.ts`): Plano Fundador: Pró anual a R$ 9,90/mês para os 20 primeiros (renovação depois do 1º ano ainda a definir), 3 dias de teste com o cartão já cadastrado (a Stripe cobra no 4º dia), fidelidade de 12 meses. Conta como vaga quem está no teste ou assinando; quem desiste devolve a vaga. Em qualquer plano, nos 7 primeiros dias o cancelamento é imediato e o valor pago é estornado (CDC, art. 49). Quando as vagas acabam, a oferta some do site.
+7. Teste com o cartão `4242 4242 4242 4242`. Com tudo certo, `EXIGIR_ASSINATURA=true`.
+
 ## 5. Primeiro assinante (teste de ponta a ponta)
 
 No `infra/.env`, preencha `AGENTE_WHATSAPP` (número do chip do agente, com DDI) para o app mostrar o botão "Abrir conversa".
