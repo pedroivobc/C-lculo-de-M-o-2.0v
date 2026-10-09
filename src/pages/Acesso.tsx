@@ -83,7 +83,7 @@ export function Entrar() {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/entrar` });
       setEnviando(false);
       if (error) return setErro(error.message);
-      return setOk('Se este e-mail tiver conta, você vai receber um link para criar a senha. Confira também o spam.');
+      return setOk('Se este e-mail tiver conta, você vai receber um link para criar a senha. Se não achar, olhe no lixo eletrônico ou spam.');
     }
     if (modo === 'definir') {
       if (senha !== confirmacao) { setEnviando(false); return setErro('As duas senhas não são iguais.'); }
@@ -199,7 +199,7 @@ export function Cadastro() {
       guardarCupom(cupom.trim() || null);
       guardarCpf(soDigitosCpf(d.cpf));
       if (!data.session) {
-        setOk('Conta criada! Abra o e-mail que enviamos, toque no link de confirmação e depois entre.');
+        setOk('Conta criada! Abra o e-mail que enviamos, toque no link de confirmação e depois entre. Se não achar, olhe no lixo eletrônico ou spam.');
         return;
       }
       // CPF repetido ou recusado: a tela de CPF explica e deixa corrigir.
