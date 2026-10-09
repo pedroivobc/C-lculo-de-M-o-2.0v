@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useConta } from '@/hooks/useConta';
 import { Lockup } from '@/components/marca/Logo';
 import { Aviso, Botao, Campo } from '@/components/ui/Campos';
-import { A_PARTIR_DE, AGENTE_WHATSAPP, DIAS_TESTE, formasDoPeriodo, LANCAMENTO_TEXTO, OFERTA_LANCAMENTO, lerPeriodo, PERIODOS, PLANOS, preco, type Forma, type Nivel, type Periodo } from '@/lib/config';
+import { A_PARTIR_DE, AGENTE_WHATSAPP, DIAS_TESTE, formasDoPeriodo, DIAS_ARREPENDIMENTO, LANCAMENTO_TEXTO, OFERTA_LANCAMENTO, lerPeriodo, PERIODOS, PLANOS, preco, type Forma, type Nivel, type Periodo } from '@/lib/config';
 import { SeletorPeriodo } from '@/components/ui/SeletorPeriodo';
 import { telefoneBonito } from '@/lib/formato';
 import { cpfValido, mascararCpf, soDigitosCpf } from '@/lib/cpf';
@@ -416,7 +416,7 @@ export function Assinar() {
             <span className="rounded-full bg-tinta px-2.5 py-0.5 text-xs font-bold text-white">{vagas === 1 ? 'Última vaga' : `Restam ${vagas} vagas`}</span>
           </span>
           <span className="numero text-[26px] font-extrabold">{LANCAMENTO_TEXTO}/mês</span>
-          <span className="text-texto">Plano {PLANOS[OFERTA_LANCAMENTO.nivel].nome} para os {OFERTA_LANCAMENTO.vagas} primeiros corretores. {OFERTA_LANCAMENTO.diasTeste} dias para testar com o cartão cadastrado; a primeira cobrança é no {OFERTA_LANCAMENTO.diasTeste + 1}º dia. Fidelidade de 1 mês, e o preço continua enquanto você assinar.</span>
+          <span className="text-texto">Plano {PLANOS[OFERTA_LANCAMENTO.nivel].nome} anual, cobrado mês a mês, para os {OFERTA_LANCAMENTO.vagas} primeiros corretores. {OFERTA_LANCAMENTO.diasTeste} dias para testar com o cartão cadastrado; a primeira cobrança é no {OFERTA_LANCAMENTO.diasTeste + 1}º dia. Fidelidade de 12 meses, com cancelamento grátis nos {DIAS_ARREPENDIMENTO} primeiros dias.</span>
           <Botao onClick={() => irPara('/api/assinatura/lancamento', {}, 'lancamento')} disabled={!!indo} className="min-h-[52px] text-base">
             {indo === 'lancamento' ? 'Abrindo o pagamento…' : `Garantir por ${LANCAMENTO_TEXTO}/mês`}
           </Botao>
@@ -467,7 +467,7 @@ export function Assinar() {
           </Botao>
         </div>
       )}
-      <span className="text-xs text-suave">O pagamento é feito na página segura da Stripe. Não guardamos o número do cartão.</span>
+      <span className="text-xs text-suave">Mudou de ideia? Nos {DIAS_ARREPENDIMENTO} primeiros dias você cancela na página da conta e recebe de volta o que pagou. O pagamento é feito na página segura da Stripe. Não guardamos o número do cartão.</span>
       <Link to="/app" className="text-center font-bold text-acao">Ir para o app</Link>
     </Moldura>
   );

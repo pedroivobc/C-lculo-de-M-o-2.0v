@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useConta } from '@/hooks/useConta';
 import { Aviso, Botao, BotaoLink, Campo, Cartao } from '@/components/ui/Campos';
 import { telefoneBonito } from '@/lib/formato';
-import { LANCAMENTO_TEXTO, lerPeriodo, OFERTA_LANCAMENTO, PERIODOS, PLANOS, preco } from '@/lib/config';
+import { DIAS_ARREPENDIMENTO, LANCAMENTO_TEXTO, lerPeriodo, OFERTA_LANCAMENTO, PERIODOS, PLANOS, preco } from '@/lib/config';
 import { ConfiguracaoOrcamento } from '@/components/conta/ConfiguracaoOrcamento';
 import { Indicacao } from '@/components/conta/Indicacao';
 
@@ -30,6 +30,9 @@ export default function Conta() {
   }
 
   const lancamento = assinatura?.plan === 'lancamento';
+  // Pix anual: só dá para cancelar (com estorno) nos 7 primeiros dias.
+  const arrependimento = assinatura?.forma_pagamento === 'pix' && !!assinatura.criada_em
+    && Date.now() - new Date(assinatura.criada_em).getTime() < DIAS_ARREPENDIMENTO * 86400_000;
   const [ocupado, setOcupado] = useState<'portal' | 'cancelar' | null>(null);
   const [avisoPlano, setAvisoPlano] = useState<{ tom: 'verde' | 'vermelho'; texto: string } | null>(null);
 
@@ -55,7 +58,7 @@ export default function Conta() {
 
   async function cancelar() {
     if (!assinatura) return;
-    const pergunta = 'No teste grátis, a assinatura termina no fim do teste e nada é cobrado. Depois dele, as mensalidades seguem até o fim da fidelidade e o acesso termina ali. Cancelar?';
+    const pergunta = 'Nos 7 primeiros dias, o cancelamento é imediato e o valor pago volta. Depois disso, as mensalidades seguem até o fim da fidelidade e o acesso termina ali. Cancelar?';
     if (!window.confirm(pergunta)) return;
     setOcupado('cancelar');
     try {
@@ -129,7 +132,7 @@ export default function Conta() {
                 )}
                 {assinatura.forma_pagamento === 'pix' && ativa && <BotaoLink to={`/assinar?nivel=${assinatura.nivel}&plano=anual`} variante="secundario">Renovar no Pix</BotaoLink>}
                 {!ativa && <BotaoLink to="/assinar">Assinar de novo</BotaoLink>}
-                {assinatura.forma_pagamento === 'cartao' && ativa && !assinatura.cancela_em && (
+                {(assinatura.forma_pagamento === 'cartao' || arrependimento) && ativa && !assinatura.cancela_em && (
                   <button type="button" onClick={cancelar} disabled={!!ocupado} className="self-start text-sm font-bold text-suave underline">
                     {ocupado === 'cancelar' ? 'Cancelando…' : 'Cancelar assinatura'}
                   </button>

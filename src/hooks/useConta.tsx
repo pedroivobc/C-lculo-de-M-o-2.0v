@@ -38,6 +38,7 @@ export interface Assinatura {
   fidelidade_ate: string | null;
   /** Cancelamento agendado. */
   cancela_em: string | null;
+  criada_em: string | null;
 }
 
 interface ContaValor {
@@ -67,7 +68,7 @@ export function ContaProvider({ children }: { children: ReactNode }) {
     if (!opcoes.silencioso) setCarregando(true);
     const [p, a, situacao] = await Promise.all([
       supabase.from('profiles').select('id, full_name, email, telefone, whatsapp_e164, whatsapp_verified_at, municipio_padrao, pdf_header, uf, cidade_nome, itbi_percentual, pdf_logo_path, cor_primaria, formato_orcamento, configurado_em, custos_padrao, cpf, papel').eq('id', user.id).maybeSingle(),
-      supabase.from('subscriptions').select('plan, nivel, status, current_period_end, forma_pagamento, fidelidade_ate, cancela_em').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('subscriptions').select('plan, nivel, status, current_period_end, forma_pagamento, fidelidade_ate, cancela_em, criada_em:created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.rpc('minha_situacao_acesso').maybeSingle<{ liberado: boolean }>(),
     ]);
     setPerfil((p.data as Perfil) ?? null);

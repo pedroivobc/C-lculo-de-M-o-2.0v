@@ -31,18 +31,21 @@ export function preco(nivel: Nivel, periodo: Periodo) {
 }
 
 /**
- * Oferta de lançamento: a única cobrança mensal, só para os primeiros corretores.
- * Teste de 3 dias com o cartão já cadastrado (a Stripe cobra no 4º dia), fidelidade de 1 mês pago
+ * Oferta de lançamento: plano anual a R$ 9,90/mês, só para os primeiros corretores.
+ * Teste de 3 dias com o cartão já cadastrado (a Stripe cobra no 4º dia), fidelidade de 12 meses
  * e o preço mantido enquanto a assinatura continuar.
  */
 export const OFERTA_LANCAMENTO = {
-  nome: 'Oferta de lançamento',
+  nome: 'Oferta de lançamento (anual)',
   nivel: 'usuario' as Nivel,
   mensalCentavos: 990,
   vagas: 20,
   diasTeste: 3,
-  fidelidadeMeses: 1,
+  fidelidadeMeses: 12,
 };
+
+/** Direito de arrependimento (CDC, art. 49): nos 7 primeiros dias o cancelamento é imediato e o valor pago volta. */
+export const DIAS_ARREPENDIMENTO = 7;
 export const LANCAMENTO_TEXTO = brl(OFERTA_LANCAMENTO.mensalCentavos);
 
 /** Formas aceitas em cada período: Pix só no anual. */

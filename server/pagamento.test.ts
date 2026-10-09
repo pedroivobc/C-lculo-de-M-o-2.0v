@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chaveDoPreco, dataDoCancelamento, somarMeses, statusDaStripe } from './pagamento';
+import { chaveDoPreco, dataDoCancelamento, dentroDoArrependimento, somarMeses, statusDaStripe } from './pagamento';
 
 describe('pagamento', () => {
   it('soma meses sem pular para o mês seguinte', () => {
@@ -15,6 +15,12 @@ describe('pagamento', () => {
     expect(dataDoCancelamento(fidelidade, mesPago, agora)).toEqual(fidelidade);
     // Fidelidade cumprida: vale no fim do mês já pago.
     expect(dataDoCancelamento(new Date('2026-10-01T00:00:00Z'), mesPago, agora)).toEqual(mesPago);
+  });
+
+  it('arrependimento vale nos 7 primeiros dias', () => {
+    const inicio = new Date('2026-10-09T12:00:00Z');
+    expect(dentroDoArrependimento(inicio, new Date('2026-10-15T12:00:00Z'))).toBe(true);
+    expect(dentroDoArrependimento(inicio, new Date('2026-10-16T12:00:01Z'))).toBe(false);
   });
 
   it('traduz o status da Stripe', () => {

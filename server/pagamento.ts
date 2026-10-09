@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { config } from './config';
 import { supabaseAdmin } from './supabase';
 import { enviarTexto } from './evolution';
-import { cobranca, OFERTA_LANCAMENTO, PERIODOS, PLANOS, type Forma, type Nivel, type Periodo } from '../src/lib/planos';
+import { cobranca, DIAS_ARREPENDIMENTO, OFERTA_LANCAMENTO, PERIODOS, PLANOS, type Forma, type Nivel, type Periodo } from '../src/lib/planos';
 
 /**
  * Cobrança pela Stripe, sempre no Checkout da própria Stripe (o número do cartão nunca passa por aqui).
@@ -48,6 +48,11 @@ export function somarMeses(data: Date, meses: number): Date {
 export function dataDoCancelamento(fidelidadeAte: Date | null, fimDoMesPago: Date | null, agora = new Date()): Date {
   const candidatos = [fidelidadeAte, fimDoMesPago, agora].filter((d): d is Date => !!d);
   return new Date(Math.max(...candidatos.map((d) => d.getTime())));
+}
+
+/** Ainda dá para desistir com reembolso (CDC, art. 49)? */
+export function dentroDoArrependimento(inicio: Date, agora = new Date()): boolean {
+  return agora.getTime() - inicio.getTime() < DIAS_ARREPENDIMENTO * 86400_000;
 }
 
 export const chaveDoPreco = (nivel: Nivel, periodo: Periodo, forma: Forma) => `orcai_${nivel}_${periodo}_${forma}`;
@@ -160,7 +165,7 @@ export class ErroAssinatura extends Error {}
 /** Assinatura que ainda vale (ativa ou atrasada), para não cobrar duas vezes. */
 async function assinaturaVigente(userId: string) {
   const { data } = await supabaseAdmin().from('subscriptions')
-    .select('id, forma_pagamento, status, current_period_end, fidelidade_ate, cancela_em, gateway_subscription_id, plan, nivel')
+    .select('id, forma_pagamento, status, current_period_end, fidelidade_ate, cancela_em, gateway_subscription_id, plan, nivel, created_at')
     .eq('user_id', userId).eq('gateway', GATEWAY).in('status', ['ativa', 'atrasada'])
     .order('current_period_end', { ascending: false }).limit(1).maybeSingle();
   if (!data) return null;
@@ -298,15 +303,29 @@ export async function abrirPortal(userId: string): Promise<string> {
 /** Agenda o cancelamento da assinatura no cartão: vale no fim da fidelidade ou do mês já pago. */
 export async function cancelarAssinatura(userId: string): Promise<{ cancelaEm: string }> {
   const vigente = await assinaturaVigente(userId);
+  // Pix anual nos 7 primeiros dias: estorna o pagamento e encerra.
+  if (vigente?.forma_pagamento === 'pix' && vigente.gateway_subscription_id && dentroDoArrependimento(new Date(vigente.created_at))) {
+    const sessao = await stripe().checkout.sessions.retrieve(vigente.gateway_subscription_id);
+    if (sessao.payment_intent) {
+      await stripe().refunds.create({ payment_intent: String(sessao.payment_intent) }, { idempotencyKey: `arrependimento-${sessao.id}` });
+    }
+    await supabaseAdmin().from('subscriptions').update({ status: 'cancelada', cancela_em: new Date().toISOString() }).eq('id', vigente.id);
+    return { cancelaEm: new Date().toISOString() };
+  }
   if (!vigente || vigente.forma_pagamento !== 'cartao' || !vigente.gateway_subscription_id) {
     throw new ErroAssinatura('Não há assinatura no cartão para cancelar. O plano anual no Pix simplesmente não renova.');
   }
-  // Desistir no teste grátis: encerra no fim do teste, sem nenhuma cobrança.
+  // Arrependimento (7 primeiros dias, inclui o teste): cancela agora e devolve o que foi pago.
   const atual = await stripe().subscriptions.retrieve(vigente.gateway_subscription_id);
-  if (atual.status === 'trialing' && atual.trial_end) {
-    await stripe().subscriptions.update(atual.id, { cancel_at_period_end: true });
+  if (dentroDoArrependimento(new Date(atual.start_date * 1000))) {
+    await stripe().subscriptions.cancel(atual.id);
+    const customer = typeof atual.customer === 'string' ? atual.customer : atual.customer.id;
+    const { data: cobrancas } = await stripe().charges.list({ customer, created: { gte: atual.start_date }, limit: 20 });
+    for (const c of cobrancas) {
+      if (c.paid && !c.refunded) await stripe().refunds.create({ charge: c.id }, { idempotencyKey: `arrependimento-${c.id}` });
+    }
     await sincronizarAssinatura(atual.id);
-    return { cancelaEm: new Date(atual.trial_end * 1000).toISOString() };
+    return { cancelaEm: new Date().toISOString() };
   }
   const quando = dataDoCancelamento(
     vigente.fidelidade_ate ? new Date(vigente.fidelidade_ate) : null,
@@ -432,7 +451,7 @@ export async function sincronizarAssinatura(id: string) {
   if (!userId) return;
   const lancamento = sub.metadata?.periodo === 'lancamento';
   const periodo = (['trimestral', 'semestral', 'anual'] as const).find((p) => p === sub.metadata?.periodo) ?? 'trimestral';
-  // Fidelidade conta a partir do fim do teste (oferta de lançamento: 1 mês pago).
+  // Fidelidade conta a partir do fim do teste (oferta de lançamento: 12 meses pagos).
   const inicioPago = new Date((sub.trial_end ?? sub.start_date) * 1000);
   const mesesFidelidade = lancamento ? OFERTA_LANCAMENTO.fidelidadeMeses : PERIODOS[periodo].meses;
   const nivel = sub.metadata?.nivel === 'pro' ? 'pro' : 'usuario';

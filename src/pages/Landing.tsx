@@ -33,7 +33,7 @@ const DUVIDAS = [
   ['Os valores são oficiais?', 'São estimativas feitas com a tabela de emolumentos de MG e as regras de ITBI de Juiz de Fora do ano corrente. Os valores finais são os do cartório e da prefeitura no dia do ato.'],
   ['Meu imóvel é em outra cidade de MG. Serve?', 'Sim. Juiz de Fora já tem a regra de ITBI cadastrada; nas outras cidades de MG você informa a alíquota no cadastro. Peça a sua cidade no formulário acima para ela ganhar a regra completa.'],
   ['Como o agente sabe que sou eu?', 'Pelo número que você confirma no cadastro com um código. Só esse número tem acesso aos seus orçamentos.'],
-  ['Posso cancelar quando quiser?', 'Sim, pela página da conta. No cartão, as mensalidades seguem até o fim da fidelidade (3, 6 ou 12 meses) e param ali. No Pix anual, basta não renovar. O seu histórico continua disponível para exportar.'],
+  ['Posso cancelar quando quiser?', 'Sim, pela página da conta. Nos 7 primeiros dias, o cancelamento é imediato e o valor pago volta. Depois disso, no cartão, as mensalidades seguem até o fim da fidelidade (3, 6 ou 12 meses) e param ali. No Pix anual, basta não renovar. O seu histórico continua disponível para exportar.'],
 ];
 
 function PedirCidade() {
@@ -231,7 +231,7 @@ export default function Landing() {
             <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border-2 border-tinta bg-amarelo-claro p-6 shadow-[8px_8px_0_#101828]">
               <div className="flex max-w-[640px] flex-col gap-1">
                 <span className="text-xl font-[850]">{OFERTA_LANCAMENTO.nome}: {LANCAMENTO_TEXTO}/mês</span>
-                <span className="text-texto">Plano {PLANOS[OFERTA_LANCAMENTO.nivel].nome} para os {OFERTA_LANCAMENTO.vagas} primeiros corretores. {OFERTA_LANCAMENTO.diasTeste} dias de teste com o cartão cadastrado, fidelidade de 1 mês e o preço mantido enquanto você assinar. {vagas === 1 ? 'Resta 1 vaga.' : `Restam ${vagas} vagas.`}</span>
+                <span className="text-texto">Plano {PLANOS[OFERTA_LANCAMENTO.nivel].nome} anual, cobrado mês a mês, para os {OFERTA_LANCAMENTO.vagas} primeiros corretores. {OFERTA_LANCAMENTO.diasTeste} dias de teste com o cartão cadastrado, fidelidade de 12 meses e cancelamento grátis nos 7 primeiros dias. {vagas === 1 ? 'Resta 1 vaga.' : `Restam ${vagas} vagas.`}</span>
               </div>
               <BotaoLink to="/cadastro?oferta=lancamento" className="min-h-14 px-6 text-[17px]">Garantir minha vaga</BotaoLink>
             </div>
