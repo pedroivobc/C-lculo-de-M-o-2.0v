@@ -141,7 +141,7 @@ Os nomes exatos dos campos variam um pouco entre versões da Evolution v2; se al
 
 O workflow não guarda segredos: lê `APP_INTERNAL_URL`, `AGENT_API_KEY`, `EVOLUTION_*` das variáveis de ambiente do container (já definidas no `docker-compose.yml`).
 
-Fluxo: *Evolution: mensagem recebida* → *Filtrar e extrair* (ignora grupos, mensagens enviadas pelo próprio número, áudios e figurinhas; aceita texto e respostas de botão ou lista) → *Perguntar ao agente* (`POST /api/agente/mensagem`) → *Uma resposta por vez* → *Enviar pelo WhatsApp (em ordem)*: cada resposta já vem do servidor com `envio.rota` (`sendText`, `sendButtons`, `sendList` ou `sendMedia`) e `envio.corpo`, e o n8n só repassa para a Evolution, uma por vez, na ordem em que o servidor mandou (o orçamento chega antes do menu seguinte). Atualize o servidor **antes** de importar esta versão do workflow.
+Fluxo: *Evolution: mensagem recebida* → *Filtrar e extrair* (ignora grupos, mensagens enviadas pelo próprio número, áudios e figurinhas; aceita texto e respostas de botão ou lista) → *Perguntar ao agente* (`POST /api/agente/mensagem`) → *Uma resposta por vez* → *Enviar pelo WhatsApp (em ordem)*: cada resposta já vem do servidor com `envio.rota` (`sendText`, `sendButtons`, `sendList` ou `sendMedia`) e `envio.corpo`, e o n8n só repassa para a Evolution, uma por vez, na ordem em que o servidor mandou (o orçamento chega antes do menu seguinte). Com um servidor anterior (sem `envio`), o nó cai no envio antigo: texto por `sendText` e arquivo por `sendMedia`.
 
 Se você já tinha importado uma versão anterior, apague o workflow antigo e importe o arquivo de novo.
 

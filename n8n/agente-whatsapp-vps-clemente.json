@@ -77,7 +77,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://evolution.vps.clementeassessoria.cloud/message/{{ $json.envio.rota }}/orcai",
+        "url": "=https://evolution.vps.clementeassessoria.cloud/message/{{ $json.envio ? $json.envio.rota : ($json.tipo === 'texto' ? 'sendText' : 'sendMedia') }}/orcai",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -89,7 +89,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $('Filtrar e extrair').first().json.numero, delay: 1200, ...$json.envio.corpo }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: $('Filtrar e extrair').first().json.numero, delay: 1200, ...($json.envio ? $json.envio.corpo\n  : $json.tipo === 'texto' ? { text: $json.texto }\n  : { mediatype: String($json.mimetype).startsWith('image/') ? 'image' : 'document', mimetype: $json.mimetype, media: $json.url, fileName: $json.nomeArquivo, caption: $json.legenda ?? '' }) }) }}",
         "options": {
           "batching": {
             "batch": {
