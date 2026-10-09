@@ -15,6 +15,10 @@ const FinanciamentoCaixa = lazy(() => import('@/pages/app/Financiamento').then((
 const BancoPrivado = lazy(() => import('@/pages/app/Financiamento').then((m) => ({ default: m.BancoPrivado })));
 const Correcao = lazy(() => import('@/pages/app/Correcao'));
 const AdminTabelas = lazy(() => import('@/pages/app/AdminTabelas'));
+const AdminGestao = lazy(() => import('@/pages/app/AdminGestao'));
+const AdminUsuarios = lazy(() => import('@/pages/app/AdminUsuarios'));
+const AdminEquipes = lazy(() => import('@/pages/app/AdminEquipes'));
+const Equipe = lazy(() => import('@/pages/app/Equipe'));
 const Doacao = lazy(() => import('@/pages/app/Doacao'));
 const Historico = lazy(() => import('@/pages/app/Historico'));
 const Agente = lazy(() => import('@/pages/app/Agente'));
@@ -44,6 +48,12 @@ function Protegido({ children, exigirWhatsapp = false }: { children: ReactNode; 
   return <>{children}</>;
 }
 
+/** Gestão de Negócio: só o administrador; os demais voltam para o início. */
+function SoAdmin({ children }: { children: ReactNode }) {
+  const { perfil } = useConta();
+  return perfil && perfil.papel !== 'admin' ? <Navigate to="/app" replace /> : <>{children}</>;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -65,7 +75,11 @@ export default function App() {
               <Route path="financiamento-caixa" element={<FinanciamentoCaixa />} />
               <Route path="banco-privado" element={<BancoPrivado />} />
               <Route path="correcao" element={<Correcao />} />
-              <Route path="admin/tabelas" element={<AdminTabelas />} />
+              <Route path="admin/tabelas" element={<SoAdmin><AdminTabelas /></SoAdmin>} />
+              <Route path="admin/gestao" element={<SoAdmin><AdminGestao /></SoAdmin>} />
+              <Route path="admin/usuarios" element={<SoAdmin><AdminUsuarios /></SoAdmin>} />
+              <Route path="admin/equipes" element={<SoAdmin><AdminEquipes /></SoAdmin>} />
+              <Route path="equipe" element={<Equipe />} />
               <Route path="doacao" element={<Doacao />} />
               <Route path="historico" element={<Historico />} />
               <Route path="agente" element={<Agente />} />

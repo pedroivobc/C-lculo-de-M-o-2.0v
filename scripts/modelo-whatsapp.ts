@@ -20,7 +20,7 @@ function simular(titulo: string, mensagens: string[]) {
   let estado: Estado | null = null;
   for (const m of mensagens) {
     linhas.push(`**🧑 Corretor:** ${m}`, '');
-    const p = passo(estado, m, { nome: 'Pedro Ivo', formatoPadrao: 'jpeg' });
+    const p = passo(estado, m, { nome: 'Pedro Ivo', formatoPadrao: 'jpeg', municipio: 'mg-juiz-de-fora' });
     estado = p.estado;
     if (p.acao?.tipo === 'calcular') {
       const r: Resultado = calcular(p.acao.calculo, p.acao.dados);
@@ -28,6 +28,8 @@ function simular(titulo: string, mensagens: string[]) {
         : `📎 orcamento-0143.${p.acao.formato === 'pdf' ? 'pdf' : 'jpg'} · Orçamento #0143 · Total ${brl(r.total)}`;
       linhas.push('**🤖 Orça.ai:**', '', '```', bot, '```', '');
     }
+    if (p.acao?.tipo === 'atendente') linhas.push('_(a conversa é aberta no Chatwoot com a etiqueta "atendente"; o robô fica quieto até o corretor escrever menu)_', '');
+    if (!p.mensagens.length) linhas.push('_(robô em silêncio: a pessoa da equipe responde pelo Chatwoot)_', '');
     for (const b of p.mensagens) linhas.push('**🤖 Orça.ai:**', '', '```', b.texto, '```', '');
   }
   return linhas.join('\n');
@@ -46,8 +48,9 @@ writeFileSync(join(saida, 'orcamento-modelo-pro.pdf'), await gerarPdfOrcamento(e
 writeFileSync(join(saida, 'orcamento-modelo-pro.txt'), orcamentoEmTexto(escritura, metaPro, pro));
 writeFileSync(join(saida, 'conversa-modelo.md'), [
   '# Conversa no WhatsApp · simulação com o motor real', '',
-  simular('Escritura de compra e venda simples, com endereço, recebendo em mensagem escrita', ['Oi', '1', '1', '1', '350 mil', '1', 'Rua Halfeld, 100, apto 201 · Centro', '3']),
+  simular('Escritura de compra e venda simples, com endereço, recebendo em mensagem escrita', ['Oi', '1', '1', '350 mil', '1', 'Rua Halfeld, 100, apto 201 · Centro', '3']),
   simular('Financiamento Caixa SBPE com cota de 80%, sem endereço, trocando os honorários e recebendo em imagem', ['Bom dia', '2', '1', '1', '400000', '80%', '1', '2', 'honorarios 900', '1']),
-  simular('Quando a pessoa digita algo fora das opções', ['oi', 'quero orçar', '0', '1', '2', '1', '350']),
+  simular('Doação simples recebendo em PDF e depois pedindo um atendente', ['Oi', '3', '1', '300 mil', 'não sei', '2', '2', '4', 'obrigado', 'menu']),
+  simular('Quando a pessoa digita algo fora das opções', ['oi', 'quero orçar', '0', '1', '1', '350']),
 ].join('\n'));
 console.log('ok', saida);

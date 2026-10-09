@@ -37,10 +37,15 @@ export function useCalculos(mes: string) {
 }
 
 /** Abre o orçamento salvo no formato escolhido na conta (PDF ou imagem), ou no formato pedido. */
-export async function abrirOrcamento(seq: number, formato?: 'pdf' | 'jpeg') {
+export function abrirOrcamento(seq: number, formato?: 'pdf' | 'jpeg') {
+  return abrirLink(`/api/calculos/${seq}/arquivo${formato ? `?formato=${formato}` : ''}`);
+}
+
+/** Abre numa aba nova o arquivo que a rota da API devolve como { url } (link temporário). */
+export async function abrirLink(caminho: string) {
   const aba = window.open('', '_blank');
   try {
-    const { url } = await api<{ url: string }>(`/api/calculos/${seq}/arquivo${formato ? `?formato=${formato}` : ''}`);
+    const { url } = await api<{ url: string }>(caminho);
     if (aba) aba.location.href = url; else window.location.href = url;
   } catch (e) {
     aba?.close();

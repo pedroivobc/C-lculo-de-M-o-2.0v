@@ -4,12 +4,14 @@ import { supabase } from '@/lib/supabase';
 import { useConta } from '@/hooks/useConta';
 import { Aviso, Botao, BotaoLink, Campo, Cartao } from '@/components/ui/Campos';
 import { telefoneBonito } from '@/lib/formato';
-import { lerPeriodo, PERIODOS, PLANOS, preco } from '@/lib/config';
+import { EQUIPE, lerPeriodo, PERIODOS, PLANOS, preco, UNLIMITED, type Nivel } from '@/lib/config';
 import { ConfiguracaoOrcamento } from '@/components/conta/ConfiguracaoOrcamento';
 import { Indicacao } from '@/components/conta/Indicacao';
 
+const nivelDoPlano = (n?: string | null): Nivel => (n === 'pro' ? 'pro' : 'usuario');
+
 export default function Conta() {
-  const { perfil, assinatura, ativa, recarregar } = useConta();
+  const { perfil, assinatura, equipe, ativa, recarregar } = useConta();
   const navegar = useNavigate();
   const [nome, setNome] = useState('');
   const [aviso, setAviso] = useState<{ tom: 'verde' | 'vermelho'; texto: string } | null>(null);
@@ -62,20 +64,40 @@ export default function Conta() {
         </div>
 
         <div className="flex flex-col gap-6">
+          {perfil?.papel === 'admin' ? (
           <section className="flex flex-col gap-3 rounded-2xl border-2 border-tinta bg-white p-6 shadow-[6px_6px_0_#101828]">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-lg font-bold">{assinatura ? `${PLANOS[assinatura.nivel ?? 'usuario'].nome} ${PERIODOS[lerPeriodo(assinatura.plan)].nome.toLowerCase()}` : 'Sem plano'}</h2>
+              <h2 className="text-lg font-bold">{assinatura?.nivel === 'unlimited' ? `Plano ${UNLIMITED.nome}` : 'Administrador'}</h2>
+              <span className="rounded-full bg-ok-claro px-2.5 py-1 text-xs font-bold text-ok">Ativo</span>
+            </div>
+            <span className="text-suave">{UNLIMITED.resumo}.{equipe ? <> Você é o gestor de <strong className="text-tinta">{equipe.nome}</strong>.</> : ' Monte a sua equipe para cadastrar colaboradores.'}</span>
+            <BotaoLink to="/app/equipe">{equipe ? 'Gerenciar equipe' : 'Montar minha equipe'}</BotaoLink>
+          </section>
+          ) : equipe ? (
+          <section className="flex flex-col gap-3 rounded-2xl border-2 border-tinta bg-white p-6 shadow-[6px_6px_0_#101828]">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-bold">{equipe.tipo === 'clemente' ? 'Clemente Team' : EQUIPE.nome}</h2>
+              <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ativa ? 'bg-ok-claro text-ok' : 'bg-amarelo-claro text-amarelo-texto'}`}>{ativa ? 'Ativo' : 'Inativo'}</span>
+            </div>
+            <span className="text-suave">Você faz parte de <strong className="text-tinta">{equipe.nome}</strong>{equipe.funcao === 'gestor' ? ' como gestor.' : '. O plano é cuidado pelo gestor da equipe.'}</span>
+            {equipe.funcao === 'gestor' && <BotaoLink to="/app/equipe">Gerenciar equipe</BotaoLink>}
+          </section>
+          ) : (
+          <section className="flex flex-col gap-3 rounded-2xl border-2 border-tinta bg-white p-6 shadow-[6px_6px_0_#101828]">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-bold">{assinatura ? `${PLANOS[nivelDoPlano(assinatura.nivel)].nome} ${PERIODOS[lerPeriodo(assinatura.plan)].nome.toLowerCase()}` : 'Sem plano'}</h2>
               <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ativa ? 'bg-ok-claro text-ok' : 'bg-amarelo-claro text-amarelo-texto'}`}>{ativa ? 'Ativo' : assinatura?.status ?? 'Inativo'}</span>
             </div>
             {assinatura ? (
               <>
-                <span className="numero text-[32px] font-black">{preco(assinatura.nivel ?? 'usuario', lerPeriodo(assinatura.plan)).totalTexto}<span className="text-sm font-medium text-suave"> {PERIODOS[lerPeriodo(assinatura.plan)].cobranca}</span></span>
+                <span className="numero text-[32px] font-black">{preco(nivelDoPlano(assinatura.nivel), lerPeriodo(assinatura.plan)).totalTexto}<span className="text-sm font-medium text-suave"> {PERIODOS[lerPeriodo(assinatura.plan)].cobranca}</span></span>
                 {assinatura.current_period_end && <span className="text-suave">Válido até {new Date(assinatura.current_period_end).toLocaleDateString('pt-BR')}</span>}
               </>
             ) : (
               <BotaoLink to="/assinar">Ver planos</BotaoLink>
             )}
           </section>
+          )}
 
           <Indicacao />
 

@@ -221,7 +221,7 @@ export default function Landing() {
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div className="flex max-w-[640px] flex-col gap-3">
               <h2 className="text-[30px] font-[850] leading-9 sm:text-[38px] sm:leading-[44px]">Dois planos. Tudo incluído.</h2>
-              <p className="text-[17px] leading-[27px] text-texto">Os dois têm todas as calculadoras, o agente no WhatsApp, o histórico e a exportação. O Pró coloca a sua marca no orçamento.</p>
+              <p className="text-[17px] leading-[27px] text-texto">Os dois têm todas as calculadoras, o histórico e a exportação. O Pró inclui o agente no WhatsApp e coloca a sua marca no orçamento.</p>
             </div>
             <SeletorPeriodo periodo={periodo} onChange={setPeriodo} className="w-full max-w-[460px] text-[15px]" />
           </div>
@@ -242,7 +242,7 @@ export default function Landing() {
                   </div>
                   <span className="self-start rounded-lg bg-amarelo-claro px-2.5 py-1 font-bold text-amarelo-texto">{v.totalTexto} {PERIODOS[periodo].cobranca}{v.descontoTexto ? ` · ${v.descontoTexto}` : ''}</span>
                   <ul className="flex flex-col gap-2 text-texto">
-                    {['Todas as calculadoras e o agente no WhatsApp', 'Histórico e exportação em planilha', p.resumo, ...(pro ? ['Escolha da cor do orçamento'] : [])].map((t) => (
+                    {['Todas as calculadoras', 'Histórico e exportação em planilha', p.resumo, ...(pro ? ['Agente no WhatsApp', 'Escolha da cor do orçamento'] : [])].map((t) => (
                       <li key={t} className="flex gap-2"><Check className="mt-0.5 size-5 shrink-0 text-ok" aria-hidden="true" />{t}</li>
                     ))}
                   </ul>

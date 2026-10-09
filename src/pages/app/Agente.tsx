@@ -1,9 +1,9 @@
 import { MessageCircle } from 'lucide-react';
 import { useConta } from '@/hooks/useConta';
 import { mesAtual, useCalculos } from '@/hooks/useCalculos';
-import { BotaoLink, Cartao } from '@/components/ui/Campos';
+import { Aviso, BotaoLink, Cartao } from '@/components/ui/Campos';
 import { telefoneBonito } from '@/lib/formato';
-import { AGENTE_WHATSAPP } from '@/lib/config';
+import { AGENTE_WHATSAPP, usaWhatsapp } from '@/lib/config';
 
 const EXEMPLOS = [
   ['"Escritura de 350 mil"', 'Calcula ITBI, escritura e registro e manda o orçamento.'],
@@ -17,6 +17,20 @@ export default function Agente() {
   const { dados } = useCalculos(mesAtual());
   const doMes = dados?.filter((c) => c.origem === 'whatsapp').length;
   const verificado = !!perfil?.whatsapp_verified_at;
+
+  if (perfil && !usaWhatsapp(perfil.papel)) {
+    return (
+      <div className="flex flex-col gap-6">
+        <header className="flex flex-col gap-1">
+          <span className="rotulo-secao">Agente WhatsApp</span>
+          <h1 className="text-[28px] font-bold leading-[34px]">O agente do WhatsApp é do plano Pró</h1>
+          <p className="text-suave">No Starter, os orçamentos são feitos aqui no site. No Pró, você também orça mandando uma mensagem no WhatsApp, com a sua logo e as suas cores.</p>
+        </header>
+        <Aviso tom="azul">Mude para o Pró quando quiser: o histórico e a configuração continuam os mesmos.</Aviso>
+        <BotaoLink to="/assinar?nivel=pro" className="self-start">Conhecer o Pró</BotaoLink>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
