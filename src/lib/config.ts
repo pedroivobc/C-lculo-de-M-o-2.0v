@@ -1,5 +1,5 @@
 /** Configurações públicas do front (VITE_*). */
-export const MARCA = 'Orçaí Imob';
+export const MARCA = 'Orça.ai Imob';
 
 /** Número do agente no WhatsApp, só dígitos com DDI (ex.: 5532988887777). */
 export const AGENTE_WHATSAPP = (import.meta.env.VITE_AGENTE_WHATSAPP ?? '').replace(/\D/g, '');
@@ -10,7 +10,7 @@ export const AGENTE_WHATSAPP = (import.meta.env.VITE_AGENTE_WHATSAPP ?? '').repl
  */
 export const EXIGIR_ASSINATURA = import.meta.env.VITE_EXIGIR_ASSINATURA === 'true';
 
-export { A_PARTIR_DE, ORDEM_PERIODOS, PERIODOS, PLANOS, lerPeriodo, preco, type Nivel, type Periodo } from './planos';
+export { A_PARTIR_DE, DIAS_ARREPENDIMENTO, EQUIPE, LANCAMENTO_TEXTO, NOME_PAPEL, OFERTA_LANCAMENTO, ORDEM_PERIODOS, PERIODOS, PLANOS, UNLIMITED, cobranca, descontoMaximo, formasDoPeriodo, lerPeriodo, preco, precoEquipe, usaWhatsapp, type Forma, type Nivel, type Papel, type Periodo } from './planos';
 
 /** Teste grátis: 3 dias; com cupom de indicação, 5. Depois, o acesso bloqueia até assinar. */
 export const DIAS_TESTE = 3;

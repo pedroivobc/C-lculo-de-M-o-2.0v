@@ -11,6 +11,8 @@ import { orcamentoEmTexto } from './orcamentoTexto';
 import { codigoDoUsuario, DIAS_TESTE, DIAS_TESTE_INDICACAO, linkDeIndicacao } from '../indicacao';
 import { arquivoDoOrcamento, buscarPorSeq, numeroCalculo, salvarCalculo, type CalculoSalvo } from '../historico';
 import { comLocalidade, configuracaoDoUsuario, type Configuracao } from '../estilo';
+import { usaWhatsapp, type Papel } from '../../src/lib/planos';
+import { pedirAtendente } from '../chatwoot';
 
 export interface MensagemRecebida {
   telefone: string;              // E.164
@@ -21,13 +23,13 @@ export interface MensagemRecebida {
   temAnexo?: boolean;
 }
 
-export type MotivoAcesso = 'ok' | 'trial' | 'sem_cartao' | 'trial_expirado' | 'assinatura_inativa' | 'sem_perfil';
+export type MotivoAcesso = 'ok' | 'trial' | 'sem_cartao' | 'trial_expirado' | 'assinatura_inativa' | 'organizacao_inativa' | 'sem_perfil';
 
 export interface Assinante {
   userId: string;
   nome: string | null;
   configuracao: Configuracao;
-  papel: 'admin' | 'pro' | 'usuario' | 'trial';
+  papel: Papel;
   /** Regra única do banco (situacao_acesso): cartão validado + trial no prazo ou assinatura ativa; admin sempre. */
   ativo: boolean;
   motivo: MotivoAcesso;
@@ -55,6 +57,7 @@ const MENSAGEM_BLOQUEIO: Record<MotivoAcesso, (url: string) => string> = {
   sem_cartao: (u) => `Para usar o ${config.marca}, cadastre um cartão de crédito na sua conta (mesmo que vá pagar no Pix): ${u}/app/conta`,
   trial_expirado: (u) => `Seu teste grátis do ${config.marca} terminou. Assine em ${u}/assinar e eu volto a calcular na hora.`,
   assinatura_inativa: (u) => `Sua assinatura do ${config.marca} não está ativa. Renove em ${u}/assinar e eu volto a calcular na hora.`,
+  organizacao_inativa: () => `O plano da sua equipe no ${config.marca} não está ativo. Fale com o gestor da sua imobiliária.`,
   sem_perfil: (u) => `Não encontrei sua conta. Entre em ${u}/entrar.`,
 };
 
@@ -148,6 +151,13 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
     return { status: assinante.motivo, respostas: [{ tipo: 'texto', texto: MENSAGEM_BLOQUEIO[assinante.motivo](config.appUrl) }] };
   }
 
+  // Starter usa só o site: o agente do WhatsApp é dos planos Pró e de equipe.
+  if (!usaWhatsapp(assinante.papel)) {
+    await registrar(msg.telefone, assinante.userId, 'entrada', 'texto', msg.texto ?? '', msg.messageId);
+    return { status: 'sem_whatsapp', respostas: [{ tipo: 'texto', texto:
+      `O atendimento pelo WhatsApp é do plano Pró. No Starter, os orçamentos são feitos em ${config.appUrl}/app. Para usar o agente, mude de plano em ${config.appUrl}/assinar?nivel=pro` }] };
+  }
+
   const textoUsuario = msg.texto?.trim() ?? '';
   await registrar(msg.telefone, assinante.userId, 'entrada', msg.temAnexo ? 'midia' : 'texto', textoUsuario, msg.messageId);
 
@@ -181,6 +191,9 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
       const salvo = await salvarCalculo({ userId: assinante.userId, resultado, entrada: dados, origem: 'whatsapp', descricao: p.acao.endereco });
       respostas.push(...await entregar(salvo, p.acao.formato, estilo));
       estado = { ...estado, ultimo: salvo.seq };
+    } else if (p.acao?.tipo === 'atendente') {
+      const nota = `🙋 ${assinante.nome ?? 'O corretor'} pediu para falar com uma pessoa. O robô fica pausado nesta conversa até ele escrever "menu".${estado.ultimo ? ` Último orçamento: ${numeroCalculo(estado.ultimo)}.` : ''}`;
+      await pedirAtendente(msg.telefone, nota).catch((e) => console.error('Chatwoot: não deu para abrir a conversa', e));
     } else if (p.acao?.tipo === 'reenviar' || p.acao?.tipo === 'detalhar') {
       const salvo = await buscarPorSeq(assinante.userId, p.acao.seq);
       if (!salvo) throw new Error('Não encontrei esse orçamento. Vamos fazer um novo?');
@@ -193,7 +206,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
     estado = { tela: 'menu', id: 'inicio', ultimo: estado.ultimo };
     mensagens = [telaAtual(estado, ctxMenu)];
   }
-  respostas.push(...mensagens.map((m): Resposta => ({ tipo: 'texto', texto: m.texto, opcoes: m.opcoes })));
+  respostas.push(...mensagens.map((m): Resposta => ({ tipo: 'texto', texto: m.texto, corpo: m.corpo, opcoes: m.opcoes })));
   await salvarSessao(msg.telefone, assinante.userId, estado);
   return responder(msg.telefone, assinante.userId, 'ok', respostas);
 }
@@ -201,7 +214,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
 /** Registra as mensagens de saída (texto) e devolve a resposta para o n8n. */
 async function responder(telefone: string, userId: string, status: string, respostas: Resposta[]) {
   const texto = respostas.map((r) => (r.tipo === 'texto' ? r.texto : `[${r.nomeArquivo}]`)).join('\n\n');
-  await registrar(telefone, userId, 'saida', 'texto', texto);
+  if (texto) await registrar(telefone, userId, 'saida', 'texto', texto); // com atendente, o robô não responde
   return { status, respostas };
 }
 
@@ -215,14 +228,16 @@ async function entregar(salvo: CalculoSalvo, formato: FormatoEntrega, estilo: Co
 
 // ---------------- Sessão do menu ----------------
 
-/** Depois de 30 minutos parada, a conversa recomeça do menu inicial. */
+/** Depois de 30 minutos parada, a conversa recomeça do menu inicial. Com uma pessoa atendendo, o robô fica quieto por até 8 horas. */
 const SESSAO_MINUTOS = 30;
+const ATENDENTE_HORAS = 8;
 
 async function lerSessao(telefone: string): Promise<Estado | null> {
   const db = supabaseAdmin();
   const { data } = await db.from('whatsapp_sessoes').select('estado, updated_at').eq('whatsapp_e164', telefone).maybeSingle();
   if (!data) return null;
-  if (Date.now() - new Date(data.updated_at).getTime() > SESSAO_MINUTOS * 60_000) {
+  const limite = (data.estado as Estado)?.tela === 'atendente' ? ATENDENTE_HORAS * 60 : SESSAO_MINUTOS;
+  if (Date.now() - new Date(data.updated_at).getTime() > limite * 60_000) {
     await db.from('whatsapp_sessoes').delete().eq('whatsapp_e164', telefone); // não guarda valores de conversa parada
     return null;
   }

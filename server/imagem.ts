@@ -3,7 +3,7 @@ import { brl, type Resultado } from '../src/lib/calc';
 import { config } from './config';
 import type { Estilo } from './estilo';
 import { ESTILO_PADRAO } from './pdf';
-import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContato, linhaDeContexto, linhaDoEndereco, lockupOrcaiSvg, SUAVE, TEXTO, TINTA, tituloDoDocumento, type MetaOrcamento } from './documento';
+import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContato, linhasDeContexto, linhaDoEndereco, lockupOrcaiSvg, SUAVE, TEXTO, TINTA, tituloDoDocumento, type MetaOrcamento } from './documento';
 
 const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const FONTE = `font-family="'DejaVu Sans', Arial, sans-serif"`;
@@ -21,9 +21,9 @@ export async function gerarJpegOrcamento(r: Resultado, meta: MetaOrcamento, esti
   let alturaLogo = 64;
   if (estilo.logoPng) {
     const { width = 1, height = 1 } = await sharp(estilo.logoPng).metadata();
-    alturaLogo = Math.min(96, (420 * height) / width);
+    alturaLogo = Math.min(130, (520 * height) / width);
     const w = (alturaLogo * width) / height;
-    t.push(`<image x="${P}" y="${y}" width="${w}" height="${alturaLogo}" href="data:image/png;base64,${estilo.logoPng.toString('base64')}"/>`);
+    t.push(`<image x="${P}" y="${y}" width="${w}" height="${alturaLogo}" preserveAspectRatio="xMinYMin meet" href="data:image/png;base64,${estilo.logoPng.toString('base64')}"/>`);
   } else if (!estilo.personalizado) {
     t.push(`<g transform="translate(${P} ${y})">${lockupOrcaiSvg(64)}</g>`);
   }
@@ -32,7 +32,7 @@ export async function gerarJpegOrcamento(r: Resultado, meta: MetaOrcamento, esti
   t.push(`<text x="${D}" y="${y + 88}" ${FONTE} font-size="20" fill="${SUAVE}" text-anchor="end">${meta.data.toLocaleDateString('pt-BR')}</text>`);
   y += Math.max(alturaLogo, 92);
   if (estilo.personalizado || estilo.logoPng) {
-    y += 34;
+    y += estilo.logoPng ? 46 : 34;
     t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="24" font-weight="700" fill="${TINTA}">${esc(estilo.cabecalho)}</text>`);
     const contato = linhaDeContato(estilo);
     if (contato) {
@@ -51,11 +51,10 @@ export async function gerarJpegOrcamento(r: Resultado, meta: MetaOrcamento, esti
     const linha = linhaDoEndereco(r, meta.endereco);
     t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="23" font-weight="700" fill="${TEXTO}">${esc(linha.length > 72 ? `${linha.slice(0, 71)}…` : linha)}</text>`);
   }
-  const contexto = linhaDeContexto(r, brl, !!meta.endereco);
-  if (contexto) {
-    y += 40;
+  linhasDeContexto(r, brl, !!meta.endereco).forEach((contexto, i) => {
+    y += i ? 32 : 40;
     t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="22" fill="${SUAVE}">${esc(contexto)}</text>`);
-  }
+  });
 
   // Cabeçalho da tabela.
   y += 60;

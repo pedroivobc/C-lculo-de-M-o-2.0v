@@ -15,6 +15,10 @@ const FinanciamentoCaixa = lazy(() => import('@/pages/app/Financiamento').then((
 const BancoPrivado = lazy(() => import('@/pages/app/Financiamento').then((m) => ({ default: m.BancoPrivado })));
 const Correcao = lazy(() => import('@/pages/app/Correcao'));
 const AdminTabelas = lazy(() => import('@/pages/app/AdminTabelas'));
+const AdminGestao = lazy(() => import('@/pages/app/AdminGestao'));
+const AdminUsuarios = lazy(() => import('@/pages/app/AdminUsuarios'));
+const AdminEquipes = lazy(() => import('@/pages/app/AdminEquipes'));
+const Equipe = lazy(() => import('@/pages/app/Equipe'));
 const Doacao = lazy(() => import('@/pages/app/Doacao'));
 const Historico = lazy(() => import('@/pages/app/Historico'));
 const Agente = lazy(() => import('@/pages/app/Agente'));
@@ -33,15 +37,22 @@ function Carregando() {
  * A identidade é confirmada pelo e-mail (Supabase Auth). O WhatsApp é opcional: só serve para usar o agente.
  */
 function Protegido({ children, exigirWhatsapp = false }: { children: ReactNode; exigirWhatsapp?: boolean }) {
-  const { user, perfil, ativa, carregando } = useConta();
+  const { user, perfil, ativa, liberado, carregando } = useConta();
   const local = useLocation();
   if (carregando) return <Carregando />;
   if (!user) return <Navigate to="/entrar" replace state={{ de: local.pathname }} />;
   // CPF único por conta: sem ele, nada além da tela de CPF.
   if (perfil && !perfil.cpf && local.pathname !== '/cpf') return <Navigate to={`/cpf${local.search}`} replace />;
   if (exigirWhatsapp && perfil && !perfil.configurado_em) return <Navigate to="/configurar" replace />;
-  if (exigirWhatsapp && EXIGIR_ASSINATURA && !ativa) return <Navigate to="/assinar" replace />;
+  // Teste grátis em dia também entra; a conta continua acessível para pagar ou trocar o cartão.
+  if (exigirWhatsapp && EXIGIR_ASSINATURA && !ativa && !liberado && local.pathname !== '/app/conta') return <Navigate to="/assinar" replace />;
   return <>{children}</>;
+}
+
+/** Gestão de Negócio: só o administrador; os demais voltam para o início. */
+function SoAdmin({ children }: { children: ReactNode }) {
+  const { perfil } = useConta();
+  return perfil && perfil.papel !== 'admin' ? <Navigate to="/app" replace /> : <>{children}</>;
 }
 
 export default function App() {
@@ -65,7 +76,11 @@ export default function App() {
               <Route path="financiamento-caixa" element={<FinanciamentoCaixa />} />
               <Route path="banco-privado" element={<BancoPrivado />} />
               <Route path="correcao" element={<Correcao />} />
-              <Route path="admin/tabelas" element={<AdminTabelas />} />
+              <Route path="admin/tabelas" element={<SoAdmin><AdminTabelas /></SoAdmin>} />
+              <Route path="admin/gestao" element={<SoAdmin><AdminGestao /></SoAdmin>} />
+              <Route path="admin/usuarios" element={<SoAdmin><AdminUsuarios /></SoAdmin>} />
+              <Route path="admin/equipes" element={<SoAdmin><AdminEquipes /></SoAdmin>} />
+              <Route path="equipe" element={<Equipe />} />
               <Route path="doacao" element={<Doacao />} />
               <Route path="historico" element={<Historico />} />
               <Route path="agente" element={<Agente />} />

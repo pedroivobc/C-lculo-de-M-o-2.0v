@@ -1,0 +1,50 @@
+# Só o site + API do Orça.ai num VPS, atrás do Caddy (HTTPS automático).
+# A Evolution (agente do WhatsApp) e o n8n rodam em outro servidor; aqui o app só aponta para eles.
+# Uso: cp .env.example .env, preencher, e `docker compose up -d --build` nesta pasta.
+
+services:
+  app:
+    build:
+      context: ../..
+      args:
+        VITE_SUPABASE_URL: ${SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+        VITE_AGENTE_WHATSAPP: ${AGENTE_WHATSAPP}
+        VITE_EXIGIR_ASSINATURA: ${EXIGIR_ASSINATURA:-false}
+        VITE_EMPRESA_CNPJ: ${EMPRESA_CNPJ}
+        VITE_EMAIL_PRIVACIDADE: ${EMAIL_PRIVACIDADE}
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      APP_URL: https://${DOMINIO}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3-flash-preview}
+      AGENT_API_KEY: ${AGENT_API_KEY}
+      VERIFICACAO_SEGREDO: ${VERIFICACAO_SEGREDO}
+      EVOLUTION_API_URL: ${EVOLUTION_API_URL}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
+      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-agente}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      WHATSAPP_BOTOES: ${WHATSAPP_BOTOES:-}
+      CHATWOOT_URL: ${CHATWOOT_URL:-}
+      CHATWOOT_API_TOKEN: ${CHATWOOT_API_TOKEN:-}
+      CHATWOOT_ACCOUNT_ID: ${CHATWOOT_ACCOUNT_ID:-}
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMINIO: ${DOMINIO}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [app]
+
+volumes:
+  caddy_data:
+  caddy_config:

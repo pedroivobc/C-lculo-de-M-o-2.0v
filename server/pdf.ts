@@ -2,7 +2,7 @@ import { jsPDF } from 'jspdf';
 import { brl, type Resultado } from '../src/lib/calc';
 import { config } from './config';
 import { COR_MARCA, hexParaRgb, type Estilo } from './estilo';
-import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContato, linhaDeContexto, linhaDoEndereco, logoOrcaiPng, SUAVE, TEXTO, TINTA, tituloDoDocumento, type MetaOrcamento } from './documento';
+import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContato, linhasDeContexto, linhaDoEndereco, logoOrcaiPng, SUAVE, TEXTO, TINTA, tituloDoDocumento, type MetaOrcamento } from './documento';
 import sharp from 'sharp';
 
 export { TITULO } from './documento';
@@ -24,7 +24,7 @@ export async function gerarPdfOrcamento(r: Resultado, meta: MetaOrcamento, estil
   let alturaLogo = 12;
   if (estilo.logoPng) {
     const { width = 1, height = 1 } = await sharp(estilo.logoPng).metadata();
-    alturaLogo = Math.min(18, (70 * height) / width);
+    alturaLogo = Math.min(24, (95 * height) / width);
     doc.addImage(new Uint8Array(estilo.logoPng), 'PNG', L, y, (alturaLogo * width) / height, alturaLogo);
   } else if (!estilo.personalizado) {
     doc.addImage(new Uint8Array(await logoOrcaiPng()), 'PNG', L, y, (12 * LARGURA_LOCKUP) / 64, 12);
@@ -37,7 +37,7 @@ export async function gerarPdfOrcamento(r: Resultado, meta: MetaOrcamento, estil
   doc.text(meta.data.toLocaleDateString('pt-BR'), R, y + 15, { align: 'right' });
   y += Math.max(alturaLogo, 16);
   if (estilo.personalizado || estilo.logoPng) {
-    y += 7;
+    y += estilo.logoPng ? 9 : 7;
     doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...rgb(TINTA));
     doc.text(estilo.cabecalho, L, y);
     const contato = linhaDeContato(estilo);
@@ -59,12 +59,11 @@ export async function gerarPdfOrcamento(r: Resultado, meta: MetaOrcamento, estil
     doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(...rgb(TEXTO));
     doc.text(doc.splitTextToSize(linhaDoEndereco(r, meta.endereco), R - L)[0], L, y);
   }
-  const contexto = linhaDeContexto(r, brl, !!meta.endereco);
-  if (contexto) {
-    y += 6;
+  linhasDeContexto(r, brl, !!meta.endereco).forEach((contexto, i) => {
+    y += i ? 4.5 : 6;
     doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(...rgb(SUAVE));
     doc.text(contexto, L, y);
-  }
+  });
 
   // Tabela.
   y += 11;

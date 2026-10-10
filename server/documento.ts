@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { ROTULO_SUBTIPO_ESCRITURA, type Resultado } from '../src/lib/calc';
+import { ROTULO_SUBTIPO_ESCRITURA, textoDasBases, type Resultado } from '../src/lib/calc';
 import { hexParaRgb, type Estilo } from './estilo';
 
 /**
@@ -34,11 +34,13 @@ export function tituloDoDocumento(r: Resultado) {
   return base;
 }
 
-export function linhaDeContexto(r: Resultado, brl: (n: number) => string, semCidade = false) {
-  const partes: string[] = [];
-  if (!semCidade && r.municipioNome && r.municipio !== 'n/a') partes.push(`Imóvel em ${r.municipioNome} (MG)`);
-  if (r.bases.length) partes.push(`Base de cálculo ${r.bases.map(brl).join(' + ')}`);
-  return partes.join(' · ');
+/** Linhas abaixo do título: a cidade e a base de cálculo, cada uma na sua linha (a base com o nome de cada parte). */
+export function linhasDeContexto(r: Resultado, brl: (n: number) => string, semCidade = false) {
+  const linhas: string[] = [];
+  if (!semCidade && r.municipioNome && r.municipio !== 'n/a') linhas.push(`Imóvel em ${r.municipioNome} (MG)`);
+  const bases = textoDasBases(r, brl);
+  if (bases) linhas.push(`Base de cálculo: ${bases}`);
+  return linhas;
 }
 
 /** Nome · WhatsApp · e-mail do assinante (plano Pró). Vazio quando não há contato. */
@@ -67,7 +69,7 @@ export function coresDoTotal(estilo: Estilo): { fundo: string; texto: string } {
   return { fundo, texto: luminancia > 0.35 ? TINTA : '#FFFFFF' };
 }
 
-/** Logo da Orçaí (símbolo + "orçaí" + IMOB) em SVG, para a imagem e para virar PNG no PDF. */
+/** Logo do Orça.ai (símbolo + "orça.ai" + IMOB) em SVG, para a imagem e para virar PNG no PDF. */
 export function lockupOrcaiSvg(altura = 64) {
   const e = altura / 64;
   return `<g transform="scale(${e})">
@@ -77,12 +79,12 @@ export function lockupOrcaiSvg(altura = 64) {
     <rect x="23" y="24" width="12" height="3" rx="1.5" fill="#AFC0F5"/>
     <rect x="21" y="32" width="22" height="9" rx="2" fill="#FFD24A"/>
     <rect x="24" y="35" width="16" height="3" rx="1.5" fill="#101828"/>
-    <text x="80" y="46" font-family="'DejaVu Sans', Arial, sans-serif" font-weight="700" font-size="40" letter-spacing="-1.5" fill="${TINTA}">orça<tspan fill="#2342D6">í</tspan></text>
-    <rect x="200" y="20" width="62" height="26" rx="6" fill="${TINTA}"/>
-    <text x="231" y="39" text-anchor="middle" font-family="'DejaVu Sans', Arial, sans-serif" font-weight="700" font-size="15" letter-spacing="1.5" fill="#FFFFFF">IMOB</text>
+    <text x="80" y="46" font-family="'DejaVu Sans', Arial, sans-serif" font-weight="700" font-size="40" letter-spacing="-1.5" fill="${TINTA}">orça<tspan fill="#2342D6">.ai</tspan></text>
+    <rect x="235" y="20" width="62" height="26" rx="6" fill="${TINTA}"/>
+    <text x="266" y="39" text-anchor="middle" font-family="'DejaVu Sans', Arial, sans-serif" font-weight="700" font-size="15" letter-spacing="1.5" fill="#FFFFFF">IMOB</text>
   </g>`;
 }
-export const LARGURA_LOCKUP = 262; // em unidades do símbolo (altura 64)
+export const LARGURA_LOCKUP = 297; // em unidades do símbolo (altura 64)
 
 let lockupPng: Promise<Buffer> | null = null;
 /** PNG da logo Orçaí (alta resolução), feito uma vez. */

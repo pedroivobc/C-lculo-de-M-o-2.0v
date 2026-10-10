@@ -1,0 +1,38 @@
+# Só o site + API do Orça.ai, num servidor que já tem proxy HTTPS (nginx/Caddy) instalado
+# no próprio sistema e a Evolution escutando em 127.0.0.1:8080 (servidor da Clemente).
+# O app escuta em 127.0.0.1:${PORTA_APP}; o proxy do servidor encaminha o domínio para lá.
+# Uso: cp .env.example .env, preencher, e `docker compose up -d --build` nesta pasta.
+
+services:
+  app:
+    build:
+      context: ../..
+      args:
+        VITE_SUPABASE_URL: ${SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+        VITE_AGENTE_WHATSAPP: ${AGENTE_WHATSAPP}
+        VITE_EXIGIR_ASSINATURA: ${EXIGIR_ASSINATURA:-false}
+        VITE_EMPRESA_CNPJ: ${EMPRESA_CNPJ}
+        VITE_EMAIL_PRIVACIDADE: ${EMAIL_PRIVACIDADE}
+    restart: unless-stopped
+    # Rede do host: o app alcança a Evolution em 127.0.0.1:8080 sem expor nada novo.
+    network_mode: host
+    environment:
+      PORT: ${PORTA_APP:-3010}
+      HOST: 127.0.0.1
+      APP_URL: https://${DOMINIO}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3-flash-preview}
+      AGENT_API_KEY: ${AGENT_API_KEY}
+      VERIFICACAO_SEGREDO: ${VERIFICACAO_SEGREDO}
+      EVOLUTION_API_URL: ${EVOLUTION_API_URL:-http://127.0.0.1:8080}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
+      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-orcai}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      WHATSAPP_BOTOES: ${WHATSAPP_BOTOES:-}
+      CHATWOOT_URL: ${CHATWOOT_URL:-}
+      CHATWOOT_API_TOKEN: ${CHATWOOT_API_TOKEN:-}
+      CHATWOOT_ACCOUNT_ID: ${CHATWOOT_ACCOUNT_ID:-}

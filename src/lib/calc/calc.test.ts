@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calcular, linhaRegistro } from './index';
+import { brl, calcular, linhaRegistro, textoDasBases } from './index';
 
 // Casos de referência. Registro conferido com o relatório final do 3º RI de Juiz de Fora (protocolo 229.352).
 describe('cálculos de referência', () => {
@@ -188,5 +188,16 @@ describe('cálculos de referência', () => {
         expect(Math.round(l.detalhes!.reduce((s, d) => s + d.valor, 0) * 100) / 100).toBe(l.valor);
       }
     }
+  });
+});
+
+describe('base de cálculo com o nome de cada parte', () => {
+  it('financiamento separa compra e venda e financiamento', () => {
+    const r = calcular('financiamento_caixa', { modalidade: 'SBPE', valorDeclarado: 200000, valorFinanciado: 120000 });
+    expect(textoDasBases(r, brl)).toBe(`Compra e venda: ${brl(200000)} · Financiamento: ${brl(120000)}`);
+  });
+  it('base única sai só com o valor', () => {
+    const r = calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 350000 });
+    expect(textoDasBases(r, brl)).toBe(brl(350000));
   });
 });

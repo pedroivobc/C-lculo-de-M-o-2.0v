@@ -11,6 +11,7 @@ export { ROTULO_SUBTIPO_ESCRITURA } from './escritura';
 export * from './custos';
 export { atoDeRegistro, FOLHAS_CONTRATO, linhaRegistro, valorDoAto } from './registro';
 export * from './parametros';
+export * from './bases';
 
 /** Um lugar só para o site, a API e o agente do WhatsApp chamarem as mesmas fórmulas. */
 export const CALCULADORAS: Record<TipoCalculo, { entrada: z.ZodTypeAny; calcular: (e: any) => Resultado }> = {

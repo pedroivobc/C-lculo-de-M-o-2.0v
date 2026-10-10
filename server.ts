@@ -23,7 +23,8 @@ async function startServer() {
 
   if (config.supabaseUrl && config.supabaseServiceKey) garantirTabelasCarregadas();
 
-  app.listen(config.port, "0.0.0.0", () => {
+  // HOST=127.0.0.1 quando um proxy no próprio servidor atende o HTTPS (infra/app-servidor).
+  app.listen(config.port, process.env.HOST || "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${config.port}`);
   });
 }

@@ -77,7 +77,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_INTERNAL_URL }}/message/{{ $json.tipo === 'texto' ? 'sendText' : 'sendMedia' }}/{{ $env.EVOLUTION_INSTANCE }}",
+        "url": "={{ $env.EVOLUTION_INTERNAL_URL }}/message/{{ $json.envio ? $json.envio.rota : ($json.tipo === 'texto' ? 'sendText' : 'sendMedia') }}/{{ $env.EVOLUTION_INSTANCE }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -89,7 +89,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json.tipo === 'texto'\n  ? { number: $('Filtrar e extrair').first().json.numero, text: $json.texto, delay: 1200 }\n  : { number: $('Filtrar e extrair').first().json.numero, mediatype: String($json.mimetype).startsWith('image/') ? 'image' : 'document', mimetype: $json.mimetype, media: $json.url, fileName: $json.nomeArquivo, caption: $json.legenda ?? '' }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: $('Filtrar e extrair').first().json.numero, delay: 1200, ...($json.envio ? $json.envio.corpo\n  : $json.tipo === 'texto' ? { text: $json.texto }\n  : { mediatype: String($json.mimetype).startsWith('image/') ? 'image' : 'document', mimetype: $json.mimetype, media: $json.url, fileName: $json.nomeArquivo, caption: $json.legenda ?? '' }) }) }}",
         "options": {
           "batching": {
             "batch": {

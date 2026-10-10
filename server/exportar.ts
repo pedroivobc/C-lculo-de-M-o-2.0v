@@ -1,3 +1,4 @@
+import { textoDasBases } from '../src/lib/calc';
 import type { CalculoSalvo } from './historico';
 import { numeroCalculo } from './historico';
 
@@ -7,10 +8,11 @@ const cel = (v: unknown) => {
 };
 const decimal = (n: number) => n.toFixed(2).replace('.', ',');
 
-/** CSV no padrão do Excel brasileiro (separador ;, vírgula decimal, BOM UTF-8). */
-export function gerarCsv(calculos: CalculoSalvo[]): Buffer {
-  const cab = ['Nº', 'Data', 'Tipo', 'Subtipo', 'Município', 'Origem', 'Descrição', 'Base', 'Itens', 'Total'];
+/** CSV no padrão do Excel brasileiro (separador ;, vírgula decimal, BOM UTF-8). Com `nomes`, a 1ª coluna é quem orçou (equipe). */
+export function gerarCsv(calculos: CalculoSalvo[], nomes?: Map<string, string>): Buffer {
+  const cab = [...(nomes ? ['Usuário'] : []), 'Nº', 'Data', 'Tipo', 'Subtipo', 'Município', 'Origem', 'Descrição', 'Base', 'Itens', 'Total'];
   const linhas = calculos.map((c) => [
+    ...(nomes ? [nomes.get(c.user_id) ?? ''] : []),
     numeroCalculo(c.seq),
     new Date(c.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
     c.tipo,
@@ -18,7 +20,7 @@ export function gerarCsv(calculos: CalculoSalvo[]): Buffer {
     c.municipio ?? '',
     c.origem,
     c.descricao ?? '',
-    (c.resultado.bases ?? []).map(decimal).join(' + '),
+    textoDasBases(c.resultado, decimal),
     c.resultado.linhas.map((l) => `${l.rotulo}: ${decimal(l.valor)}`).join(' | '),
     decimal(Number(c.total)),
   ].map(cel).join(';'));
