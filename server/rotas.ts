@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { calcular, calcularItbi, CALCULADORAS, comCustos, MUNICIPIOS_ITBI, type TipoCalculo } from '../src/lib/calc';
 import { config } from './config';
+import { ehAudio, LIMITE_AUDIO_BYTES, transcreverAudio } from './agente/audio';
 import { exigirAdmin, exigirAgente, exigirGestor, exigirUsuario } from './auth';
 import { compararTabelas, ehErroPlanilha, gerarPlanilha, lerPlanilha, listarVersoes, parametrosParaJson, publicarTabela, removerVersao, TIPOS, tipoValido, versoesVigentes } from './tabelas';
 import { supabaseAdmin, salvarArquivo, urlAssinada } from './supabase';
@@ -43,7 +44,10 @@ const mensagemSchema = z.object({
   texto: z.string().optional(),
   messageId: z.string().optional(),
   nome: z.string().optional(),
-  /** Aceitos por compatibilidade com o fluxo do n8n. O conteúdo de anexos não é baixado, lido nem guardado. */
+  /**
+   * Anexo em base64. Só nota de voz (audio/*) é usada: vira texto pela transcrição e o áudio é descartado.
+   * Imagens e documentos não são lidos nem guardados.
+   */
   midia: z.object({ base64: z.string(), mimetype: z.string() }).optional(),
   temMidia: z.boolean().optional(),
 });
@@ -52,10 +56,31 @@ rotas.post('/api/agente/mensagem', exigirAgente, h(async (req, res) => {
   const m = mensagemSchema.parse(req.body);
   const telefone = m.remoteJid ? telefoneDoJid(m.remoteJid) : normalizarTelefone(m.telefone ?? '');
   if (!telefone) return res.json({ status: 'ignorada', respostas: [] }); // grupo, broadcast ou número inválido
-  const temAnexo = Boolean(m.midia || m.temMidia);
-  const r = await processarMensagem({ telefone, texto: m.texto, messageId: m.messageId, nome: m.nome, temAnexo });
+  let texto = m.texto;
+  let temAnexo = Boolean(m.midia || m.temMidia);
+  let ouvido: string | null = null;
+  // Nota de voz: transcreve e segue como se a pessoa tivesse escrito.
+  if (m.midia && ehAudio(m.midia.mimetype)) {
+    const aviso = await (async () => {
+      // Sem a chave do Gemini, ou áudio sem conteúdo (Webhook Base64 desligado na Evolution).
+      if (!config.geminiKey || !m.midia!.base64) return 'Ainda não consigo ouvir áudios por aqui 🎧 Pode escrever, por favor?';
+      if (m.midia!.base64.length * 0.75 > LIMITE_AUDIO_BYTES) return 'Esse áudio ficou longo demais para mim 😅 Pode mandar um mais curto ou escrever?';
+      try { ouvido = await transcreverAudio(m.midia!.base64, m.midia!.mimetype); }
+      catch (e) { console.error('Transcrição do áudio:', e); return 'Não consegui ouvir esse áudio 😕 Pode tentar de novo ou escrever?'; }
+      return ouvido ? null : 'Não ouvi nada nesse áudio 🤔 Pode mandar de novo ou escrever?';
+    })();
+    if (aviso) {
+      const resposta = { tipo: 'texto' as const, texto: aviso };
+      return res.json({ status: 'audio_nao_entendido', respostas: [{ ...resposta, envio: envioDe(resposta, config.whatsappBotoes) }] });
+    }
+    texto = ouvido!;
+    temAnexo = false;
+  }
+  const r = await processarMensagem({ telefone, texto, messageId: m.messageId, nome: m.nome, temAnexo });
+  // Mostra o que foi entendido do áudio antes da resposta, para a pessoa conferir.
+  const respostas = ouvido ? [{ tipo: 'texto' as const, texto: `🎤 _Entendi:_ "${ouvido}"` }, ...r.respostas] : r.respostas;
   // Cada resposta leva também o envio pronto para a Evolution (texto, botões, lista ou arquivo).
-  res.json({ ...r, respostas: r.respostas.map((x) => ({ ...x, envio: envioDe(x, config.whatsappBotoes) })) });
+  res.json({ ...r, respostas: respostas.map((x) => ({ ...x, envio: envioDe(x, config.whatsappBotoes) })) });
 }));
 
 rotas.get('/api/agente/identificar', exigirAgente, h(async (req, res) => {
