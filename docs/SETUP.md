@@ -214,6 +214,8 @@ Outros testes: no menu final, **2** (outro formato) e **1** (imagem); **3** (val
 | `GET /api/calculos/:numero/pdf` | site | Link temporário do PDF |
 | `GET /api/exportar?mes=AAAA-MM` | site | Planilha CSV (abre no Excel) |
 | `POST /api/cidades/pedido` | landing | "Quero na minha cidade" |
+| `POST /api/admin/itbi` | admin | Motor de ITBI das 5 capitais (São Paulo, Rio, Brasília, Fortaleza, Salvador); ainda fora do site. Regras em `src/lib/calc/itbi.ts`, pesquisa em `docs/MOTOR_ITBI_CAPITAIS.md` |
+| `GET /api/admin/itbi/municipios` | admin | Municípios (código IBGE) atendidos pelo motor |
 
 ## Desenvolvimento local
 
