@@ -7,6 +7,7 @@ import { A_PARTIR_DE, LANCAMENTO_TEXTO, OFERTA_LANCAMENTO, PERIODOS, PLANOS, pre
 import { SeletorPeriodo } from '@/components/ui/SeletorPeriodo';
 import { Lockup } from '@/components/marca/Logo';
 import { Orcamento } from '@/components/ui/Orcamento';
+import { BotaoWhatsapp } from '@/components/ui/BotaoWhatsapp';
 import { Aviso, BotaoLink, EntradaMoeda } from '@/components/ui/Campos';
 import { cn } from '@/lib/utils';
 
@@ -293,12 +294,13 @@ export default function Landing() {
       </main>
 
       <footer className="border-t border-linha bg-white">
-        <div className="mx-auto flex max-w-[1200px] flex-wrap justify-between gap-x-8 gap-y-3 p-6 text-[13px] text-suave">
+        <div className="mx-auto flex max-w-[1200px] flex-wrap justify-between gap-x-8 gap-y-3 p-6 pb-24 text-[13px] text-suave">
           <span>Orça.ai Imob · Juiz de Fora, MG · um produto Clemente Assessoria</span>
           <span>Valores estimados. Confirme com o cartório e a prefeitura antes do ato.</span>
           <span className="flex gap-5"><Link to="/termos" className="text-suave">Termos de uso</Link><Link to="/privacidade" className="text-suave">Política de privacidade</Link></span>
         </div>
       </footer>
+      <BotaoWhatsapp />
     </div>
   );
 }
