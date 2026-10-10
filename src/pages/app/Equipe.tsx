@@ -127,7 +127,7 @@ function Usuarios({ resumo, aoMudar }: { resumo: Resumo; aoMudar: () => void }) 
         setAviso(r.aviso ? { tom: 'azul', texto: r.aviso } : {
           tom: 'verde',
           texto: r.entrega === 'ligado' ? `${form.nome} já tinha conta e entrou na equipe.`
-            : r.entrega === 'convite_email' ? `Mandamos um convite para ${form.email}. Ao criar a senha, ${form.nome} entra na equipe.`
+            : r.entrega === 'convite_email' ? `Mandamos um convite para ${form.email}. Ao criar a senha, ${form.nome} entra na equipe. Se não chegar, peça para olhar no lixo eletrônico ou spam.`
             : `${form.nome} entra na equipe ao criar a conta em ${resumo.linkCadastro} e confirmar o WhatsApp ${form.telefone}.`,
         });
       }

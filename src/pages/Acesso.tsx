@@ -83,7 +83,7 @@ export function Entrar() {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/entrar` });
       setEnviando(false);
       if (error) return setErro(error.message);
-      return setOk('Se este e-mail tiver conta, você vai receber um link para criar a senha. Confira também o spam.');
+      return setOk('Se este e-mail tiver conta, você vai receber um link para criar a senha. Se não achar, olhe no lixo eletrônico ou spam.');
     }
     if (modo === 'definir') {
       if (senha !== confirmacao) { setEnviando(false); return setErro('As duas senhas não são iguais.'); }
@@ -185,20 +185,21 @@ export function Cadastro() {
   const [cupom, setCupom] = useState((params.get('cupom') ?? cupomGuardado() ?? '').toUpperCase());
   const [aceite, setAceite] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const muda = (k: keyof typeof d) => (e: ChangeEvent<HTMLInputElement>) => setD((s) => ({ ...s, [k]: e.target.value }));
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
     if (!cpfValido(d.cpf)) return setErro('CPF inválido. Confira os números.');
-    setEnviando(true); setErro(null);
+    setEnviando(true); setErro(null); setOk(null);
     try {
       const { data, error } = await supabase.auth.signUp({ email: d.email, password: d.senha, options: { data: { full_name: d.nome, telefone: d.whatsapp.replace(/\D/g, '') } } });
       if (error) throw error;
       guardarCupom(cupom.trim() || null);
       guardarCpf(soDigitosCpf(d.cpf));
       if (!data.session) {
-        setErro('Conta criada. Abra o e-mail que enviamos, toque no link de confirmação e depois entre.');
+        setOk('Conta criada! Abra o e-mail que enviamos, toque no link de confirmação e depois entre. Se não achar, olhe no lixo eletrônico ou spam.');
         return;
       }
       // CPF repetido ou recusado: a tela de CPF explica e deixa corrigir.
@@ -237,6 +238,7 @@ export function Cadastro() {
           <span>Li e aceito os <Link to="/termos" target="_blank" className="font-bold text-acao">termos de uso</Link> e a <Link to="/privacidade" target="_blank" className="font-bold text-acao">política de privacidade</Link> (LGPD).</span>
         </label>
         {erro && <Aviso tom="vermelho">{erro}</Aviso>}
+        {ok && <Aviso tom="verde">{ok}</Aviso>}
         <Botao type="submit" disabled={enviando} className="min-h-[52px] text-base">{enviando ? 'Criando…' : 'Criar conta'}</Botao>
         <p className="text-center text-suave">Já tem conta? <Link to="/entrar" className="font-bold text-acao">Entrar</Link></p>
       </form>
