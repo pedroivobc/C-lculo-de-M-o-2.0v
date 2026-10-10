@@ -194,9 +194,13 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   const ctxMenu: ContextoMenu = { nome: assinante.nome, formatoPadrao: assinante.configuracao.estilo.formato, temAnexo: msg.temAnexo, custosPadrao: assinante.configuracao.custos, municipio: assinante.configuracao.localidade.municipio };
   const p = passo(await lerSessao(msg.telefone), textoUsuario, ctxMenu);
   if (p.acao?.tipo === 'livre') {
+    if (!config.geminiKey) {
+      const menu: Estado = { tela: 'menu', id: 'inicio', ultimo: p.estado.ultimo };
+      await salvarSessao(msg.telefone, assinante.userId, menu);
+      return comOuvido(await responder(msg.telefone, assinante.userId, 'ok', [{ tipo: 'texto', texto: telaAtual(menu, ctxMenu, 'Para orçar, escolha uma opção 👇\n\n').texto }]));
+    }
     await salvarSessao(msg.telefone, assinante.userId, p.estado);
-    if (config.geminiKey) return comOuvido(await responderComIa(msg.telefone, assinante, textoUsuario, Boolean(ouvido)));
-    return comOuvido(await responder(msg.telefone, assinante.userId, 'ok', [{ tipo: 'texto', texto: telaAtual(p.estado, ctxMenu, 'Para orçar, escolha uma opção 👇\n\n').texto }]));
+    return comOuvido(await responderComIa(msg.telefone, assinante, textoUsuario, Boolean(ouvido)));
   }
 
   const respostas: Resposta[] = [];
