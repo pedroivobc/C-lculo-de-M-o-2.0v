@@ -21,6 +21,7 @@ import {
   orcamentosDaEquipe, relatorioDaEquipe, removerMembro, resumoEquipe, type DadosMembro, type NovaOrganizacao,
 } from './equipe';
 import { encerrarLiberacao, estenderTeste, fichaDoUsuario, liberarPlano, listarUsuarios, registrar, visaoGeral } from './gestao';
+import { contasDeTeste } from './agente/teste';
 
 export const rotas = Router();
 
@@ -80,8 +81,10 @@ const limiteCodigo = rateLimit({ windowMs: 15 * 60_000, limit: 5, standardHeader
 rotas.post('/api/whatsapp/codigo', limiteCodigo, exigirUsuario, h(async (req, res) => {
   const telefone = normalizarTelefone(z.object({ whatsapp: z.string() }).parse(req.body).whatsapp);
   if (!telefone) return res.status(400).json({ erro: 'Informe o WhatsApp com DDD.' });
+  // Conta de teste do WhatsApp com este número não bloqueia: ela passa para esta conta na confirmação.
   const { data: emUso } = await supabaseAdmin().from('profiles').select('id')
-    .in('whatsapp_e164', variantesTelefone(telefone)).neq('id', req.userId!).limit(1).maybeSingle();
+    .in('whatsapp_e164', variantesTelefone(telefone))
+    .not('id', 'in', `(${[req.userId!, ...await contasDeTeste(telefone)].join(',')})`).limit(1).maybeSingle();
   if (emUso) return res.status(409).json({ erro: 'Este WhatsApp já está ligado a outra conta.' });
   const codigo = await criarCodigo(req.userId!, telefone);
   res.json({ whatsapp: telefone, codigo, mensagem: mensagemDeConfirmacao(codigo) });

@@ -15,6 +15,7 @@ import { usaWhatsapp, type Papel } from '../../src/lib/planos';
 import { pedirAtendente } from '../chatwoot';
 import { AUDIO_MAX_SEGUNDOS, transcreverAudio, type AudioRecebido } from './audio';
 import { falar } from './voz';
+import { criarContaDeTeste, LIMITE_TESTE, lerNome, origemDaMensagem, usadosNoTeste } from './teste';
 
 export interface MensagemRecebida {
   telefone: string;              // E.164
@@ -27,7 +28,7 @@ export interface MensagemRecebida {
   audio?: AudioRecebido;
 }
 
-export type MotivoAcesso = 'ok' | 'trial' | 'sem_cartao' | 'trial_expirado' | 'assinatura_inativa' | 'organizacao_inativa' | 'sem_perfil';
+export type MotivoAcesso = 'ok' | 'trial' | 'sem_cartao' | 'trial_expirado' | 'assinatura_inativa' | 'organizacao_inativa' | 'sem_perfil' | 'teste_esgotado';
 
 export interface Assinante {
   userId: string;
@@ -37,6 +38,8 @@ export interface Assinante {
   /** Regra única do banco (situacao_acesso): cartão validado + trial no prazo ou assinatura ativa; admin sempre. */
   ativo: boolean;
   motivo: MotivoAcesso;
+  /** Conta de teste do WhatsApp (sem cadastro no site): orçamentos já usados de LIMITE_TESTE. */
+  teste?: { usados: number };
 }
 
 export async function identificar(telefone: string): Promise<Assinante | null> {
@@ -49,8 +52,16 @@ export async function identificar(telefone: string): Promise<Assinante | null> {
   if (!perfil) return null;
   const { data: situacao, error } = await db.rpc('situacao_acesso', { uid: perfil.id }).maybeSingle<{ papel: Assinante['papel']; liberado: boolean; motivo: MotivoAcesso }>();
   if (error) throw new Error(`Falha ao consultar o acesso: ${error.message}`);
+  const nome = perfil.nome?.trim() || perfil.full_name?.trim().split(/\s+/)[0] || null;
+  const configuracao = await configuracaoDoUsuario(perfil.id);
+  // Teste grátis do WhatsApp: liberado até LIMITE_TESTE orçamentos, sem cartão.
+  const usados = await usadosNoTeste(perfil.id);
+  if (usados !== null) {
+    const ativo = usados < LIMITE_TESTE;
+    return { userId: perfil.id, nome, configuracao, papel: 'trial', ativo, motivo: ativo ? 'ok' : 'teste_esgotado', teste: { usados } };
+  }
   return {
-    userId: perfil.id, nome: perfil.nome?.trim() || perfil.full_name?.trim().split(/\s+/)[0] || null, configuracao: await configuracaoDoUsuario(perfil.id),
+    userId: perfil.id, nome, configuracao,
     papel: situacao?.papel ?? 'trial', ativo: !!situacao?.liberado, motivo: situacao?.motivo ?? 'sem_perfil',
   };
 }
@@ -63,6 +74,7 @@ const MENSAGEM_BLOQUEIO: Record<MotivoAcesso, (url: string) => string> = {
   assinatura_inativa: (u) => `Sua assinatura do ${config.marca} não está ativa. Renove em ${u}/assinar e eu volto a calcular na hora.`,
   organizacao_inativa: () => `O plano da sua equipe no ${config.marca} não está ativo. Fale com o gestor da sua imobiliária.`,
   sem_perfil: (u) => `Não encontrei sua conta. Entre em ${u}/entrar.`,
+  teste_esgotado: (u) => `Você já usou os ${LIMITE_TESTE} orçamentos grátis 🙌\n\nPara continuar orçando aqui e no site, assine o ${config.marca}: ${u}/cadastro\n\nCadastre este mesmo WhatsApp que os orçamentos do teste vão junto para a sua conta.`,
 };
 
 function instrucoes(a: Assinante) {
@@ -146,9 +158,18 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
 
   const assinante = await identificar(msg.telefone);
   if (!assinante) {
-    await registrar(msg.telefone, null, 'entrada', msg.audio ? 'audio' : msg.temAnexo ? 'midia' : 'texto', msg.texto ?? '', msg.messageId);
-    return { status: 'sem_cadastro', respostas: [{ tipo: 'texto', texto:
-      `Olá${msg.nome?.trim() ? `, ${msg.nome.trim().split(/\s+/)[0]}` : ''}! Eu sou o agente do *${config.marca}*: faço orçamento de escritura, ITBI e financiamento em segundos.\n\nEste número ainda não está cadastrado. Assine em ${config.appUrl}/cadastro e confirme este WhatsApp para começar.` }] };
+    // Número sem cadastro: começa o teste grátis (conta de teste com este WhatsApp) e pergunta o nome.
+    const tipo = msg.audio ? 'audio' : msg.temAnexo ? 'midia' : 'texto';
+    const teste = await criarContaDeTeste(msg.telefone, msg.nome, origemDaMensagem(msg.texto))
+      .catch((e) => { console.error('Teste grátis:', e); return null; });
+    await registrar(msg.telefone, teste, 'entrada', tipo, msg.texto ?? '', msg.messageId);
+    if (!teste) {
+      return { status: 'sem_cadastro', respostas: [{ tipo: 'texto', texto:
+        `Olá! Eu sou o agente do *${config.marca}*: faço orçamento de escritura, ITBI e financiamento em segundos.\n\nAssine em ${config.appUrl}/cadastro e confirme este WhatsApp para começar.` }] };
+    }
+    await salvarSessao(msg.telefone, teste, { tela: 'nome' });
+    return responder(msg.telefone, teste, 'teste_inicio', [{ tipo: 'texto', texto:
+      `Olá! 👋 Eu sou o agente do *${config.marca}*: faço orçamento de escritura, ITBI, registro e financiamento em segundos.\n\nVocê pode fazer *${LIMITE_TESTE} orçamentos grátis* aqui, sem cadastro. Pra começar, qual é o seu nome?` }]);
   }
   if (!assinante.ativo) {
     await registrar(msg.telefone, assinante.userId, 'entrada', 'texto', msg.texto ?? '', msg.messageId);
@@ -180,6 +201,29 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   await registrar(msg.telefone, assinante.userId, 'entrada', msg.audio ? 'audio' : msg.temAnexo ? 'midia' : 'texto', textoUsuario, msg.messageId);
   // Com um atendente na conversa o robô não responde, então também não ecoa o áudio.
   const comOuvido = <T extends { respostas: Resposta[] }>(r: T): T => (ouvido && r.respostas.length ? { ...r, respostas: [ouvido, ...r.respostas] } : r);
+  const sessao = await lerSessao(msg.telefone);
+  // Teste grátis: depois de cada orçamento, avisa quantos ainda restam (o último já leva o link para assinar).
+  const comAvisoDoTeste = async <T extends { respostas: Resposta[] }>(r: T): Promise<T> => {
+    if (!assinante.teste) return r;
+    const agora = await usadosNoTeste(assinante.userId) ?? 0;
+    if (agora <= assinante.teste.usados) return r;
+    const resta = LIMITE_TESTE - agora;
+    const texto = resta > 0 ? `🎁 Você ainda tem *${resta}* orçamento${resta > 1 ? 's' : ''} grátis.`
+      : `🎁 Esse foi seu último orçamento grátis. Para continuar, assine o ${config.marca}: ${config.appUrl}/cadastro\n\nCadastre este mesmo WhatsApp que os orçamentos do teste vão junto para a sua conta.`;
+    return { ...r, respostas: [...r.respostas, { tipo: 'texto', texto }] };
+  };
+
+  // Teste grátis: a primeira resposta é o nome.
+  if (sessao?.tela === 'nome') {
+    const n = lerNome(textoUsuario);
+    if (!n) return comOuvido(await responder(msg.telefone, assinante.userId, 'teste_nome', [{ tipo: 'texto', texto: 'Não peguei seu nome 😅 Me diga só como você se chama, por exemplo: *Pedro*.' }]));
+    await db.from('profiles').update({ nome: n.nome, sobrenome: n.sobrenome, full_name: [n.nome, n.sobrenome].filter(Boolean).join(' ') }).eq('id', assinante.userId);
+    const inicio: Estado = { tela: 'menu', id: 'inicio' };
+    await salvarSessao(msg.telefone, assinante.userId, inicio);
+    const ctxNome: ContextoMenu = { nome: n.nome, formatoPadrao: assinante.configuracao.estilo.formato, custosPadrao: assinante.configuracao.custos, municipio: assinante.configuracao.localidade.municipio };
+    return comOuvido(await responder(msg.telefone, assinante.userId, 'ok', [{ tipo: 'texto', texto: telaAtual(inicio, ctxNome,
+      `Prazer, ${n.nome}! 🤝 Escolha uma opção ou me mande o pedido escrito ou em áudio, por exemplo: _escritura de 350 mil em Juiz de Fora_.\n\n`).texto }]));
+  }
 
   // "indicar" ou "cupom": manda o cupom de indicação do assinante, pronto para encaminhar.
   if (/^(indicar|indicacao|indicação|cupom|meu cupom)$/i.test(textoUsuario)) {
@@ -192,7 +236,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
 
   // Conversa por menus numerados (./menu.ts). Texto livre no menu inicial vai para o agente com IA.
   const ctxMenu: ContextoMenu = { nome: assinante.nome, formatoPadrao: assinante.configuracao.estilo.formato, temAnexo: msg.temAnexo, custosPadrao: assinante.configuracao.custos, municipio: assinante.configuracao.localidade.municipio };
-  const p = passo(await lerSessao(msg.telefone), textoUsuario, ctxMenu);
+  const p = passo(sessao, textoUsuario, ctxMenu);
   if (p.acao?.tipo === 'livre') {
     if (!config.geminiKey) {
       const menu: Estado = { tela: 'menu', id: 'inicio', ultimo: p.estado.ultimo };
@@ -200,7 +244,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
       return comOuvido(await responder(msg.telefone, assinante.userId, 'ok', [{ tipo: 'texto', texto: telaAtual(menu, ctxMenu, 'Para orçar, escolha uma opção 👇\n\n').texto }]));
     }
     await salvarSessao(msg.telefone, assinante.userId, p.estado);
-    return comOuvido(await responderComIa(msg.telefone, assinante, textoUsuario, Boolean(ouvido)));
+    return comAvisoDoTeste(comOuvido(await responderComIa(msg.telefone, assinante, textoUsuario, Boolean(ouvido))));
   }
 
   const respostas: Resposta[] = [];
@@ -232,7 +276,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   }
   respostas.push(...mensagens.map((m): Resposta => ({ tipo: 'texto', texto: m.texto, corpo: m.corpo, opcoes: m.opcoes })));
   await salvarSessao(msg.telefone, assinante.userId, estado);
-  return comOuvido(await responder(msg.telefone, assinante.userId, 'ok', respostas));
+  return comAvisoDoTeste(comOuvido(await responder(msg.telefone, assinante.userId, 'ok', respostas)));
 }
 
 /** Registra as mensagens de saída (texto) e devolve a resposta para o n8n. */

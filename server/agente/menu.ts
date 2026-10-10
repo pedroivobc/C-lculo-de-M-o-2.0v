@@ -157,7 +157,9 @@ export type Tela =
   /** Conversa passada para uma pessoa (Chatwoot): o robô fica quieto até o corretor escrever "menu". */
   | { tela: 'atendente'; desde: string }
   /** Conversa livre com a IA (pedido por extenso ou áudio): as respostas seguintes também vão para ela até "menu". */
-  | { tela: 'ia' };
+  | { tela: 'ia' }
+  /** Teste grátis pelo WhatsApp: esperando o nome da pessoa (tratado em ./conversa.ts). */
+  | { tela: 'nome' };
 
 export type Estado = Tela & {
   /** Número (seq) do último orçamento feito nesta conversa. */
@@ -307,7 +309,7 @@ function comoTexto(p: Pergunta, valor: unknown): string {
 
 /** Certidões e honorários que vão entrar no orçamento em andamento. */
 function custosEmUso(e: Estado, ctx: ContextoMenu): Custos | null {
-  if (e.tela === 'menu' || e.tela === 'atendente' || e.tela === 'ia') return null;
+  if (e.tela === 'menu' || e.tela === 'atendente' || e.tela === 'ia' || e.tela === 'nome') return null;
   if (e.tela === 'formato' && (e.reenvio || !e.fluxo)) return null;
   const f = FLUXOS[e.fluxo!];
   const base = custosDoCalculo(f.calculo, ctx.custosPadrao ?? null, e.dados ?? {});
@@ -335,7 +337,7 @@ function telaEndereco(etapa: 'pergunta' | 'digitar', prefixo = ''): MensagemMenu
 
 /** Re-mostra a tela atual (usado quando a resposta não foi entendida). */
 export function telaAtual(e: Estado, ctx: ContextoMenu, prefixo = ''): MensagemMenu {
-  if (e.tela === 'atendente' || e.tela === 'ia') return telaMenu('inicio', prefixo, ctx);
+  if (e.tela === 'atendente' || e.tela === 'ia' || e.tela === 'nome') return telaMenu('inicio', prefixo, ctx);
   if (e.tela === 'menu') return telaMenu(e.id, prefixo, ctx);
   if (e.tela === 'pergunta') return telaPergunta(FLUXOS[e.fluxo], e.i, prefixo, e.dados);
   if (e.tela === 'endereco') return telaEndereco(e.etapa, prefixo);
@@ -380,6 +382,7 @@ function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): P
 
   // A IA fez uma pergunta (ex.: "compra e venda simples ou com financiamento?"): a resposta volta para ela.
   if (estado.tela === 'ia') return { estado, mensagens: [], acao: { tipo: 'livre' } };
+  if (estado.tela === 'nome') return { estado: { tela: 'menu', id: 'inicio', ultimo }, mensagens: [telaMenu('inicio', saudacao(ctx.nome), ctx)] };
 
   const naoEntendi = (): Passo => ({
     estado,
