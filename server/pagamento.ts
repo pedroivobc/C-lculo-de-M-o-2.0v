@@ -523,11 +523,11 @@ export async function entregarRecompensas(indicador: string) {
 /** Depois de ativar: entrega meses grátis pendentes (do próprio e de quem o indicou) e dá boas-vindas. */
 async function aposAtivar(userId: string, primeiraVez: boolean) {
   const db = supabaseAdmin();
-  const { data: p } = await db.from('profiles').select('indicado_por, whatsapp_e164, whatsapp_verified_at, full_name').eq('id', userId).single();
+  const { data: p } = await db.from('profiles').select('indicado_por, whatsapp_e164, whatsapp_verified_at, full_name, nome').eq('id', userId).single();
   await entregarRecompensas(userId).catch((e) => console.error('Indicação:', e));
   if (p?.indicado_por) await entregarRecompensas(p.indicado_por).catch((e) => console.error('Indicação:', e));
   if (primeiraVez && p?.whatsapp_e164 && p.whatsapp_verified_at) {
-    const nome = (p.full_name ?? '').trim().split(/\s+/)[0];
+    const nome = p.nome?.trim() || (p.full_name ?? '').trim().split(/\s+/)[0];
     await enviarTexto(p.whatsapp_e164, `${nome ? `${nome}, sua` : 'Sua'} assinatura do ${config.marca} está ativa. É só mandar aqui o cálculo que você precisa.`)
       .catch((e) => console.error('Boas-vindas no WhatsApp:', e));
   }

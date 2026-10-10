@@ -9,7 +9,9 @@ import { salvarArquivo, supabaseAdmin, urlAssinada } from '../supabase';
 export type Resposta =
   /** `opcoes` acompanha os menus: vira botões ou lista com WHATSAPP_BOTOES ligado (./whatsapp.ts); `corpo` é o texto sem a lista numerada. */
   | { tipo: 'texto'; texto: string; corpo?: string; opcoes?: { id: string; titulo: string; descricao?: string }[] }
-  | { tipo: 'documento'; url: string; nomeArquivo: string; mimetype: string; legenda?: string };
+  | { tipo: 'documento'; url: string; nomeArquivo: string; mimetype: string; legenda?: string }
+  /** Mensagem de voz (WAV em base64); `texto` é o que foi falado, para o histórico. */
+  | { tipo: 'audio'; base64: string; texto: string };
 // Imagens (JPEG) também vão como 'documento' na resposta; o n8n escolhe mediatype 'image' pelo mimetype.
 
 export interface Contexto {

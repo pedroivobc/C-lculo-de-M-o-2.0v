@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { passo, type ContextoMenu } from './menu';
 import { envioDe } from './whatsapp';
+import { textoParaFala } from './voz';
 
-const ctx: ContextoMenu = { nome: 'Pedro Ivo', formatoPadrao: 'jpeg', municipio: 'mg-juiz-de-fora' };
+const ctx: ContextoMenu = { nome: 'Pedro', formatoPadrao: 'jpeg', municipio: 'mg-juiz-de-fora' };
 const comoResposta = (m: ReturnType<typeof passo>['mensagens'][number]) => ({ tipo: 'texto' as const, texto: m.texto, corpo: m.corpo, opcoes: m.opcoes });
 
 describe('envio pela Evolution', () => {
@@ -41,5 +42,14 @@ describe('envio pela Evolution', () => {
   it('arquivos: imagem ou documento pelo mimetype', () => {
     expect(envioDe({ tipo: 'documento', url: 'https://x/a.jpg', nomeArquivo: 'a.jpg', mimetype: 'image/jpeg' }, true))
       .toEqual({ rota: 'sendMedia', corpo: { mediatype: 'image', mimetype: 'image/jpeg', media: 'https://x/a.jpg', fileName: 'a.jpg', caption: '' } });
+  });
+
+  it('resposta falada vai como mensagem de voz', () => {
+    expect(envioDe({ tipo: 'audio', base64: 'UklGRg==', texto: 'Oi' }, false))
+      .toEqual({ rota: 'sendWhatsAppAudio', corpo: { audio: 'UklGRg==', encoding: true } });
+  });
+
+  it('texto falado sai sem formatação nem emojis', () => {
+    expect(textoParaFala('*Escritura* de _350 mil_ 👍 pronta ✅')).toBe('Escritura de 350 mil pronta');
   });
 });

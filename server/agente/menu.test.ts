@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { calcular } from '../../src/lib/calc';
 import { FLUXOS, MENUS, lerOpcao, lerValor, passo, type ContextoMenu, type Estado, type Passo } from './menu';
 
-const ctx: ContextoMenu = { nome: 'Pedro Ivo', formatoPadrao: 'jpeg', municipio: 'mg-juiz-de-fora' };
+const ctx: ContextoMenu = { nome: 'Pedro', formatoPadrao: 'jpeg', municipio: 'mg-juiz-de-fora' };
 
 /** Manda várias mensagens seguidas e devolve o último passo. */
 function conversa(...mensagens: string[]): Passo {

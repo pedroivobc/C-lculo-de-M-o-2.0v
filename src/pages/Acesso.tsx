@@ -181,7 +181,7 @@ function CampoCupom({ valor, onChange }: { valor: string; onChange: (v: string) 
 export function Cadastro() {
   const navegar = useNavigate();
   const [params] = useSearchParams();
-  const [d, setD] = useState({ nome: '', email: '', cpf: '', whatsapp: '', senha: '' });
+  const [d, setD] = useState({ nome: '', sobrenome: '', email: '', cpf: '', whatsapp: '', senha: '' });
   const [cupom, setCupom] = useState((params.get('cupom') ?? cupomGuardado() ?? '').toUpperCase());
   const [aceite, setAceite] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -194,7 +194,7 @@ export function Cadastro() {
     if (!cpfValido(d.cpf)) return setErro('CPF inválido. Confira os números.');
     setEnviando(true); setErro(null); setOk(null);
     try {
-      const { data, error } = await supabase.auth.signUp({ email: d.email, password: d.senha, options: { data: { full_name: d.nome, telefone: d.whatsapp.replace(/\D/g, '') } } });
+      const { data, error } = await supabase.auth.signUp({ email: d.email, password: d.senha, options: { data: { full_name: `${d.nome.trim()} ${d.sobrenome.trim()}`.trim(), nome: d.nome.trim(), sobrenome: d.sobrenome.trim(), telefone: d.whatsapp.replace(/\D/g, '') } } });
       if (error) throw error;
       guardarCupom(cupom.trim() || null);
       guardarCpf(soDigitosCpf(d.cpf));
@@ -224,7 +224,10 @@ export function Cadastro() {
           <p className="text-suave">Leva menos de um minuto.</p>
         </div>
         <AvisoSemSupabase />
-        <Campo rotulo="Nome completo" required autoComplete="name" value={d.nome} onChange={muda('nome')} />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Campo rotulo="Nome" required autoComplete="given-name" value={d.nome} onChange={muda('nome')} />
+          <Campo rotulo="Sobrenome" required autoComplete="family-name" value={d.sobrenome} onChange={muda('sobrenome')} />
+        </div>
         <Campo rotulo="E-mail" type="email" required autoComplete="email" value={d.email} onChange={muda('email')} />
         <Campo rotulo="CPF" required inputMode="numeric" autoComplete="off" placeholder="000.000.000-00" value={mascararCpf(d.cpf)}
           onChange={(e) => setD((s) => ({ ...s, cpf: soDigitosCpf(e.target.value) }))} aria-invalid={d.cpf.length === 11 && !cpfValido(d.cpf)}
