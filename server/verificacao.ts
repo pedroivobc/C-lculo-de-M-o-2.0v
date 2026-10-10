@@ -3,6 +3,7 @@ import { config } from './config';
 import { supabaseAdmin } from './supabase';
 import { variantesTelefone } from './telefone';
 import { vincularPorTelefone } from './equipe';
+import { contasDeTeste, liberarNumeroDeTeste } from './agente/teste';
 
 /**
  * Confirmação do WhatsApp invertida: o site mostra um código e o corretor o envia ao agente.
@@ -60,9 +61,13 @@ export async function confirmarPorMensagem(telefone: string, texto: string | und
     await db.from('phone_verifications').update({ attempts: v.attempts + 1 }).eq('id', v.id);
     return { status: 'codigo_errado' };
   }
+  // Conta de teste do WhatsApp com este número não conta como "em uso": ela passa para a conta nova.
+  const testes = await contasDeTeste(telefone);
   const { data: emUso } = await db.from('profiles').select('id')
-    .in('whatsapp_e164', variantesTelefone(telefone)).neq('id', v.user_id).limit(1).maybeSingle();
+    .in('whatsapp_e164', variantesTelefone(telefone))
+    .not('id', 'in', `(${[v.user_id, ...testes].join(',')})`).limit(1).maybeSingle();
   if (emUso) return { status: 'em_uso' };
+  await liberarNumeroDeTeste(telefone, v.user_id);
   // Grava o número como o WhatsApp o entrega: é assim que o agente vai reconhecê-lo.
   await db.from('profiles').update({ whatsapp_e164: telefone, whatsapp_verified_at: new Date().toISOString() }).eq('id', v.user_id);
   await db.from('phone_verifications').delete().eq('user_id', v.user_id);
