@@ -43,8 +43,8 @@ export const MUNICIPIOS: Record<string, Municipio> = {
     nome: 'Belo Horizonte',
     uf: 'MG',
     itbi: { aliquota: 0.03 },
-    // A base de NFS-e não traz registro ativo de BH para o serviço 21.01: 5% até confirmar com um recibo.
-    issCartorio: 0.05,
+    // ISS de cartório em BH: 2% (Lei 8.725/2003, art. 14, § 11, incluído pela Lei 9.677/2008).
+    issCartorio: 0.02,
   },
 };
 
