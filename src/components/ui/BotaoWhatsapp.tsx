@@ -3,7 +3,8 @@ import { AGENTE_WHATSAPP } from '@/lib/config';
 
 /** Número do agente caso VITE_AGENTE_WHATSAPP não venha no build: (32) 3197-0173. */
 const NUMERO_PADRAO = '553231970173';
-const MENSAGEM = 'Olá! Vim pelo site e quero conhecer o Orça.ai.';
+/** O agente reconhece o código e libera o teste grátis; "site-inicio" marca a origem. */
+const MENSAGEM = 'Quero testar o Orça.ai grátis! Código: site-inicio';
 
 /** Botão flutuante das páginas públicas que abre a conversa com o agente no WhatsApp. */
 export function BotaoWhatsapp() {
