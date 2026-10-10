@@ -62,7 +62,8 @@ rotas.post('/api/agente/mensagem', exigirAgente, h(async (req, res) => {
   // Nota de voz: transcreve e segue como se a pessoa tivesse escrito.
   if (m.midia && ehAudio(m.midia.mimetype)) {
     const aviso = await (async () => {
-      if (!config.geminiKey) return 'Ainda não consigo ouvir áudios por aqui 🎧 Pode escrever, por favor?';
+      // Sem a chave do Gemini, ou áudio sem conteúdo (Webhook Base64 desligado na Evolution).
+      if (!config.geminiKey || !m.midia!.base64) return 'Ainda não consigo ouvir áudios por aqui 🎧 Pode escrever, por favor?';
       if (m.midia!.base64.length * 0.75 > LIMITE_AUDIO_BYTES) return 'Esse áudio ficou longo demais para mim 😅 Pode mandar um mais curto ou escrever?';
       try { ouvido = await transcreverAudio(m.midia!.base64, m.midia!.mimetype); }
       catch (e) { console.error('Transcrição do áudio:', e); return 'Não consegui ouvir esse áudio 😕 Pode tentar de novo ou escrever?'; }
