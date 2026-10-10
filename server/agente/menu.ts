@@ -319,7 +319,7 @@ function telaFormato(ctx: ContextoMenu, e?: Estado, prefixo = ''): MensagemMenu 
 }
 
 /** Boas-vindas de toda conversa nova: "Olá, Pedro! 👋 Qual tipo de cálculo iremos fazer hoje?" */
-const saudacao = (nome?: string | null) => `Olá${nome ? `, ${nome.split(' ')[0]}` : ''}! 👋 `;
+const saudacao = (nome?: string | null) => `Olá${nome ? `, ${nome}` : ''}! 👋 `;
 
 // ---------------- Transições ----------------
 

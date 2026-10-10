@@ -14,6 +14,7 @@ import { comLocalidade, configuracaoDoUsuario, type Configuracao } from '../esti
 import { usaWhatsapp, type Papel } from '../../src/lib/planos';
 import { pedirAtendente } from '../chatwoot';
 import { AUDIO_MAX_SEGUNDOS, transcreverAudio, type AudioRecebido } from './audio';
+import { falar } from './voz';
 
 export interface MensagemRecebida {
   telefone: string;              // E.164
@@ -41,7 +42,7 @@ export interface Assinante {
 export async function identificar(telefone: string): Promise<Assinante | null> {
   const db = supabaseAdmin();
   const { data: perfil } = await db.from('profiles')
-    .select('id, full_name')
+    .select('id, full_name, nome')
     .in('whatsapp_e164', variantesTelefone(telefone))
     .not('whatsapp_verified_at', 'is', null)
     .limit(1).maybeSingle();
@@ -49,7 +50,7 @@ export async function identificar(telefone: string): Promise<Assinante | null> {
   const { data: situacao, error } = await db.rpc('situacao_acesso', { uid: perfil.id }).maybeSingle<{ papel: Assinante['papel']; liberado: boolean; motivo: MotivoAcesso }>();
   if (error) throw new Error(`Falha ao consultar o acesso: ${error.message}`);
   return {
-    userId: perfil.id, nome: perfil.full_name, configuracao: await configuracaoDoUsuario(perfil.id),
+    userId: perfil.id, nome: perfil.nome?.trim() || perfil.full_name?.trim().split(/\s+/)[0] || null, configuracao: await configuracaoDoUsuario(perfil.id),
     papel: situacao?.papel ?? 'trial', ativo: !!situacao?.liberado, motivo: situacao?.motivo ?? 'sem_perfil',
   };
 }
@@ -147,7 +148,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   if (!assinante) {
     await registrar(msg.telefone, null, 'entrada', msg.audio ? 'audio' : msg.temAnexo ? 'midia' : 'texto', msg.texto ?? '', msg.messageId);
     return { status: 'sem_cadastro', respostas: [{ tipo: 'texto', texto:
-      `Olá! Eu sou o agente do *${config.marca}*: faço orçamento de escritura, ITBI e financiamento em segundos.\n\nEste número ainda não está cadastrado. Assine em ${config.appUrl}/cadastro e confirme este WhatsApp para começar.` }] };
+      `Olá${msg.nome?.trim() ? `, ${msg.nome.trim().split(/\s+/)[0]}` : ''}! Eu sou o agente do *${config.marca}*: faço orçamento de escritura, ITBI e financiamento em segundos.\n\nEste número ainda não está cadastrado. Assine em ${config.appUrl}/cadastro e confirme este WhatsApp para começar.` }] };
   }
   if (!assinante.ativo) {
     await registrar(msg.telefone, assinante.userId, 'entrada', 'texto', msg.texto ?? '', msg.messageId);
@@ -194,7 +195,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   const p = passo(await lerSessao(msg.telefone), textoUsuario, ctxMenu);
   if (p.acao?.tipo === 'livre') {
     await salvarSessao(msg.telefone, assinante.userId, p.estado);
-    if (config.geminiKey) return comOuvido(await responderComIa(msg.telefone, assinante, textoUsuario));
+    if (config.geminiKey) return comOuvido(await responderComIa(msg.telefone, assinante, textoUsuario, Boolean(ouvido)));
     return comOuvido(await responder(msg.telefone, assinante.userId, 'ok', [{ tipo: 'texto', texto: telaAtual(p.estado, ctxMenu, 'Para orçar, escolha uma opção 👇\n\n').texto }]));
   }
 
@@ -232,7 +233,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
 
 /** Registra as mensagens de saída (texto) e devolve a resposta para o n8n. */
 async function responder(telefone: string, userId: string, status: string, respostas: Resposta[]) {
-  const texto = respostas.map((r) => (r.tipo === 'texto' ? r.texto : `[${r.nomeArquivo}]`)).join('\n\n');
+  const texto = respostas.map((r) => (r.tipo === 'texto' ? r.texto : r.tipo === 'audio' ? `🎙️ ${r.texto}` : `[${r.nomeArquivo}]`)).join('\n\n');
   if (texto) await registrar(telefone, userId, 'saida', 'texto', texto); // com atendente, o robô não responde
   return { status, respostas };
 }
@@ -270,7 +271,8 @@ async function salvarSessao(telefone: string, userId: string, estado: Estado) {
 // ---------------- Texto livre com IA ----------------
 
 /** Pedido escrito por extenso ("escritura de 350 mil em JF"): o modelo chama as mesmas calculadoras. */
-async function responderComIa(telefone: string, assinante: Assinante, textoUsuario: string) {
+/** `porVoz`: o corretor mandou áudio, então a resposta curta também vai falada (menus, valores e arquivos seguem escritos). */
+async function responderComIa(telefone: string, assinante: Assinante, textoUsuario: string, porVoz = false) {
   const anexos: Resposta[] = [];
   const ctx: Contexto = { userId: assinante.userId, telefone, configuracao: assinante.configuracao, anexos };
   const ai = new GoogleGenAI({ apiKey: config.geminiKey });
@@ -299,6 +301,10 @@ async function responderComIa(telefone: string, assinante: Assinante, textoUsuar
   }
 
   if (!resposta) resposta = 'Não consegui entender esse pedido.';
+  const voz = porVoz ? await falar(resposta).catch((e) => { console.error('Falha ao gerar a resposta falada', e); return null; }) : null;
+  if (voz) {
+    return responder(telefone, assinante.userId, 'ok', [{ tipo: 'audio', base64: voz, texto: resposta }, ...anexos, { tipo: 'texto', texto: 'Digite *menu* para ver as opções.' }]);
+  }
   resposta += '\n\nDigite *menu* para ver as opções.';
   return responder(telefone, assinante.userId, 'ok', [{ tipo: 'texto', texto: resposta }, ...anexos]);
 }

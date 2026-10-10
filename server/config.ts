@@ -13,6 +13,9 @@ export const config = {
   supabaseServiceKey: env('SUPABASE_SERVICE_ROLE_KEY'),
   geminiKey: env('GEMINI_API_KEY'),
   geminiModel: env('GEMINI_MODEL', 'gemini-3-flash-preview'),
+  /** Voz das respostas a áudios. Vazio em GEMINI_TTS_MODEL desliga a resposta falada. */
+  geminiTtsModel: env('GEMINI_TTS_MODEL', 'gemini-2.5-flash-preview-tts'),
+  geminiVoz: env('GEMINI_VOZ', 'Kore'),
   /** Chave que o n8n manda no header x-agent-key. */
   agentKey: env('AGENT_API_KEY'),
   /** Segredo para o hash dos códigos de verificação do WhatsApp. */

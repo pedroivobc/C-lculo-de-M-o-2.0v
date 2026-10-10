@@ -17,15 +17,20 @@ export default function Conta() {
   const { perfil, assinatura, equipe, ativa, recarregar } = useConta();
   const navegar = useNavigate();
   const [nome, setNome] = useState('');
+  const [sobrenome, setSobrenome] = useState('');
   const [aviso, setAviso] = useState<{ tom: 'verde' | 'vermelho'; texto: string } | null>(null);
 
   useEffect(() => {
-    setNome(perfil?.full_name ?? '');
+    // Contas de antes da separação: a primeira palavra do nome completo é o nome.
+    const [primeiro = '', ...resto] = (perfil?.full_name ?? '').trim().split(/\s+/);
+    setNome(perfil?.nome ?? primeiro);
+    setSobrenome(perfil?.nome ? perfil.sobrenome ?? '' : resto.join(' '));
   }, [perfil]);
 
   async function salvar() {
     if (!perfil) return;
-    const { error } = await supabase.from('profiles').update({ full_name: nome.trim() || null }).eq('id', perfil.id);
+    const n = nome.trim(), s = sobrenome.trim();
+    const { error } = await supabase.from('profiles').update({ nome: n || null, sobrenome: s || null, full_name: [n, s].filter(Boolean).join(' ') || null }).eq('id', perfil.id);
     setAviso(error ? { tom: 'vermelho', texto: error.message } : { tom: 'verde', texto: 'Alterações salvas.' });
     if (!error) recarregar();
   }
@@ -89,8 +94,9 @@ export default function Conta() {
           <Cartao titulo="Seus dados">
             <div className="flex flex-col gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Campo rotulo="Nome" value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="name" />
-                <Campo rotulo="E-mail" value={perfil?.email ?? ''} disabled />
+                <Campo rotulo="Nome" value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="given-name" dica="É como o agente chama você no WhatsApp." />
+                <Campo rotulo="Sobrenome" value={sobrenome} onChange={(e) => setSobrenome(e.target.value)} autoComplete="family-name" />
+                <Campo rotulo="E-mail" value={perfil?.email ?? ''} disabled className="sm:col-span-2" />
               </div>
               <div className="flex flex-wrap items-center gap-3 rounded-xl bg-nevoa p-4">
                 <span className="flex min-w-56 flex-1 flex-col">
