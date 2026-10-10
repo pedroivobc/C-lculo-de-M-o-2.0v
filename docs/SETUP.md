@@ -125,7 +125,7 @@ Use um chip **só para o agente** (não o seu WhatsApp pessoal).
    ```bash
    curl -X POST https://evo.seudominio/webhook/set/agente \
      -H "apikey: SUA_CHAVE" -H "Content-Type: application/json" \
-     -d '{"webhook":{"enabled":true,"url":"http://n8n:5678/webhook/evolution-agente","byEvents":false,"base64":false,"events":["MESSAGES_UPSERT"]}}'
+     -d '{"webhook":{"enabled":true,"url":"http://n8n:5678/webhook/evolution-agente","byEvents":false,"base64":true,"events":["MESSAGES_UPSERT"]}}'
    ```
    A URL usa o nome interno `n8n` porque os dois estão na mesma rede Docker.
 
@@ -141,7 +141,9 @@ Os nomes exatos dos campos variam um pouco entre versões da Evolution v2; se al
 
 O workflow não guarda segredos: lê `APP_INTERNAL_URL`, `AGENT_API_KEY`, `EVOLUTION_*` das variáveis de ambiente do container (já definidas no `docker-compose.yml`).
 
-Fluxo: *Evolution: mensagem recebida* → *Filtrar e extrair* (ignora grupos, mensagens enviadas pelo próprio número, áudios e figurinhas; aceita texto e respostas de botão ou lista) → *Perguntar ao agente* (`POST /api/agente/mensagem`) → *Uma resposta por vez* → *Enviar pelo WhatsApp (em ordem)*: cada resposta já vem do servidor com `envio.rota` (`sendText`, `sendButtons`, `sendList` ou `sendMedia`) e `envio.corpo`, e o n8n só repassa para a Evolution, uma por vez, na ordem em que o servidor mandou (o orçamento chega antes do menu seguinte). Com um servidor anterior (sem `envio`), o nó cai no envio antigo: texto por `sendText` e arquivo por `sendMedia`.
+Fluxo: *Evolution: mensagem recebida* → *Filtrar e extrair* (ignora grupos, mensagens enviadas pelo próprio número e figurinhas; aceita texto, respostas de botão ou lista e notas de voz) → *Perguntar ao agente* (`POST /api/agente/mensagem`) → *Uma resposta por vez* → *Enviar pelo WhatsApp (em ordem)*: cada resposta já vem do servidor com `envio.rota` (`sendText`, `sendButtons`, `sendList` ou `sendMedia`) e `envio.corpo`, e o n8n só repassa para a Evolution, uma por vez, na ordem em que o servidor mandou (o orçamento chega antes do menu seguinte). Com um servidor anterior (sem `envio`), o nó cai no envio antigo: texto por `sendText` e arquivo por `sendMedia`.
+
+**Notas de voz.** O corretor pode mandar áudio no lugar de texto: o servidor transcreve com o Gemini (`GEMINI_API_KEY`), responde primeiro com 🎤 *Entendi: "…"* e segue como se a mensagem tivesse sido escrita. O áudio só passa pela memória e é descartado; o histórico guarda a transcrição. Para o áudio chegar ao servidor, ligue **Webhook Base64** no webhook da instância na Evolution (`"base64": true`). Sem a chave do Gemini ou sem o Base64, o agente pede para a pessoa escrever.
 
 Se você já tinha importado uma versão anterior, apague o workflow antigo e importe o arquivo de novo.
 
