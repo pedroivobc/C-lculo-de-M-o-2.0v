@@ -33,6 +33,7 @@ status `CONFERIDO_FONTE_PRIMARIA` ou `TRANSCRITO_CONFERIDO` e, de preferência, 
 - **Belo Horizonte**: ITBI de 3% conferido em fonte primária. Cadastrada no motor sem regra de SFH (3% sobre o valor inteiro).
 - **ISS dos cartórios**: Uberlândia, Contagem, Montes Claros e Betim têm 5% ativo na base NFS-e; JF e BH não têm registro
   ativo no recorte. O ISS é o do município do cartório, não o do imóvel.
+  BH: 2% pela Lei 8.725/2003, art. 14, § 11 (incluído pela Lei 9.677/2008), conferido em 10/10/2026.
 
 ## Outros estados
 

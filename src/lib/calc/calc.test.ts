@@ -66,7 +66,9 @@ describe('cálculos de referência', () => {
     const r = calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 350000, municipio: 'mg-belo-horizonte' });
     expect(r.linhas.find((l) => l.rotulo === 'ITBI')).toMatchObject({ valor: 10500, origem: 'municipio' });
     expect(r.municipioNome).toBe('Belo Horizonte');
-    expect(r.total).toBe(Math.round((jf.total + 3500) * 100) / 100);
+    // ISS de cartório de 2% em BH (5% em JF): escritura e registro saem um pouco abaixo.
+    expect(r.linhas.find((l) => l.rotulo === 'Escritura')!.valor).toBeLessThan(jf.linhas.find((l) => l.rotulo === 'Escritura')!.valor);
+    expect(r.total).toBe(22049.57);
   });
 
   it('outra cidade sem alíquota pede a alíquota', () => {
