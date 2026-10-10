@@ -46,6 +46,13 @@ const mensagemSchema = z.object({
   /** Aceitos por compatibilidade com o fluxo do n8n. O conteúdo de anexos não é baixado, lido nem guardado. */
   midia: z.object({ base64: z.string(), mimetype: z.string() }).optional(),
   temMidia: z.boolean().optional(),
+  /** Mensagem de voz: base64 (se a Evolution mandar no webhook) ou { key, message } para baixar. Transcrita e descartada. */
+  audio: z.object({
+    base64: z.string().nullish(),
+    mimetype: z.string().nullish(),
+    segundos: z.number().nullish(),
+    mensagem: z.record(z.unknown()).nullish(),
+  }).nullish(),
 });
 
 rotas.post('/api/agente/mensagem', exigirAgente, h(async (req, res) => {
@@ -53,7 +60,7 @@ rotas.post('/api/agente/mensagem', exigirAgente, h(async (req, res) => {
   const telefone = m.remoteJid ? telefoneDoJid(m.remoteJid) : normalizarTelefone(m.telefone ?? '');
   if (!telefone) return res.json({ status: 'ignorada', respostas: [] }); // grupo, broadcast ou número inválido
   const temAnexo = Boolean(m.midia || m.temMidia);
-  const r = await processarMensagem({ telefone, texto: m.texto, messageId: m.messageId, nome: m.nome, temAnexo });
+  const r = await processarMensagem({ telefone, texto: m.texto, messageId: m.messageId, nome: m.nome, temAnexo, audio: m.audio ?? undefined });
   // Cada resposta leva também o envio pronto para a Evolution (texto, botões, lista ou arquivo).
   res.json({ ...r, respostas: r.respostas.map((x) => ({ ...x, envio: envioDe(x, config.whatsappBotoes) })) });
 }));

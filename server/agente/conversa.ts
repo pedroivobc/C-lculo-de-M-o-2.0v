@@ -13,6 +13,7 @@ import { arquivoDoOrcamento, buscarPorSeq, numeroCalculo, salvarCalculo, type Ca
 import { comLocalidade, configuracaoDoUsuario, type Configuracao } from '../estilo';
 import { usaWhatsapp, type Papel } from '../../src/lib/planos';
 import { pedirAtendente } from '../chatwoot';
+import { AUDIO_MAX_SEGUNDOS, transcreverAudio, type AudioRecebido } from './audio';
 
 export interface MensagemRecebida {
   telefone: string;              // E.164
@@ -21,6 +22,8 @@ export interface MensagemRecebida {
   nome?: string;                 // pushName do WhatsApp
   /** A mensagem trouxe foto ou arquivo. Só o fato é registrado: o anexo não é lido nem guardado. */
   temAnexo?: boolean;
+  /** Mensagem de voz: é transcrita (só para assinantes com o agente) e segue como se fosse escrita. */
+  audio?: AudioRecebido;
 }
 
 export type MotivoAcesso = 'ok' | 'trial' | 'sem_cartao' | 'trial_expirado' | 'assinatura_inativa' | 'organizacao_inativa' | 'sem_perfil';
@@ -142,7 +145,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
 
   const assinante = await identificar(msg.telefone);
   if (!assinante) {
-    await registrar(msg.telefone, null, 'entrada', msg.temAnexo ? 'midia' : 'texto', msg.texto ?? '', msg.messageId);
+    await registrar(msg.telefone, null, 'entrada', msg.audio ? 'audio' : msg.temAnexo ? 'midia' : 'texto', msg.texto ?? '', msg.messageId);
     return { status: 'sem_cadastro', respostas: [{ tipo: 'texto', texto:
       `Olá! Eu sou o agente do *${config.marca}*: faço orçamento de escritura, ITBI e financiamento em segundos.\n\nEste número ainda não está cadastrado. Assine em ${config.appUrl}/cadastro e confirme este WhatsApp para começar.` }] };
   }
@@ -158,16 +161,32 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
       `O atendimento pelo WhatsApp é do plano Pró. No Starter, os orçamentos são feitos em ${config.appUrl}/app. Para usar o agente, mude de plano em ${config.appUrl}/assinar?nivel=pro` }] };
   }
 
-  const textoUsuario = msg.texto?.trim() ?? '';
-  await registrar(msg.telefone, assinante.userId, 'entrada', msg.temAnexo ? 'midia' : 'texto', textoUsuario, msg.messageId);
+  let textoUsuario = msg.texto?.trim() ?? '';
+  // Áudio: transcreve e segue como se o corretor tivesse escrito. Mostra o que entendeu antes da resposta.
+  let ouvido: Resposta | null = null;
+  if (msg.audio && !textoUsuario) {
+    const longo = (msg.audio.segundos ?? 0) > AUDIO_MAX_SEGUNDOS;
+    const transcricao = longo ? null : await transcreverAudio(msg.audio).catch((e) => { console.error('Falha ao transcrever o áudio', e); return null; });
+    if (!transcricao) {
+      await registrar(msg.telefone, assinante.userId, 'entrada', 'audio', '', msg.messageId);
+      return responder(msg.telefone, assinante.userId, 'audio_nao_entendido', [{ tipo: 'texto', texto: longo
+        ? `Esse áudio passou de ${AUDIO_MAX_SEGUNDOS / 60} minutos 😅 Mande um mais curto ou escreva o pedido.`
+        : 'Não consegui entender o áudio 😕 Pode mandar de novo, falando perto do celular, ou escrever?' }]);
+    }
+    textoUsuario = transcricao;
+    ouvido = { tipo: 'texto', texto: `🎙️ Entendi: _${transcricao}_` };
+  }
+  await registrar(msg.telefone, assinante.userId, 'entrada', msg.audio ? 'audio' : msg.temAnexo ? 'midia' : 'texto', textoUsuario, msg.messageId);
+  // Com um atendente na conversa o robô não responde, então também não ecoa o áudio.
+  const comOuvido = <T extends { respostas: Resposta[] }>(r: T): T => (ouvido && r.respostas.length ? { ...r, respostas: [ouvido, ...r.respostas] } : r);
 
   // "indicar" ou "cupom": manda o cupom de indicação do assinante, pronto para encaminhar.
   if (/^(indicar|indicacao|indicação|cupom|meu cupom)$/i.test(textoUsuario)) {
     const codigo = await codigoDoUsuario(assinante.userId);
-    return responder(msg.telefone, assinante.userId, 'ok', [
+    return comOuvido(await responder(msg.telefone, assinante.userId, 'ok', [
       { tipo: 'texto', texto: `Seu cupom de indicação: *${codigo}*\nQuem se cadastrar com ele ganha ${DIAS_TESTE_INDICACAO} dias grátis (em vez de ${DIAS_TESTE}). Encaminhe a mensagem abaixo 👇` },
       { tipo: 'texto', texto: `Uso o *${config.marca}* para fazer orçamento de escritura, ITBI e financiamento em segundos, direto no WhatsApp. Cadastre-se com o meu cupom *${codigo}* e ganhe ${DIAS_TESTE_INDICACAO} dias grátis:\n${linkDeIndicacao(codigo)}` },
-    ]);
+    ]));
   }
 
   // Conversa por menus numerados (./menu.ts). Texto livre no menu inicial vai para o agente com IA.
@@ -175,8 +194,8 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   const p = passo(await lerSessao(msg.telefone), textoUsuario, ctxMenu);
   if (p.acao?.tipo === 'livre') {
     await salvarSessao(msg.telefone, assinante.userId, p.estado);
-    if (config.geminiKey) return responderComIa(msg.telefone, assinante, textoUsuario);
-    return responder(msg.telefone, assinante.userId, 'ok', [{ tipo: 'texto', texto: telaAtual(p.estado, ctxMenu, 'Para orçar, escolha uma opção 👇\n\n').texto }]);
+    if (config.geminiKey) return comOuvido(await responderComIa(msg.telefone, assinante, textoUsuario));
+    return comOuvido(await responder(msg.telefone, assinante.userId, 'ok', [{ tipo: 'texto', texto: telaAtual(p.estado, ctxMenu, 'Para orçar, escolha uma opção 👇\n\n').texto }]));
   }
 
   const respostas: Resposta[] = [];
@@ -208,7 +227,7 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   }
   respostas.push(...mensagens.map((m): Resposta => ({ tipo: 'texto', texto: m.texto, corpo: m.corpo, opcoes: m.opcoes })));
   await salvarSessao(msg.telefone, assinante.userId, estado);
-  return responder(msg.telefone, assinante.userId, 'ok', respostas);
+  return comOuvido(await responder(msg.telefone, assinante.userId, 'ok', respostas));
 }
 
 /** Registra as mensagens de saída (texto) e devolve a resposta para o n8n. */
