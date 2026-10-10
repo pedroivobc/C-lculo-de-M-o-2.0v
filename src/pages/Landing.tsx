@@ -30,8 +30,8 @@ const NOTA: Record<Ato, string> = {
 
 const DUVIDAS = [
   ['Cálculo na Mão e Orça.ai são a mesma coisa?', 'São. O endereço calculonamao.com.br traz você para o Orça.ai: mesma conta, mesmo plano e o mesmo agente no WhatsApp.'],
-  ['Os valores são oficiais?', 'São estimativas feitas com a tabela de emolumentos de MG e as regras de ITBI de Juiz de Fora do ano corrente. Os valores finais são os do cartório e da prefeitura no dia do ato.'],
-  ['Meu imóvel é em outra cidade de MG. Serve?', 'Sim. Juiz de Fora já tem a regra de ITBI cadastrada; nas outras cidades de MG você informa a alíquota no cadastro. Peça a sua cidade no formulário acima para ela ganhar a regra completa.'],
+  ['Os valores são oficiais?', 'São estimativas feitas com a tabela de emolumentos de MG e as regras de ITBI de Juiz de Fora e Belo Horizonte do ano corrente. Os valores finais são os do cartório e da prefeitura no dia do ato.'],
+  ['Meu imóvel é em outra cidade de MG. Serve?', 'Sim. Juiz de Fora e Belo Horizonte já têm a regra de ITBI cadastrada; nas outras cidades de MG você informa a alíquota no cadastro. Peça a sua cidade no formulário acima para ela ganhar a regra completa.'],
   ['Como o agente sabe que sou eu?', 'Pelo número que você confirma no cadastro com um código. Só esse número tem acesso aos seus orçamentos.'],
   ['Posso cancelar quando quiser?', 'Sim, pela página da conta. Nos 7 primeiros dias, o cancelamento é imediato e o valor pago volta. Depois disso, no cartão, as mensalidades seguem até o fim da fidelidade (3, 6 ou 12 meses) e param ali. No Pix anual, basta não renovar. O seu histórico continua disponível para exportar.'],
 ];
@@ -81,7 +81,7 @@ export default function Landing() {
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-center gap-x-4 gap-y-1 px-6 py-2.5">
           <span className="flex items-center gap-2">
             <span aria-hidden="true" className="h-0 w-0 border-x-[5px] border-b-[9px] border-x-transparent border-b-[#ff5a62]" />
-            Começando por <strong>Juiz de Fora (MG)</strong>. Novas cidades em breve.
+            Disponível em <strong>Juiz de Fora</strong> e <strong>Belo Horizonte (MG)</strong>. Novas cidades em breve.
           </span>
           <a href="#cidades" className="font-bold text-marca-texto">Peça a sua cidade</a>
         </div>
@@ -208,10 +208,13 @@ export default function Landing() {
           <div className="flex flex-wrap items-center gap-x-16 gap-y-8 rounded-[28px] border border-linha bg-white p-6 sm:p-12">
             <div className="flex flex-1 basis-80 flex-col gap-3.5">
               <span className="rotulo-secao">Minas Gerais primeiro</span>
-              <h2 className="text-[30px] font-[850] leading-9 sm:text-[38px] sm:leading-[44px]">Começamos por Juiz de Fora. A próxima cidade é você que escolhe.</h2>
+              <h2 className="text-[30px] font-[850] leading-9 sm:text-[38px] sm:leading-[44px]">Começamos por Juiz de Fora e Belo Horizonte. A próxima cidade é você que escolhe.</h2>
               <p className="text-[17px] leading-[27px] text-texto">A tabela de cartório de MG já vale para o estado inteiro. Para abrir uma cidade nova, falta cadastrar a regra de ITBI da prefeitura. Vamos pela ordem dos pedidos.</p>
               <div className="flex items-center gap-3 rounded-xl bg-nevoa px-4 py-3.5">
                 <span className="size-2.5 rounded-full bg-ok" aria-hidden="true" /><span><strong>Juiz de Fora</strong> · disponível</span>
+              </div>
+              <div className="flex items-center gap-3 rounded-xl bg-nevoa px-4 py-3.5">
+                <span className="size-2.5 rounded-full bg-ok" aria-hidden="true" /><span><strong>Belo Horizonte</strong> · disponível</span>
               </div>
             </div>
             <PedirCidade />
