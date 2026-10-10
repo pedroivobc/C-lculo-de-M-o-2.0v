@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
-import { calcular, CALCULADORAS, comCustos, type TipoCalculo } from '../src/lib/calc';
+import { calcular, calcularItbi, CALCULADORAS, comCustos, MUNICIPIOS_ITBI, type TipoCalculo } from '../src/lib/calc';
 import { config } from './config';
 import { exigirAdmin, exigirAgente, exigirGestor, exigirUsuario } from './auth';
 import { compararTabelas, ehErroPlanilha, gerarPlanilha, lerPlanilha, listarVersoes, parametrosParaJson, publicarTabela, removerVersao, TIPOS, tipoValido, versoesVigentes } from './tabelas';
@@ -87,6 +87,17 @@ rotas.get('/api/parametros', (_req, res) => {
   res.set('Cache-Control', 'public, max-age=300');
   res.json({ parametros: parametrosParaJson(), versoes: versoesVigentes() });
 });
+
+// ---------------- Motor de ITBI (5 capitais) — só administrador, ainda fora do site ----------------
+rotas.get('/api/admin/itbi/municipios', exigirUsuario, exigirAdmin, (_req, res) => { res.json({ municipios: MUNICIPIOS_ITBI }); });
+
+rotas.post('/api/admin/itbi', exigirUsuario, exigirAdmin, h(async (req, res) => {
+  try { res.json(calcularItbi(req.body)); }
+  catch (e) {
+    if (e instanceof z.ZodError) throw e;
+    res.status(400).json({ erro: e instanceof Error ? e.message : String(e) }); // município ou data sem regra
+  }
+}));
 
 rotas.get('/api/admin/tabelas', exigirUsuario, exigirAdmin, h(async (_req, res) => {
   res.json({ tipos: TIPOS, vigentes: versoesVigentes(), versoes: await listarVersoes() });

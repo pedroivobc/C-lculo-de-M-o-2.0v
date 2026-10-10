@@ -29,3 +29,4 @@ export function calcular(tipo: TipoCalculo, dados: unknown): Resultado {
 }
 
 export const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+export { calcularItbi, entradaItbi, MUNICIPIOS_ITBI, type EntradaItbi, type ResultadoItbi } from './itbi';
