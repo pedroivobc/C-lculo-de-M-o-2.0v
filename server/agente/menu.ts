@@ -155,7 +155,9 @@ export type Tela =
   | { tela: 'endereco'; etapa: 'pergunta' | 'digitar'; fluxo: string; dados: Record<string, unknown>; origem: string }
   | { tela: 'formato'; fluxo?: string; dados?: Record<string, unknown>; origem?: string; reenvio?: boolean; endereco?: string }
   /** Conversa passada para uma pessoa (Chatwoot): o robô fica quieto até o corretor escrever "menu". */
-  | { tela: 'atendente'; desde: string };
+  | { tela: 'atendente'; desde: string }
+  /** Conversa livre com a IA (pedido por extenso ou áudio): as respostas seguintes também vão para ela até "menu". */
+  | { tela: 'ia' };
 
 export type Estado = Tela & {
   /** Número (seq) do último orçamento feito nesta conversa. */
@@ -305,7 +307,7 @@ function comoTexto(p: Pergunta, valor: unknown): string {
 
 /** Certidões e honorários que vão entrar no orçamento em andamento. */
 function custosEmUso(e: Estado, ctx: ContextoMenu): Custos | null {
-  if (e.tela === 'menu' || e.tela === 'atendente') return null;
+  if (e.tela === 'menu' || e.tela === 'atendente' || e.tela === 'ia') return null;
   if (e.tela === 'formato' && (e.reenvio || !e.fluxo)) return null;
   const f = FLUXOS[e.fluxo!];
   const base = custosDoCalculo(f.calculo, ctx.custosPadrao ?? null, e.dados ?? {});
@@ -333,7 +335,7 @@ function telaEndereco(etapa: 'pergunta' | 'digitar', prefixo = ''): MensagemMenu
 
 /** Re-mostra a tela atual (usado quando a resposta não foi entendida). */
 export function telaAtual(e: Estado, ctx: ContextoMenu, prefixo = ''): MensagemMenu {
-  if (e.tela === 'atendente') return telaMenu('inicio', prefixo, ctx);
+  if (e.tela === 'atendente' || e.tela === 'ia') return telaMenu('inicio', prefixo, ctx);
   if (e.tela === 'menu') return telaMenu(e.id, prefixo, ctx);
   if (e.tela === 'pergunta') return telaPergunta(FLUXOS[e.fluxo], e.i, prefixo, e.dados);
   if (e.tela === 'endereco') return telaEndereco(e.etapa, prefixo);
@@ -372,9 +374,12 @@ function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): P
     const inicio = menuDe('inicio', ctx);
     const n = estado ? null : lerOpcao(texto, inicio.opcoes.map((o) => o.rotulo));
     if (n && inicio.opcoes[n - 1]) return irPara(inicio.opcoes[n - 1].vai, 'inicio', ultimo, ctx);
-    if (!estado && /\d/.test(t) && t.length > 8) return { estado: { tela: 'menu', id: 'inicio', ultimo }, mensagens: [], acao: { tipo: 'livre' } };
+    if (!estado && /\d/.test(t) && t.length > 8) return { estado: { tela: 'ia', ultimo }, mensagens: [], acao: { tipo: 'livre' } };
     return { estado: { tela: 'menu', id: 'inicio', ultimo }, mensagens: [telaMenu('inicio', saudacao(ctx.nome), ctx)] };
   }
+
+  // A IA fez uma pergunta (ex.: "compra e venda simples ou com financiamento?"): a resposta volta para ela.
+  if (estado.tela === 'ia') return { estado, mensagens: [], acao: { tipo: 'livre' } };
 
   const naoEntendi = (): Passo => ({
     estado,
@@ -388,7 +393,7 @@ function passoDoMenu(estado: Estado | null, texto: string, ctx: ContextoMenu): P
     const n = lerOpcao(texto, menu.opcoes.map((o) => o.rotulo));
     const opcao = n ? menu.opcoes[n - 1] : undefined;
     if (!opcao) {
-      if (estado.id === 'inicio' && /\d/.test(t) && t.length > 8) return { estado, mensagens: [], acao: { tipo: 'livre' } };
+      if (estado.id === 'inicio' && /\d/.test(t) && t.length > 8) return { estado: { tela: 'ia', ultimo }, mensagens: [], acao: { tipo: 'livre' } };
       return naoEntendi();
     }
     if (opcao.vai === 'reenviar') {
