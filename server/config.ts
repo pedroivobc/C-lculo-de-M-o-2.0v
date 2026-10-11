@@ -35,6 +35,14 @@ export const config = {
    * Ligar (sim) depois de testar no número do agente: na conexão por QR code, alguns aparelhos não mostram botões.
    */
   whatsappBotoes: /^(sim|true|1)$/i.test(env('WHATSAPP_BOTOES')),
+  /**
+   * Trava de assinatura também na API (cálculo, arquivo do orçamento, exportação), igual à do site.
+   * Segue o mesmo EXIGIR_ASSINATURA do .env que liga a trava do front (VITE_EXIGIR_ASSINATURA).
+   */
+  exigirAssinatura: /^(sim|true|1)$/i.test(env('EXIGIR_ASSINATURA', env('VITE_EXIGIR_ASSINATURA'))),
+  producao: env('NODE_ENV') === 'production',
+  /** Válvula de escape: CSP_DESLIGADA=sim tira a Content-Security-Policy se alguma tela quebrar depois do deploy. */
+  cspDesligada: /^(sim|true|1)$/i.test(env('CSP_DESLIGADA')),
   /** Chatwoot: quando o corretor pede um atendente, a conversa é aberta e marcada lá. Opcional. */
   chatwoot: {
     url: env('CHATWOOT_URL').replace(/\/$/, ''),

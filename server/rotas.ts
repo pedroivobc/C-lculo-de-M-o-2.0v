@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { calcular, calcularItbi, CALCULADORAS, comCustos, MUNICIPIOS_ITBI, type TipoCalculo } from '../src/lib/calc';
 import { config } from './config';
-import { exigirAdmin, exigirAgente, exigirGestor, exigirUsuario } from './auth';
+import { exigirAcesso, exigirAdmin, exigirAgente, exigirGestor, exigirUsuario } from './auth';
 import { compararTabelas, ehErroPlanilha, gerarPlanilha, lerPlanilha, listarVersoes, parametrosParaJson, publicarTabela, removerVersao, TIPOS, tipoValido, versoesVigentes } from './tabelas';
 import { supabaseAdmin, salvarArquivo, urlAssinada } from './supabase';
 import { normalizarTelefone, telefoneDoJid, variantesTelefone } from './telefone';
@@ -22,17 +22,25 @@ import {
 } from './equipe';
 import { encerrarLiberacao, estenderTeste, fichaDoUsuario, liberarPlano, listarUsuarios, registrar, visaoGeral } from './gestao';
 import { contasDeTeste } from './agente/teste';
+import { erroInterno } from './erros';
 
 export const rotas = Router();
 
-/** Envolve handlers async: erro de validação vira 400 com a mensagem, o resto vira 500. */
+/** Envolve handlers async: erro de validação vira 400 com a mensagem, o resto vira 500 (genérico em produção). */
 const h = (fn: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response) =>
   fn(req, res).catch((e) => {
     if (e instanceof z.ZodError) return res.status(400).json({ erro: 'Dados inválidos', detalhes: e.issues });
     if (e instanceof ErroEquipe) return res.status(e.status).json({ erro: e.message });
-    console.error(e);
-    res.status(500).json({ erro: e instanceof Error ? e.message : 'Erro interno' });
+    erroInterno(req, res, e);
   });
+
+/** Limite de pedidos com resposta em JSON (o site mostra o `erro`). Sem `chave`, conta por IP. */
+const limite = (windowMs: number, max: number, chave?: (req: Request) => string | undefined) => rateLimit({
+  windowMs, limit: max, standardHeaders: true, legacyHeaders: false,
+  message: { erro: 'Muitos pedidos em pouco tempo. Espere um pouco e tente de novo.' },
+  ...(chave ? { keyGenerator: (req: Request) => chave(req) ?? `ip:${req.ip}` } : {}),
+});
+const porUsuario = (req: Request) => req.userId && `u:${req.userId}`;
 
 rotas.get('/api/saude', (_req, res) => res.json({ ok: true, marca: config.marca }));
 
@@ -56,7 +64,17 @@ const mensagemSchema = z.object({
   }).nullish(),
 });
 
-rotas.post('/api/agente/mensagem', exigirAgente, h(async (req, res) => {
+// Mesmo com a chave certa: teto geral (a chave vazada não vira canhão) e por número (IA, áudio e arquivos custam).
+const limiteAgente = limite(60_000, 600);
+const telefoneDaMensagem = (req: Request) => {
+  const b = req.body ?? {};
+  const t = typeof b.remoteJid === 'string' ? b.remoteJid : typeof b.telefone === 'string' ? b.telefone : '';
+  return t ? `tel:${t.replace(/\D/g, '').slice(0, 20)}` : undefined;
+};
+const limitePorNumero = limite(60_000, 20, telefoneDaMensagem);
+const limiteIdentificar = limite(60_000, 60);
+
+rotas.post('/api/agente/mensagem', limiteAgente, exigirAgente, limitePorNumero, h(async (req, res) => {
   const m = mensagemSchema.parse(req.body);
   const telefone = m.remoteJid ? telefoneDoJid(m.remoteJid) : normalizarTelefone(m.telefone ?? '');
   if (!telefone) return res.json({ status: 'ignorada', respostas: [] }); // grupo, broadcast ou número inválido
@@ -66,11 +84,12 @@ rotas.post('/api/agente/mensagem', exigirAgente, h(async (req, res) => {
   res.json({ ...r, respostas: r.respostas.map((x) => ({ ...x, envio: envioDe(x, config.whatsappBotoes) })) });
 }));
 
-rotas.get('/api/agente/identificar', exigirAgente, h(async (req, res) => {
+/** Só o necessário para o n8n decidir o caminho: sem id, nome ou papel (se a chave vazar, não vira lista de clientes). */
+rotas.get('/api/agente/identificar', limiteIdentificar, exigirAgente, h(async (req, res) => {
   const telefone = normalizarTelefone(String(req.query.whatsapp ?? ''));
   if (!telefone) return res.status(400).json({ erro: 'Telefone inválido' });
   const a = await identificar(telefone);
-  res.json(a ? { status: a.ativo ? 'ativo' : 'inativo', motivo: a.motivo, papel: a.papel, nome: a.nome, userId: a.userId } : { status: 'sem_cadastro' });
+  res.json({ status: a ? (a.ativo ? 'ativo' : 'inativo') : 'sem_cadastro' });
 }));
 
 // ---------------- Verificação do WhatsApp ----------------
@@ -177,7 +196,8 @@ rotas.post('/api/conta/cpf', limiteCodigo, exigirUsuario, h(async (req, res) => 
   const { data: outro } = await db.from('profiles').select('id').eq('cpf', cpf).neq('id', req.userId!).maybeSingle();
   if (outro) return res.status(409).json({ erro: 'Este CPF já tem uma conta. Entre com ela ou fale com o suporte.' });
   const { error } = await db.from('profiles').update({ cpf }).eq('id', req.userId!);
-  if (error) return res.status(error.code === '23505' ? 409 : 500).json({ erro: error.code === '23505' ? 'Este CPF já tem uma conta.' : error.message });
+  if (error?.code === '23505') return res.status(409).json({ erro: 'Este CPF já tem uma conta.' });
+  if (error) throw new Error(`Falha ao gravar o CPF: ${error.message}`);
   res.json({ ok: true });
 }));
 
@@ -279,7 +299,12 @@ rotas.get('/api/indicacao/validar', limiteCupom, h(async (req, res) => {
 
 // ---------------- Cálculos pelo site ----------------
 
-rotas.post('/api/calculos/:tipo', exigirUsuario, h(async (req, res) => {
+// Por usuário: cálculo grava no banco; arquivo gera PDF/JPEG; exportação gera CSV no storage.
+const limiteCalculo = limite(60_000, 30, porUsuario);
+const limiteArquivo = limite(60_000, 20, porUsuario);
+const limiteExportar = limite(15 * 60_000, 10, porUsuario);
+
+rotas.post('/api/calculos/:tipo', exigirUsuario, limiteCalculo, exigirAcesso, h(async (req, res) => {
   const tipo = req.params.tipo as TipoCalculo;
   if (!CALCULADORAS[tipo]) return res.status(404).json({ erro: 'Tipo de cálculo inexistente' });
   const { descricao, salvar = true, ...informado } = req.body ?? {};
@@ -304,7 +329,7 @@ rotas.get('/api/calculos', exigirUsuario, h(async (req, res) => {
 }));
 
 /** Link temporário do orçamento. Formato: ?formato=pdf|jpeg; sem ele, o escolhido na conta. `/pdf` força PDF. */
-rotas.get(['/api/calculos/:seq/arquivo', '/api/calculos/:seq/pdf'], exigirUsuario, h(async (req, res) => {
+rotas.get(['/api/calculos/:seq/arquivo', '/api/calculos/:seq/pdf'], exigirUsuario, limiteArquivo, exigirAcesso, h(async (req, res) => {
   const salvo = await buscarPorSeq(req.userId!, Number(req.params.seq));
   if (!salvo) return res.status(404).json({ erro: 'Cálculo não encontrado' });
   const { estilo } = await configuracaoDoUsuario(req.userId!);
@@ -313,7 +338,7 @@ rotas.get(['/api/calculos/:seq/arquivo', '/api/calculos/:seq/pdf'], exigirUsuari
   res.json(await arquivoDoOrcamento(salvo, estilo, formato));
 }));
 
-rotas.get('/api/exportar', exigirUsuario, h(async (req, res) => {
+rotas.get('/api/exportar', exigirUsuario, limiteExportar, exigirAcesso, h(async (req, res) => {
   const mes = String(req.query.mes ?? new Date().toISOString().slice(0, 7));
   const calculos = await listarCalculos(req.userId!, intervaloDoMes(mes));
   const nome = `calculos-${mes}.csv`;
@@ -371,7 +396,7 @@ rotas.get('/api/equipe/orcamentos', exigirUsuario, exigirGestor, h(async (req, r
 }));
 
 /** Orçamento de alguém da equipe, com a marca da equipe e o contato de quem orçou. */
-rotas.get('/api/equipe/orcamentos/:id/arquivo', exigirUsuario, exigirGestor, h(async (req, res) => {
+rotas.get('/api/equipe/orcamentos/:id/arquivo', exigirUsuario, limiteArquivo, exigirGestor, h(async (req, res) => {
   const { data } = await supabaseAdmin().from('calculations').select('*').eq('id', String(req.params.id)).eq('organizacao_id', req.organizacao!.id).maybeSingle();
   if (!data) return res.status(404).json({ erro: 'Orçamento não encontrado' });
   const { estilo } = await configuracaoDoUsuario(data.user_id);
@@ -383,7 +408,7 @@ rotas.get('/api/equipe/relatorio', exigirUsuario, exigirGestor, h(async (req, re
   res.json(await relatorioDaEquipe(req.organizacao!, mes, { de, ate }));
 }));
 
-rotas.get('/api/equipe/exportar', exigirUsuario, exigirGestor, h(async (req, res) => {
+rotas.get('/api/equipe/exportar', exigirUsuario, limiteExportar, exigirGestor, h(async (req, res) => {
   const { mes, de, ate } = mesDaConsulta(req);
   const { calculos, nomes } = await orcamentosDaEquipe(req.organizacao!.id, { de, ate });
   const nome = `equipe-${mes}.csv`;
@@ -479,7 +504,7 @@ rotas.post('/api/admin/usuarios/:id/teste', exigirUsuario, exigirAdmin, h(async 
 
 // ---------------- Pedido de cidade (landing, sem login) ----------------
 
-const limitePedido = rateLimit({ windowMs: 60 * 60_000, limit: 10 });
+const limitePedido = limite(60 * 60_000, 10);
 rotas.post('/api/cidades/pedido', limitePedido, h(async (req, res) => {
   const { cidade, uf, whatsapp } = z.object({
     cidade: z.string().min(2).max(80), uf: z.string().regex(/^[A-Za-z]{2}$/).default('MG'), whatsapp: z.string().optional(),
