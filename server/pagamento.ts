@@ -135,7 +135,12 @@ async function cupomMesGratis(): Promise<string> {
 export async function clienteDoUsuario(userId: string): Promise<string> {
   const db = supabaseAdmin();
   const { data: existente } = await db.from('clientes_gateway').select('customer_id').eq('user_id', userId).eq('gateway', GATEWAY).maybeSingle();
-  if (existente) return existente.customer_id;
+  if (existente) {
+    // Cliente criado com a outra chave (teste x produção) não existe nesta conta: cria de novo.
+    const ok = await stripe().customers.retrieve(existente.customer_id).then((c) => !c.deleted, () => false);
+    if (ok) return existente.customer_id;
+    await db.from('clientes_gateway').delete().eq('user_id', userId).eq('gateway', GATEWAY);
+  }
   const { data: p } = await db.from('profiles').select('full_name, email, cpf').eq('id', userId).single();
   const novo = await stripe().customers.create({
     name: p?.full_name ?? undefined,
