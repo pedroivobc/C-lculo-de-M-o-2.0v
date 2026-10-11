@@ -148,7 +148,7 @@ Separar em `server/routes/*.ts`. Três tipos de autenticação:
 | `GET /api/calculos` | usuário | Lista/filtra histórico (busca, tipo, período, origem) |
 | `GET /api/calculos/:seq/pdf` | usuário **e** agente | Gera (ou reaproveita) o PDF no Storage e devolve URL assinada (expira em 10 min) |
 | `GET /api/exportar?periodo=2026-10&formato=xlsx\|pdf\|csv` | usuário **e** agente | Gera arquivo do período, URL assinada |
-| `GET /api/agente/identificar?whatsapp=` | agente | `{ status: 'ativo' \| 'sem_cadastro' \| 'inativo', nome, user_id }` |
+| `GET /api/agente/identificar?whatsapp=` | agente | `{ status: 'ativo' \| 'sem_cadastro' \| 'inativo' }` (só o status) |
 | `GET /api/conta/dados` / `DELETE /api/conta` | usuário | LGPD: exportar tudo / excluir conta |
 
 Bibliotecas novas: `exceljs` (planilha), `zod` (validar entrada das rotas), `express-rate-limit`. O `jspdf` atual já roda no Node — mover `src/lib/pdfGenerator.ts` para uso no servidor e trocar o logo fixo da Clemente pelo `pdf_header`/`pdf_logo_path` do cliente.

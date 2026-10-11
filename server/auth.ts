@@ -54,3 +54,41 @@ export async function exigirGestor(req: Request, res: Response, next: NextFuncti
   req.organizacao = v.organizacao;
   next();
 }
+
+export interface SituacaoAcesso { liberado: boolean; motivo: string }
+
+/**
+ * Mesma regra da tela (src/App.tsx): entra quem o banco libera (situacao_acesso: admin, equipe em dia, teste no prazo,
+ * assinatura com cartão) ou quem tem assinatura própria ativa (ex.: Pix anual). Equipe parada bloqueia sempre.
+ */
+export function acessoLiberado(situacao: SituacaoAcesso | null, assinaturaAtiva: boolean) {
+  if (situacao?.liberado) return true;
+  return assinaturaAtiva && situacao?.motivo !== 'organizacao_inativa';
+}
+
+async function assinaturaPropriaAtiva(userId: string) {
+  const { data } = await supabaseAdmin().from('subscriptions').select('status, current_period_end')
+    .eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+  return data?.status === 'ativa' && (!data.current_period_end || new Date(data.current_period_end) > new Date());
+}
+
+/**
+ * Rotas que calculam, salvam ou geram arquivo: exige acesso liberado (usar depois de exigirUsuario).
+ * Só vale com EXIGIR_ASSINATURA ligado, o mesmo que trava o site; assim a API não fica aberta a quem pula a tela.
+ */
+export async function exigirAcesso(req: Request, res: Response, next: NextFunction) {
+  if (!config.exigirAssinatura) return next();
+  let liberado: boolean;
+  let situacao: SituacaoAcesso | null;
+  try {
+    const r = await supabaseAdmin().rpc('situacao_acesso', { uid: req.userId! }).maybeSingle<SituacaoAcesso>();
+    if (r.error) throw new Error(r.error.message);
+    situacao = r.data;
+    liberado = acessoLiberado(situacao, situacao?.liberado ? false : await assinaturaPropriaAtiva(req.userId!));
+  } catch (e) {
+    console.error('Acesso: falha ao consultar situacao_acesso:', e);
+    return res.status(503).json({ erro: 'Não conseguimos confirmar o seu plano agora. Tente de novo em instantes.' });
+  }
+  if (liberado) return next();
+  res.status(402).json({ erro: 'Seu acesso não está ativo. Assine ou regularize o plano para continuar.', motivo: situacao?.motivo ?? 'sem_perfil' });
+}

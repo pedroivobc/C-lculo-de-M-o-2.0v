@@ -2,12 +2,22 @@
 	reverse_proxy app:3000
 }
 
+# n8n: os webhooks ficam abertos (a Evolution chama /webhook/...); o editor pede usuário e senha antes do login do n8n.
+# Gere o hash com: docker compose run --rm caddy caddy hash-password  (vai para PAINEL_SENHA_HASH no .env).
 {$DOMINIO_N8N} {
+	@painel not path /webhook/* /webhook-test/*
+	basic_auth @painel {
+		{$PAINEL_USUARIO} {$PAINEL_SENHA_HASH}
+	}
 	reverse_proxy n8n:5678
 }
 
 # Painel e API da Evolution (para ler o QR Code e configurar a instância).
-# Protegido pela AUTHENTICATION_API_KEY. Pode ser removido depois de conectar o número.
+# O app e o n8n falam com a Evolution pela rede interna (evolution:8080); por fora, só com usuário e senha.
+# Depois de conectar o número, o melhor é remover este bloco.
 {$DOMINIO_EVOLUTION} {
+	basic_auth {
+		{$PAINEL_USUARIO} {$PAINEL_SENHA_HASH}
+	}
 	reverse_proxy evolution:8080
 }
