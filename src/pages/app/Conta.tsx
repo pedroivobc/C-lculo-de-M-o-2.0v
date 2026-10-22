@@ -127,10 +127,14 @@ export default function Conta() {
           ) : equipe ? (
           <section className="flex flex-col gap-3 rounded-2xl border-2 border-tinta bg-white p-6 shadow-[6px_6px_0_#101828]">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-lg font-bold">{equipe.tipo === 'clemente' ? 'Clemente Team' : EQUIPE.nome}</h2>
+              <h2 className="text-lg font-bold">{equipe.funcao === 'parceiro' ? 'Corretor Parceiro' : equipe.tipo === 'clemente' ? 'Clemente Team' : EQUIPE.nome}</h2>
               <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ativa ? 'bg-ok-claro text-ok' : 'bg-amarelo-claro text-amarelo-texto'}`}>{ativa ? 'Ativo' : 'Inativo'}</span>
             </div>
-            <span className="text-suave">Você faz parte de <strong className="text-tinta">{equipe.nome}</strong>{equipe.funcao === 'gestor' ? ' como gestor.' : '. O plano é cuidado pelo gestor da equipe.'}</span>
+            {equipe.funcao === 'parceiro' ? (
+              <span className="text-suave">Você é corretor parceiro da <strong className="text-tinta">Clemente Assessoria</strong>: orça no site e no WhatsApp sem custo, e os orçamentos saem com a logo da Clemente.</span>
+            ) : (
+              <span className="text-suave">Você faz parte de <strong className="text-tinta">{equipe.nome}</strong>{equipe.funcao === 'gestor' ? ' como gestor.' : '. O plano é cuidado pelo gestor da equipe.'}</span>
+            )}
             {equipe.funcao === 'gestor' && <BotaoLink to="/app/equipe">Gerenciar equipe</BotaoLink>}
           </section>
           ) : (

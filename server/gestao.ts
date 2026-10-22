@@ -281,7 +281,7 @@ export async function visaoGeral(dias: number, agora = Date.now()) {
     ...assinaturas.filter((s) => s.status === 'cancelada').map((s) => ({ tipo: 'Cancelamento', texto: nome(s.user_id), data: s.updated_at, destino: `/app/admin/usuarios?id=${s.user_id}` })),
     ...tabelas.map((t) => ({ tipo: 'Tabela publicada', texto: `${NOME_TABELA[t.tipo] ?? t.tipo} ${t.ano}`, data: t.created_at, destino: '/app/admin/tabelas' })),
     ...(auditoria.data ?? []).map((a) => ({ tipo: 'Ação administrativa', texto: `${ROTULO_ACAO[a.acao] ?? a.acao}${a.objeto_tipo === 'usuario' ? ` · ${nome(a.objeto_id)}` : ''}`, data: a.created_at,
-      destino: a.objeto_tipo === 'usuario' ? `/app/admin/usuarios?id=${a.objeto_id}` : '/app/admin/equipes' })),
+      destino: a.objeto_tipo === 'usuario' ? `/app/admin/usuarios?id=${a.objeto_id}` : a.objeto_tipo === 'parceiro' ? '/app/parceiros' : '/app/admin/equipes' })),
   ].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 10);
 
   const perfisPorPapel: Record<string, number> = {};
@@ -305,6 +305,8 @@ export const ROTULO_ACAO: Record<string, string> = {
   criar_equipe: 'Equipe criada',
   mudar_pacote: 'Pacote da equipe alterado',
   liberar_equipe: 'Equipe liberada sem cobrança',
+  incluir_parceiro: 'Corretor parceiro cadastrado',
+  remover_parceiro: 'Corretor parceiro removido',
 };
 
 // ---------------- Usuários ----------------
@@ -367,7 +369,7 @@ export async function fichaDoUsuario(id: string, agora = Date.now()) {
 
 // ---------------- Ações com auditoria ----------------
 
-export async function registrar(atorId: string, acao: string, objeto: { tipo: 'usuario' | 'organizacao'; id: string }, extra: { motivo?: string | null; antes?: unknown; depois?: unknown } = {}) {
+export async function registrar(atorId: string, acao: string, objeto: { tipo: 'usuario' | 'organizacao' | 'parceiro'; id: string }, extra: { motivo?: string | null; antes?: unknown; depois?: unknown } = {}) {
   const { error } = await db().from('admin_auditoria').insert({
     ator_id: atorId, acao, objeto_tipo: objeto.tipo, objeto_id: objeto.id, motivo: extra.motivo ?? null, antes: extra.antes ?? null, depois: extra.depois ?? null,
   });

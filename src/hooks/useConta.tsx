@@ -49,7 +49,8 @@ export interface Equipe {
   id: string;
   nome: string;
   tipo: 'teams' | 'clemente';
-  funcao: 'gestor' | 'colaborador';
+  /** 'parceiro': Corretor Parceiro da Clemente Assessoria (sempre numa Clemente Team). */
+  funcao: 'gestor' | 'colaborador' | 'parceiro';
 }
 
 interface ContaValor {

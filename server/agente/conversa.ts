@@ -15,6 +15,7 @@ import { usaWhatsapp, type Papel } from '../../src/lib/planos';
 import { pedirAtendente } from '../chatwoot';
 import { AUDIO_MAX_SEGUNDOS, transcreverAudio, type AudioRecebido } from './audio';
 import { falar } from './voz';
+import { ativarParceiroPeloWhatsapp } from '../parceiros';
 import { criarContaDeTeste, LIMITE_TESTE, lerNome, origemDaMensagem, usadosNoTeste } from './teste';
 
 export interface MensagemRecebida {
@@ -156,7 +157,11 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
     return { status: `verificacao_${confirmacao.status}`, respostas: [{ tipo: 'texto', texto: RESPOSTA_CONFIRMACAO[confirmacao.status](config.appUrl) }] };
   }
 
-  const assinante = await identificar(msg.telefone);
+  let assinante = await identificar(msg.telefone);
+  // Corretor parceiro cadastrado pelo time da Clemente só com o telefone: a conta nasce agora e ele é atendido normalmente.
+  if (!assinante && await ativarParceiroPeloWhatsapp(msg.telefone).catch((e) => { console.error('Parceiro: ativação pelo WhatsApp', e); return false; })) {
+    assinante = await identificar(msg.telefone);
+  }
   if (!assinante) {
     // Número sem cadastro: começa o teste grátis (conta de teste com este WhatsApp) e pergunta o nome.
     const tipo = msg.audio ? 'audio' : msg.temAnexo ? 'midia' : 'texto';

@@ -28,12 +28,14 @@ export interface Membro {
   nome: string;
   telefone_e164: string;
   email: string | null;
-  funcao: 'gestor' | 'colaborador';
+  funcao: 'gestor' | 'colaborador' | 'parceiro';
+  /** Só do corretor parceiro: imobiliária em que ele trabalha. */
+  imobiliaria: string | null;
   removido_em: string | null;
   created_at: string;
 }
 
-export interface DadosMembro { nome: string; telefone: string; email?: string | null }
+export interface DadosMembro { nome: string; telefone: string; email?: string | null; imobiliaria?: string | null }
 export interface NovaOrganizacao { nome: string; tipo: TipoOrganizacao; emailGestor: string; telefoneGestor?: string | null; assentosBase: number }
 
 /** Erro com mensagem para mostrar ao gestor (vira 400/409 na rota). */
@@ -52,10 +54,10 @@ export async function vinculoDoUsuario(userId: string): Promise<{ organizacao: O
   return { organizacao: data.organizacao as unknown as Organizacao, funcao: data.funcao as Membro['funcao'] };
 }
 
-/** Usuários ativos (incluindo o gestor) contam no pacote. */
+/** Usuários ativos (incluindo o gestor) contam no pacote. Corretores parceiros ficam de fora (ver ./parceiros.ts). */
 export async function membrosAtivos(orgId: string): Promise<Membro[]> {
   const { data, error } = await db().from('organizacao_membros').select('*')
-    .eq('organizacao_id', orgId).is('removido_em', null).order('funcao').order('nome');
+    .eq('organizacao_id', orgId).is('removido_em', null).neq('funcao', 'parceiro').order('funcao').order('nome');
   if (error) throw new Error(error.message);
   return (data ?? []) as Membro[];
 }
@@ -77,7 +79,7 @@ async function liberada(org: Organizacao) {
 export async function resumoEquipe(org: Organizacao, mes: { de: string; ate: string }) {
   const [membros, { data: calculos }, ativa] = await Promise.all([
     membrosAtivos(org.id),
-    db().from('calculations').select('user_id').eq('organizacao_id', org.id).gte('created_at', mes.de).lt('created_at', mes.ate),
+    db().from('calculations').select('user_id').eq('organizacao_id', org.id).is('parceiro_id', null).gte('created_at', mes.de).lt('created_at', mes.ate),
     liberada(org),
   ]);
   const porUsuario = new Map<string, number>();
@@ -94,7 +96,7 @@ export async function resumoEquipe(org: Organizacao, mes: { de: string; ate: str
 }
 
 /** Conta que já existe com esse e-mail ou com esse WhatsApp confirmado. */
-async function contaExistente(email: string | null, telefone: string) {
+export async function contaExistente(email: string | null, telefone: string) {
   if (email) {
     const { data } = await db().from('profiles').select('id, papel').ilike('email', email).limit(1).maybeSingle();
     if (data) return data as { id: string; papel: string };
@@ -104,7 +106,7 @@ async function contaExistente(email: string | null, telefone: string) {
   return (data as { id: string; papel: string } | null) ?? null;
 }
 
-async function conferirTelefoneLivre(orgId: string, telefone: string, ignorar?: string) {
+export async function conferirTelefoneLivre(orgId: string, telefone: string, ignorar?: string) {
   let q = db().from('organizacao_membros').select('id').eq('organizacao_id', orgId).is('removido_em', null)
     .in('telefone_e164', variantesTelefone(telefone));
   if (ignorar) q = q.neq('id', ignorar);
@@ -119,6 +121,8 @@ async function ligarConta(membroId: string, conta: { id: string; papel: string }
   if (outro) throw new ErroEquipe('Esta pessoa já faz parte de outra equipe. Peça que ela saia de lá antes.', 409);
   const { error } = await db().from('organizacao_membros').update({ user_id: conta.id, updated_at: new Date().toISOString() }).eq('id', membroId);
   if (error) throw new Error(error.message);
+  // Conta de teste do WhatsApp que entra numa equipe vira conta normal: o acesso passa a vir da organização.
+  await db().from('whatsapp_testes').delete().eq('user_id', conta.id);
   return 'ligado' as const;
 }
 
@@ -127,7 +131,7 @@ async function ligarConta(membroId: string, conta: { id: string; papel: string }
  * Com e-mail e sem conta, o Supabase manda um convite para criar a senha. Só com telefone, a pessoa
  * entra na equipe quando criar a conta e confirmar esse WhatsApp.
  */
-export async function incluirMembro(org: Organizacao, dados: DadosMembro) {
+export async function incluirMembro(org: Organizacao, dados: DadosMembro, funcao: 'colaborador' | 'parceiro' = 'colaborador') {
   const email = dados.email?.trim().toLowerCase() || null;
   await conferirTelefoneLivre(org.id, dados.telefone);
   if (email) {
@@ -142,7 +146,8 @@ export async function incluirMembro(org: Organizacao, dados: DadosMembro) {
   }
 
   const { data: membro, error } = await db().from('organizacao_membros').insert({
-    organizacao_id: org.id, nome: dados.nome.trim(), telefone_e164: dados.telefone, email, funcao: 'colaborador',
+    organizacao_id: org.id, nome: dados.nome.trim(), telefone_e164: dados.telefone, email, funcao,
+    imobiliaria: funcao === 'parceiro' ? dados.imobiliaria?.trim() || null : null,
   }).select('*').single();
   if (error) throw new Error(error.message);
 
@@ -162,7 +167,7 @@ export async function incluirMembro(org: Organizacao, dados: DadosMembro) {
   return { id: membro.id as string, entrega, aviso };
 }
 
-async function membroDaOrg(org: Organizacao, membroId: string): Promise<Membro> {
+export async function membroDaOrg(org: Organizacao, membroId: string): Promise<Membro> {
   const { data } = await db().from('organizacao_membros').select('*').eq('id', membroId).eq('organizacao_id', org.id).is('removido_em', null).maybeSingle();
   if (!data) throw new ErroEquipe('Usuário não encontrado na equipe.', 404);
   return data as Membro;
@@ -174,7 +179,10 @@ export async function alterarMembro(org: Organizacao, membroId: string, dados: D
   const email = dados.email?.trim().toLowerCase() || null;
   await conferirTelefoneLivre(org.id, dados.telefone, m.id);
   const { error } = await db().from('organizacao_membros')
-    .update({ nome: dados.nome.trim(), telefone_e164: dados.telefone, email, updated_at: new Date().toISOString() }).eq('id', m.id);
+    .update({
+      nome: dados.nome.trim(), telefone_e164: dados.telefone, email, updated_at: new Date().toISOString(),
+      ...(m.funcao === 'parceiro' ? { imobiliaria: dados.imobiliaria?.trim() || null } : {}),
+    }).eq('id', m.id);
   if (error) throw new Error(error.message);
   if (!m.user_id) {
     const conta = await contaExistente(email, dados.telefone);
@@ -213,7 +221,7 @@ async function nomesDaEquipe(orgId: string) {
 
 /** Orçamentos feitos na equipe num intervalo, com o nome de quem fez. */
 export async function orcamentosDaEquipe(orgId: string, filtro: { de: string; ate: string; membroUserId?: string }) {
-  let q = db().from('calculations').select('*').eq('organizacao_id', orgId)
+  let q = db().from('calculations').select('*').eq('organizacao_id', orgId).is('parceiro_id', null)
     .gte('created_at', filtro.de).lt('created_at', filtro.ate).order('created_at', { ascending: false }).limit(1000);
   if (filtro.membroUserId) q = q.eq('user_id', filtro.membroUserId);
   const [{ data, error }, nomes] = await Promise.all([q, nomesDaEquipe(orgId)]);
@@ -229,7 +237,7 @@ export async function relatorioDaEquipe(org: Organizacao, mes: string, intervalo
   const [{ calculos, nomes }, membros, { data: serie }] = await Promise.all([
     orcamentosDaEquipe(org.id, intervalo),
     membrosAtivos(org.id),
-    db().from('calculations').select('created_at').eq('organizacao_id', org.id).gte('created_at', inicio6).lt('created_at', intervalo.ate),
+    db().from('calculations').select('created_at').eq('organizacao_id', org.id).is('parceiro_id', null).gte('created_at', inicio6).lt('created_at', intervalo.ate),
   ]);
 
   const porUsuario = new Map<string, { nome: string; quantidade: number; site: number; whatsapp: number; totalOrcado: number; ultimo: string | null }>();
@@ -275,7 +283,7 @@ export async function gestaoDoNegocio(intervalo: { de: string; ate: string }) {
   const [{ data: perfis }, { data: orgs }, { data: membros }, { data: calculosMes }, { data: clientes }, { data: assinaturas }] = await Promise.all([
     db().from('profiles').select('papel'),
     db().from('organizacoes').select('*').order('created_at', { ascending: false }),
-    db().from('organizacao_membros').select('organizacao_id, user_id').is('removido_em', null),
+    db().from('organizacao_membros').select('organizacao_id, user_id, funcao').is('removido_em', null),
     db().from('calculations').select('organizacao_id, origem').gte('created_at', intervalo.de).lt('created_at', intervalo.ate),
     db().from('admin_clientes').select('*').order('created_at', { ascending: false }).limit(500),
     db().from('subscriptions').select('user_id, nivel, status, current_period_end').eq('status', 'ativa'),
@@ -293,11 +301,12 @@ export async function gestaoDoNegocio(intervalo: { de: string; ate: string }) {
     : { data: [] };
   const organizacoes = lista.map((o) => {
     const dono = (donos ?? []).find((d) => d.id === o.dono_id);
-    const doGrupo = (membros ?? []).filter((m) => m.organizacao_id === o.id);
+    const doGrupo = (membros ?? []).filter((m) => m.organizacao_id === o.id && m.funcao !== 'parceiro');
     return {
       id: o.id, nome: o.nome, tipo: o.tipo, assentosBase: o.assentos_base, criadaEm: o.created_at,
       gestor: dono?.full_name || dono?.email || '—',
       usuarios: doGrupo.length,
+      parceiros: (membros ?? []).filter((m) => m.organizacao_id === o.id && m.funcao === 'parceiro').length,
       pendentes: doGrupo.filter((m) => !m.user_id).length,
       orcamentosMes: (calculosMes ?? []).filter((c) => c.organizacao_id === o.id).length,
       mensalidade: mensalidade(o, doGrupo.length),

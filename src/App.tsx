@@ -19,6 +19,7 @@ const AdminGestao = lazy(() => import('@/pages/app/AdminGestao'));
 const AdminUsuarios = lazy(() => import('@/pages/app/AdminUsuarios'));
 const AdminEquipes = lazy(() => import('@/pages/app/AdminEquipes'));
 const Equipe = lazy(() => import('@/pages/app/Equipe'));
+const Parceiros = lazy(() => import('@/pages/app/Parceiros'));
 const Doacao = lazy(() => import('@/pages/app/Doacao'));
 const Historico = lazy(() => import('@/pages/app/Historico'));
 const Agente = lazy(() => import('@/pages/app/Agente'));
@@ -81,6 +82,7 @@ export default function App() {
               <Route path="admin/usuarios" element={<SoAdmin><AdminUsuarios /></SoAdmin>} />
               <Route path="admin/equipes" element={<SoAdmin><AdminEquipes /></SoAdmin>} />
               <Route path="equipe" element={<Equipe />} />
+              <Route path="parceiros" element={<Parceiros />} />
               <Route path="doacao" element={<Doacao />} />
               <Route path="historico" element={<Historico />} />
               <Route path="agente" element={<Agente />} />
