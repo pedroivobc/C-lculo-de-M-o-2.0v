@@ -28,15 +28,15 @@ export async function gerarJpegOrcamento(r: Resultado, meta: MetaOrcamento, esti
     t.push(`<g transform="translate(${P} ${y})">${lockupOrcaiSvg(64)}</g>`);
   }
   t.push(`<text x="${D}" y="${y + 22}" ${FONTE} font-size="18" font-weight="700" letter-spacing="2" fill="${SUAVE}" text-anchor="end">ORÇAMENTO</text>`);
-  t.push(`<text x="${D}" y="${y + 58}" ${FONTE} font-size="34" font-weight="700" fill="${TINTA}" text-anchor="end">Nº ${esc(meta.numero.replace('#', ''))}</text>`);
-  t.push(`<text x="${D}" y="${y + 88}" ${FONTE} font-size="20" fill="${SUAVE}" text-anchor="end">${meta.data.toLocaleDateString('pt-BR')}</text>`);
+  if (!estilo.semNumero) t.push(`<text x="${D}" y="${y + 58}" ${FONTE} font-size="34" font-weight="700" fill="${TINTA}" text-anchor="end">Nº ${esc(meta.numero.replace('#', ''))}</text>`);
+  t.push(`<text x="${D}" y="${y + (estilo.semNumero ? 52 : 88)}" ${FONTE} font-size="20" fill="${SUAVE}" text-anchor="end">${meta.data.toLocaleDateString('pt-BR')}</text>`);
   y += Math.max(alturaLogo, 92);
   if (estilo.personalizado || estilo.logoPng) {
     y += estilo.logoPng ? 46 : 34;
-    t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="24" font-weight="700" fill="${TINTA}">${esc(estilo.cabecalho)}</text>`);
+    if (estilo.cabecalho) t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="24" font-weight="700" fill="${TINTA}">${esc(estilo.cabecalho)}</text>`);
     const contato = linhaDeContato(estilo);
     if (contato) {
-      y += 30;
+      if (estilo.cabecalho) y += 30;
       t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="19" fill="${TEXTO}">${esc(contato)}</text>`);
     }
   }

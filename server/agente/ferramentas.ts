@@ -141,7 +141,7 @@ const resumo = (r: Resultado, seq: number) => ({
 /** Anexa o orçamento no formato escolhido pelo assinante (PDF ou imagem JPEG). */
 async function anexar(ctx: Contexto, salvo: Parameters<typeof arquivoDoOrcamento>[0], formato?: 'pdf' | 'jpeg') {
   const arquivo = await arquivoDoOrcamento(salvo, ctx.configuracao.estilo, formato);
-  ctx.anexos.push({ tipo: 'documento', ...arquivo, legenda: `Orçamento ${numeroCalculo(salvo.seq)}` });
+  ctx.anexos.push({ tipo: 'documento', ...arquivo, legenda: ctx.configuracao.estilo.semNumero ? 'Orçamento' : `Orçamento ${numeroCalculo(salvo.seq)}` });
 }
 
 /** Executa uma ferramenta e devolve o resultado que volta para o modelo. Arquivos vão para ctx.anexos. */

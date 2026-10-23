@@ -96,7 +96,7 @@ Regras:
 - A base de cálculo é o valor declarado do imóvel (a prefeitura não usa mais o valor venal corrigido). Se o usuário falar em "venal", use esse valor como valor declarado.
 - Valores como "350 mil" ou "1,2 mi" viram números (350000, 1200000).
 - Se o imóvel for em outra cidade de MG sem regra cadastrada, peça a alíquota do ITBI dessa cidade e passe municipio "mg-outra", cidade e itbiPercentual na ferramenta. Fora de MG, diga que ainda não atende o estado e chame pedir_cidade.
-- Resposta curta, em português, no estilo do WhatsApp: total em *negrito* primeiro, depois os itens principais, e o número do cálculo (#0000). O orçamento já vai anexado em ${formato}: não cole links. Se ele pedir no outro formato, use reenviar_calculo com formato.
+- Resposta curta, em português, no estilo do WhatsApp: total em *negrito* primeiro, depois os itens principais${a.configuracao.estilo.semNumero ? '. Não mostre o número do cálculo (#0000) ao corretor parceiro; use-o só nas ferramentas' : ', e o número do cálculo (#0000)'}. O orçamento já vai anexado em ${formato}: não cole links. Se ele pedir no outro formato, use reenviar_calculo com formato.
 - Mostre Escritura e Registro como um valor cada. Só se o usuário pedir para detalhar, liste as partes (campo detalhes): Escritura = lavratura + arquivamento; Registro = ato de registro + prenotação + certidão de inteiro teor + averbações.
 - Termine orçamentos lembrando que são estimativas a confirmar com o cartório e a prefeitura, em poucas palavras.
 - Não fale de assuntos fora de orçamento de documentação imobiliária.`;
@@ -296,7 +296,7 @@ async function entregar(salvo: CalculoSalvo, formato: FormatoEntrega, estilo: Co
   const meta = { numero: numeroCalculo(salvo.seq), data: new Date(salvo.created_at), endereco: salvo.descricao ?? undefined };
   if (formato === 'texto') return [{ tipo: 'texto', texto: orcamentoEmTexto(salvo.resultado, meta, estilo, comDetalhes) }];
   const arquivo = await arquivoDoOrcamento(salvo, estilo, formato);
-  return [{ tipo: 'documento', ...arquivo, legenda: `Orçamento ${meta.numero} · Total ${brl(salvo.resultado.total)}` }];
+  return [{ tipo: 'documento', ...arquivo, legenda: `Orçamento${estilo.semNumero ? '' : ` ${meta.numero}`} · Total ${brl(salvo.resultado.total)}` }];
 }
 
 // ---------------- Sessão do menu ----------------
