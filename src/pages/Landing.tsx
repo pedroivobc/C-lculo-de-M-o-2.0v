@@ -16,7 +16,9 @@ const ATOS: { id: Ato; rotulo: string; titulo: string; nota: string }[] = [
 ];
 
 const CIDADES = Object.values(MUNICIPIOS);
-const NOMES_CIDADES = CIDADES.map((m) => m.nome).join(' e ');
+const NOMES_MG = CIDADES.filter((m) => !m.piloto).map((m) => m.nome).join(' e ');
+const NOMES_PILOTO = CIDADES.filter((m) => m.piloto).map((m) => m.nome).join(', ');
+const NOMES_CIDADES = `${NOMES_MG} e, em teste piloto, ${NOMES_PILOTO}`;
 
 /** Simulação da home: as mesmas fórmulas e tabelas do app, com premissas fixas e explicadas. */
 function simular(ato: Ato, municipio: string, valor: number): Resultado | null {
@@ -80,7 +82,7 @@ function PedirCidade() {
       }}
     >
       <h3>Quero na minha cidade</h3>
-      <label>Cidade em MG
+      <label>Sua cidade
         <input required minLength={2} value={cidade} onChange={(e) => setCidade(e.target.value)} placeholder="Ex.: Barbacena" />
       </label>
       <label>Seu WhatsApp
@@ -171,7 +173,7 @@ export default function Landing() {
           <h1>O cliente perguntou.<br />Já está <em>na mão.</em><span className="spark" aria-hidden="true">✳</span></h1>
           <p>Orçamento de ITBI, escritura e registro para corretores.<br className="desktop" /> Pelo site ou no WhatsApp, pronto para apresentar ao cliente.</p>
           <a className="button yellow" href="#simular">Simular meu orçamento <span aria-hidden="true">↗</span></a>
-          <div className="hero-caption">Sem cadastro para simular · {NOMES_CIDADES} / MG</div>
+          <div className="hero-caption">Sem cadastro para simular · {NOMES_MG} / MG e capitais em teste piloto</div>
           <div className="hero-scene">
             <div className="photo">
               <img
@@ -215,7 +217,7 @@ export default function Landing() {
             <form className="simulator-form" onSubmit={(e) => e.preventDefault()}>
               <label>Cidade
                 <select value={municipio} onChange={(e) => setMunicipio(e.target.value)}>
-                  {CIDADES.map((m) => <option key={m.id} value={m.id}>{m.nome} / {m.uf}</option>)}
+                  {CIDADES.map((m) => <option key={m.id} value={m.id}>{m.nome} / {m.uf}{m.piloto ? ' · piloto' : ''}</option>)}
                 </select>
               </label>
               <label>Valor do imóvel (R$)
@@ -230,7 +232,7 @@ export default function Landing() {
                 </div>
               </fieldset>
               <p className="calc-assumptions">{atual.nota} Certidões e honorários: valores de exemplo, que você ajusta no aplicativo.</p>
-              <p className="calc-source">Cálculo com a tabela de emolumentos de Minas Gerais e as regras de ITBI de cada cidade, as mesmas do aplicativo. Estimativa; os valores finais devem ser confirmados com cartório e prefeitura.</p>
+              <p className="calc-source">Cálculo com a tabela de emolumentos do estado e as regras de ITBI de cada cidade, as mesmas do aplicativo. Nas cidades em teste piloto, o cartório entra pelo ato principal (sem prenotação, certidões e selos) e a doação ainda não está disponível. Estimativa; os valores finais devem ser confirmados com cartório e prefeitura.</p>
             </form>
             <article className="live-result" aria-live="polite">
               <div className="result-top">
@@ -238,7 +240,7 @@ export default function Landing() {
                 <span>Orçamento de {atual.titulo}</span>
                 <small>ESTIMATIVA</small>
               </div>
-              <p>{MUNICIPIOS[municipio]?.nome} / MG · Imóvel de {brl(centavos / 100)}</p>
+              <p>{MUNICIPIOS[municipio]?.nome} / {MUNICIPIOS[municipio]?.uf}{MUNICIPIOS[municipio]?.piloto ? ' · teste piloto' : ''} · Imóvel de {brl(centavos / 100)}</p>
               {resultado ? (
                 <>
                   <div>
@@ -263,7 +265,7 @@ export default function Landing() {
                   </details>
                 </>
               ) : (
-                <div className="live-total"><span>Total estimado</span><strong>Informe um valor válido</strong></div>
+                <div className="live-total"><span>Total estimado</span><strong>{ato === 'doacao' && MUNICIPIOS[municipio]?.piloto ? 'Doação ainda não está no piloto desta cidade' : 'Informe um valor válido'}</strong></div>
               )}
               <Link className="button" to="/cadastro">Criar conta e salvar orçamentos ↗</Link>
               <small>Esta simulação é gratuita. O PDF personalizado e o agente no WhatsApp estão no plano Pró.</small>
@@ -427,11 +429,11 @@ export default function Landing() {
 
         <section className="cities-section" id="cidades">
           <div>
-            <div className="eyebrow">MINAS GERAIS PRIMEIRO</div>
+            <div className="eyebrow">MINAS GERAIS E CAPITAIS EM PILOTO</div>
             <h2>A próxima cidade<br /><em>é você que escolhe.</em></h2>
-            <p>A tabela de cartório de MG já vale para o estado inteiro. Para abrir uma cidade nova, falta cadastrar a regra de ITBI da prefeitura. Vamos pela ordem dos pedidos.</p>
+            <p>A tabela de cartório de MG já vale para o estado inteiro. Fora de MG, as capitais abaixo estão em teste piloto, com a tabela de cartório do estado e o ITBI da prefeitura. Vamos pela ordem dos pedidos.</p>
             <ul className="city-list">
-              {CIDADES.map((m) => <li key={m.id}><span aria-hidden="true" /> <strong>{m.nome}</strong> · disponível</li>)}
+              {CIDADES.map((m) => <li key={m.id}><span aria-hidden="true" /> <strong>{m.nome}</strong> / {m.uf} · {m.piloto ? 'teste piloto' : 'disponível'}</li>)}
             </ul>
           </div>
           <PedirCidade />

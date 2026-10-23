@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { obterMunicipio, camposLocalidade, percentual } from './municipios';
+import { obterMunicipio, camposLocalidade, percentual, type Municipio } from './municipios';
 import { MG, aliquotaItcd } from './uf';
 import { arquivamento, lavratura, precoFolha } from './notas';
 import { linhaRegistro } from './registro';
+import { atoCartorio, taxaTransmissao, type UfPiloto } from './cartorios';
 import { Detalhe, Linha, Resultado, somar } from './tipos';
 
 const valor = z.coerce.number().nonnegative();
@@ -52,11 +53,55 @@ export function linhaEscritura(lavraturas: { rotulo: string; base: number }[], f
   };
 }
 
+const somaDetalhes = (d: Detalhe[]) => Math.round(d.reduce((s, x) => s + x.valor, 0) * 100) / 100;
+const NAO_INCLUI = 'Não inclui prenotação, certidões e selos do cartório';
+
+/**
+ * Linha "Escritura" pela tabela do estado da cidade. Em MG, lavratura + arquivamento (./notas.ts);
+ * nas cidades do piloto, a lavratura pela tabela do estado e, no PR, o Funrejus sobre cada transmissão (`transmissoes`).
+ */
+export function linhaEscrituraDe(m: Municipio, lavraturas: { rotulo: string; base: number }[], folhas: number, transmissoes: number[] = []): Linha {
+  if (m.uf === 'MG') return linhaEscritura(lavraturas, folhas, m.issCartorio);
+  const uf = m.uf as UfPiloto;
+  const detalhes: Detalhe[] = lavraturas.map((l) => {
+    const a = atoCartorio(uf, 'notas', l.base, m.issCartorio);
+    return { rotulo: l.rotulo, valor: a.valor, nota: `${a.nota} · base ${brl(l.base)}` };
+  });
+  for (const b of transmissoes) {
+    const t = taxaTransmissao(uf, b);
+    if (t) detalhes.push({ rotulo: 'Funrejus', valor: t.valor, nota: `${t.nota} · base ${brl(b)}` });
+  }
+  return { rotulo: 'Escritura', valor: somaDetalhes(detalhes), origem: 'uf', nota: `Lavratura · tabela de ${m.uf} · ${NAO_INCLUI}`, detalhes };
+}
+
+/**
+ * Linha "Registro" pela tabela do estado da cidade. Em MG, o detalhamento completo de ./registro.ts;
+ * nas cidades do piloto, os atos com valor pela tabela do estado (e o Funrejus quando não houve escritura).
+ */
+export function linhaRegistroDe(
+  m: Municipio,
+  atos: { rotulo: string; base: number; cancelamento?: boolean }[],
+  opcoes: { rotulo?: string; reducao?: number; notaReducao?: string; folhas?: number; transmissoes?: number[] } = {},
+): Linha {
+  if (m.uf === 'MG') return linhaRegistro(atos, { iss: m.issCartorio, ...opcoes });
+  const uf = m.uf as UfPiloto;
+  const reducao = opcoes.reducao ?? 0;
+  const detalhes: Detalhe[] = atos.map((a) => {
+    const r = atoCartorio(uf, 'registro', a.base, m.issCartorio, reducao);
+    const nota = reducao && opcoes.notaReducao ? r.nota.replace(/redução de .*$/, opcoes.notaReducao) : r.nota;
+    return { rotulo: a.rotulo, valor: r.valor, nota: `${nota} · base ${brl(a.base)}` };
+  });
+  for (const b of opcoes.transmissoes ?? []) {
+    const t = taxaTransmissao(uf, b);
+    if (t) detalhes.push({ rotulo: 'Funrejus', valor: t.valor, nota: `${t.nota} · base ${brl(b)}` });
+  }
+  return { rotulo: opcoes.rotulo ?? 'Registro', valor: somaDetalhes(detalhes), origem: 'uf', nota: `Registro de Imóveis · tabela de ${m.uf} · ${NAO_INCLUI}`, detalhes };
+}
+
 /** Escrituras de compra e venda e de doação: ITBI/ITCD, escritura (lavratura + arquivamento) e registro. */
 export function calcularEscritura(dados: EntradaEscritura): Resultado {
   const e = entradaEscritura.parse(dados);
   const m = obterMunicipio(e.municipio, e);
-  const iss = m.issCartorio;
   const linhas: Linha[] = [];
   let bases: number[] = [];
 
@@ -68,8 +113,8 @@ export function calcularEscritura(dados: EntradaEscritura): Resultado {
       const base = e.valorDeclarado;
       bases = [base];
       itbi(base);
-      linhas.push(linhaEscritura([{ rotulo: 'Lavratura', base }], e.folhas, iss));
-      linhas.push(linhaRegistro([{ rotulo: 'Ato de registro · compra e venda', base }], { iss }));
+      linhas.push(linhaEscrituraDe(m, [{ rotulo: 'Lavratura', base }], e.folhas, [base]));
+      linhas.push(linhaRegistroDe(m, [{ rotulo: 'Ato de registro · compra e venda', base }]));
       break;
     }
     case 'interveniencia': {
@@ -77,8 +122,8 @@ export function calcularEscritura(dados: EntradaEscritura): Resultado {
       const b2 = e.valorDeclarado2;
       bases = [b1, b2];
       itbi(b1, '1º ato'); itbi(b2, '2º ato');
-      linhas.push(linhaEscritura([{ rotulo: 'Lavratura · 1º ato', base: b1 }, { rotulo: 'Lavratura · 2º ato', base: b2 }], e.folhas, iss));
-      linhas.push(linhaRegistro([{ rotulo: 'Ato de registro · 1º ato', base: b1 }, { rotulo: 'Ato de registro · 2º ato', base: b2 }], { iss }));
+      linhas.push(linhaEscrituraDe(m, [{ rotulo: 'Lavratura · 1º ato', base: b1 }, { rotulo: 'Lavratura · 2º ato', base: b2 }], e.folhas, [b1, b2]));
+      linhas.push(linhaRegistroDe(m, [{ rotulo: 'Ato de registro · 1º ato', base: b1 }, { rotulo: 'Ato de registro · 2º ato', base: b2 }]));
       break;
     }
     case 'compra_vinculo': {
@@ -86,14 +131,14 @@ export function calcularEscritura(dados: EntradaEscritura): Resultado {
       const bv = e.valorVinculo;
       bases = [bc, bv];
       itbi(bc, 'compra');
-      linhas.push(linhaEscritura([{ rotulo: 'Lavratura · compra', base: bc }, { rotulo: 'Lavratura · vínculo', base: bv }], e.folhas, iss));
-      linhas.push(linhaRegistro([{ rotulo: 'Ato de registro · compra', base: bc }, { rotulo: 'Ato de registro · vínculo', base: bv }], { iss }));
+      linhas.push(linhaEscrituraDe(m, [{ rotulo: 'Lavratura · compra', base: bc }, { rotulo: 'Lavratura · vínculo', base: bv }], e.folhas, [bc]));
+      linhas.push(linhaRegistroDe(m, [{ rotulo: 'Ato de registro · compra', base: bc }, { rotulo: 'Ato de registro · vínculo', base: bv }]));
       break;
     }
     case 'doacao_simples':
     case 'doacao_usufruto':
     case 'renuncia_usufruto': {
-      linhas.push(...atosDeDoacao(e.subtipo, Math.max(e.valorAtribuido, e.avaliacaoFazenda), e.folhas, iss, (b) => { bases = b; }));
+      linhas.push(...atosDeDoacao(m, e.subtipo, Math.max(e.valorAtribuido, e.avaliacaoFazenda), e.folhas, (b) => { bases = b; }));
       break;
     }
   }
@@ -101,17 +146,20 @@ export function calcularEscritura(dados: EntradaEscritura): Resultado {
   linhas.push({ rotulo: 'Certidões', valor: e.certidoes, origem: 'usuario' });
   linhas.push({ rotulo: 'Honorários', valor: e.honorarios, origem: 'usuario' });
 
-  return { tipo: 'escritura', subtipo: e.subtipo, municipio: m.id, municipioNome: m.nome, bases, linhas, total: somar(linhas) };
+  return { tipo: 'escritura', subtipo: e.subtipo, municipio: m.id, municipioNome: m.nome, uf: m.uf, piloto: m.piloto, bases, linhas, total: somar(linhas) };
 }
 
 /** Atos de doação compartilhados por Escrituras e Doação: imposto, escritura e registro. */
 export function atosDeDoacao(
+  m: Municipio,
   subtipo: 'doacao_simples' | 'doacao_usufruto' | 'renuncia_usufruto',
   base: number,
   folhas: number,
-  iss: number,
   definirBases: (b: number[]) => void,
 ): Linha[] {
+  // O ITCD é estadual e só o de MG está cadastrado.
+  if (m.uf !== 'MG') throw new Error(`Doação ainda não está disponível em ${m.nome} (${m.uf}): no piloto, o ITCD de ${m.uf} ainda não entrou. Escritura e financiamento já funcionam.`);
+  const iss = m.issCartorio;
   if (subtipo === 'doacao_simples') {
     const aliq = aliquotaItcd(base);
     definirBases([base]);

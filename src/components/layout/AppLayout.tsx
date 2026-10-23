@@ -95,21 +95,23 @@ const itemMenu = ({ isActive }: { isActive: boolean }) =>
 /** Cidade do assinante (definida no cadastro); troca em Conta. */
 function useCidade() {
   const { perfil } = useConta();
-  const nome = perfil?.municipio_padrao === MUNICIPIO_OUTRA ? perfil.cidade_nome ?? 'Sua cidade' : MUNICIPIOS[perfil?.municipio_padrao ?? MUNICIPIO_PADRAO]?.nome ?? 'Juiz de Fora';
+  const m = MUNICIPIOS[perfil?.municipio_padrao ?? MUNICIPIO_PADRAO];
+  const nome = perfil?.municipio_padrao === MUNICIPIO_OUTRA ? perfil.cidade_nome ?? 'Sua cidade' : m?.nome ?? 'Juiz de Fora';
+  const uf = `${m?.uf ?? 'MG'}${m?.piloto ? ' · piloto' : ''}`;
   const pct = perfil?.itbi_percentual != null ? Number(perfil.itbi_percentual)
     : (MUNICIPIOS[perfil?.municipio_padrao ?? MUNICIPIO_PADRAO]?.itbi.aliquota ?? 0) * 100;
-  return { nome, itbi: `${String(pct).replace('.', ',')}%` };
+  return { nome, uf, itbi: `${String(pct).replace('.', ',')}%` };
 }
 
 function SeletorMunicipio({ className }: { className?: string }) {
-  const { nome, itbi } = useCidade();
+  const { nome, uf, itbi } = useCidade();
   return (
     <div className={cn('flex flex-col gap-1.5 text-xs font-bold text-suave', className)}>
       Município
       <Link to="/app/conta" className="flex min-h-11 items-center gap-2 rounded-[10px] border border-borda bg-white px-3 no-underline hover:border-tinta" aria-label={`Município: ${nome}, ITBI ${itbi}. Alterar em Conta`}>
         <span aria-hidden="true" className="h-0 w-0 shrink-0 border-x-[6px] border-b-[10px] border-x-transparent border-b-minas" />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-sm font-bold text-tinta">{nome} · MG</span>
+          <span className="truncate text-sm font-bold text-tinta">{nome} · {uf}</span>
           <span className="text-[11px] font-semibold text-suave">ITBI {itbi}</span>
         </span>
         <span className="text-xs font-bold text-acao">Alterar</span>

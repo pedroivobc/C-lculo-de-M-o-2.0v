@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { brl, type Resultado } from '../src/lib/calc';
+import { avisoDasTabelas, brl, type Resultado } from '../src/lib/calc';
 import { config } from './config';
 import type { Estilo } from './estilo';
 import { ESTILO_PADRAO } from './pdf';
@@ -90,7 +90,7 @@ export async function gerarJpegOrcamento(r: Resultado, meta: MetaOrcamento, esti
   y += 112 + 56;
 
   // Rodapé.
-  t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="19" fill="${SUAVE}">Valores estimados com as tabelas vigentes de MG.</text>`);
+  t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="19" fill="${SUAVE}">${avisoDasTabelas(r)}</text>`);
   y += 28;
   t.push(`<text x="${P}" y="${y}" ${FONTE} font-size="19" fill="${SUAVE}">Confirme com o cartório e a prefeitura antes do ato.</text>`);
   if (estilo.personalizado) {
