@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Download, FileDown, Pencil, Trash2, UserPlus, X } from 'lucide-react';
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
+import { Download, FileDown, FileSpreadsheet, Pencil, Trash2, Upload, UserPlus, X } from 'lucide-react';
 import { api } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import { NOME_TIPO, abrirLink } from '@/hooks/useCalculos';
 import { useConta } from '@/hooks/useConta';
 import { brl, dataHora, numeroCalculo, telefoneBonito } from '@/lib/formato';
@@ -331,6 +332,7 @@ function CadastroParceiros({ lista, aoMudar }: { lista: Lista; aoMudar: () => vo
             </div>
           </div>
         </Cartao>
+        <ImportarPlanilha aoMudar={aoMudar} />
         <Cartao titulo="Como funciona">
           <ul className="flex list-disc flex-col gap-1.5 pl-5 text-suave">
             <li>O parceiro não paga nada e não passa pelo teste grátis.</li>
@@ -340,5 +342,90 @@ function CadastroParceiros({ lista, aoMudar }: { lista: Lista; aoMudar: () => vo
         </Cartao>
       </div>
     </div>
+  );
+}
+
+interface Importacao {
+  incluidos: number;
+  jaCadastrados: number;
+  erros: number;
+  linhas: { linha: number; nome: string; situacao: 'incluido' | 'ja_cadastrado' | 'erro'; mensagem?: string }[];
+}
+
+/** Lê o arquivo escolhido como base64 (sem o prefixo data:). */
+const paraBase64 = (f: File) => new Promise<string>((ok, erro) => {
+  const r = new FileReader();
+  r.onload = () => ok(String(r.result).split(',')[1] ?? '');
+  r.onerror = () => erro(new Error('Não foi possível ler o arquivo.'));
+  r.readAsDataURL(f);
+});
+
+/** Vários parceiros de uma vez: baixa a planilha modelo, preenche e envia. */
+function ImportarPlanilha({ aoMudar }: { aoMudar: () => void }) {
+  const [ocupado, setOcupado] = useState<'modelo' | 'enviar' | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [r, setR] = useState<Importacao | null>(null);
+
+  async function baixarModelo() {
+    setOcupado('modelo'); setErro(null);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const resp = await fetch('/api/parceiros/modelo', { headers: { Authorization: `Bearer ${data.session?.access_token ?? ''}` } });
+      if (!resp.ok) throw new Error((await resp.json().catch(() => ({}))).erro ?? 'Não foi possível baixar o modelo.');
+      const url = URL.createObjectURL(await resp.blob());
+      const a = document.createElement('a');
+      a.href = url; a.download = 'modelo-corretores-parceiros.xlsx'; a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : String(e));
+    } finally { setOcupado(null); }
+  }
+
+  async function enviar(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    setOcupado('enviar'); setErro(null); setR(null);
+    try {
+      setR(await api<Importacao>('/api/parceiros/importar', { corpo: { arquivo: await paraBase64(f) } }));
+      aoMudar();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : String(err));
+    } finally { setOcupado(null); }
+  }
+
+  const problemas = r?.linhas.filter((l) => l.situacao !== 'incluido') ?? [];
+  return (
+    <Cartao titulo="Cadastrar vários de uma vez">
+      <div className="flex flex-col gap-4">
+        <p className="text-suave">Baixe a planilha modelo, preencha uma linha por parceiro (nome, imobiliária, WhatsApp e, se quiser, e-mail) e envie aqui.</p>
+        <div className="flex flex-wrap gap-2">
+          <Botao variante="secundario" onClick={baixarModelo} disabled={!!ocupado}>
+            <FileSpreadsheet className="size-5" aria-hidden="true" />{ocupado === 'modelo' ? 'Baixando…' : 'Baixar planilha modelo'}
+          </Botao>
+          <label className={cn('inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-[10px] border border-dashed border-borda bg-white px-4 font-bold hover:border-tinta', ocupado && 'pointer-events-none opacity-60')}>
+            <Upload className="size-5" aria-hidden="true" />{ocupado === 'enviar' ? 'Cadastrando…' : 'Enviar planilha preenchida'}
+            <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="sr-only" onChange={enviar} disabled={!!ocupado} />
+          </label>
+        </div>
+        {erro && <Aviso tom="vermelho">{erro}</Aviso>}
+        {r && (
+          <Aviso tom={r.erros ? 'amarelo' : 'verde'}>
+            {r.incluidos} parceiro{r.incluidos === 1 ? '' : 's'} cadastrado{r.incluidos === 1 ? '' : 's'}
+            {r.jaCadastrados ? `, ${r.jaCadastrados} já estava${r.jaCadastrados === 1 ? '' : 'm'} cadastrado${r.jaCadastrados === 1 ? '' : 's'}` : ''}
+            {r.erros ? ` e ${r.erros} linha${r.erros === 1 ? '' : 's'} com problema. Corrija e envie a planilha de novo: quem já entrou é ignorado.` : '.'}
+          </Aviso>
+        )}
+        {problemas.length > 0 && (
+          <ul className="flex max-h-60 flex-col gap-1.5 overflow-y-auto text-sm">
+            {problemas.map((l) => (
+              <li key={l.linha} className="rounded-lg bg-nevoa px-3 py-2">
+                <strong>Linha {l.linha}{l.nome ? ` · ${l.nome}` : ''}:</strong> {l.situacao === 'ja_cadastrado' ? 'já cadastrado' : l.mensagem}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </Cartao>
   );
 }
