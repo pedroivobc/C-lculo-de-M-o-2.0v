@@ -85,7 +85,7 @@ function instrucoes(a: Assinante) {
     : `${MUNICIPIOS[l.municipio]?.nome ?? l.municipio}${l.itbiPercentual !== undefined ? ` (ITBI de ${l.itbiPercentual}% informado pelo assinante)` : ''}`;
   const atendidos = Object.values(MUNICIPIOS).map((m) => `${m.nome} (${m.uf})`).join(', ');
   const formato = a.configuracao.estilo.formato === 'jpeg' ? 'imagem (JPEG)' : 'PDF';
-  return `Você é o agente do ${config.marca} no WhatsApp. Ajuda corretores, despachantes e assessorias a orçar custos de documentação de imóveis.
+  return `Você é o agente do ${config.marca} no WhatsApp. Ajuda corretores, despachantes e assessorias a orçar a documentação de imóveis (ITBI, escritura e registro).
 Hoje é ${new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}. Assinante: ${a.nome ?? 'sem nome'}. Município padrão: ${cidade}.
 Municípios com regra da prefeitura cadastrada: ${atendidos}. Os emolumentos de cartório seguem a tabela de MG.
 Os cálculos usam a cidade do assinante automaticamente; não pergunte a cidade se ele não falar de outra.
@@ -99,6 +99,7 @@ Regras:
 - Resposta curta, em português, no estilo do WhatsApp: total em *negrito* primeiro, depois os itens principais${a.configuracao.estilo.semNumero ? '. Não mostre o número do cálculo (#0000) ao corretor parceiro; use-o só nas ferramentas' : ', e o número do cálculo (#0000)'}. O orçamento já vai anexado em ${formato}: não cole links. Se ele pedir no outro formato, use reenviar_calculo com formato.
 - Mostre Escritura e Registro como um valor cada. Só se o usuário pedir para detalhar, liste as partes (campo detalhes): Escritura = lavratura + arquivamento; Registro = ato de registro + prenotação + certidão de inteiro teor + averbações.
 - Termine orçamentos lembrando que são estimativas a confirmar com o cartório e a prefeitura, em poucas palavras.
+- Nunca use a palavra "custo" (nem "custos"): diga "total estimado", "valor" ou "orçamento".
 - Não fale de assuntos fora de orçamento de documentação imobiliária.`;
 }
 
