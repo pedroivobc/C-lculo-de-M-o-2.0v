@@ -30,7 +30,7 @@ interface Visao {
 
 type Formato = 'brl' | 'num' | 'pct';
 const PERIODOS = [7, 30, 90, 365];
-const ORDEM_PAPEIS: Papel[] = ['teams', 'clemente', 'pro', 'usuario', 'trial', 'admin'];
+const ORDEM_PAPEIS: Papel[] = ['teams', 'clemente', 'parceiro', 'pro', 'usuario', 'trial', 'admin'];
 const NOME_GRAN = { dia: 'por dia', semana: 'por semana', mes: 'por mês' };
 
 const numero = (n: number) => n.toLocaleString('pt-BR');

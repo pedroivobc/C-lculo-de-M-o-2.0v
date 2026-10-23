@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { brl, calcular, linhaRegistro, textoDasBases } from './index';
+import { brl, calcular, linhaRegistro, textoDasBases, valorTransacionado } from './index';
 
 // Casos de referência. Registro conferido com o relatório final do 3º RI de Juiz de Fora (protocolo 229.352).
 describe('cálculos de referência', () => {
@@ -201,5 +201,15 @@ describe('base de cálculo com o nome de cada parte', () => {
   it('base única sai só com o valor', () => {
     const r = calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 350000 });
     expect(textoDasBases(r, brl)).toBe(brl(350000));
+  });
+});
+
+describe('valor transacionado (painel dos parceiros)', () => {
+  it('é o valor do imóvel na escritura e no financiamento', () => {
+    expect(valorTransacionado(calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: 350000 }))).toBe(350000);
+    expect(valorTransacionado(calcular('financiamento_caixa', { modalidade: 'SBPE', valorDeclarado: 400000, valorFinanciado: 300000 }))).toBe(400000);
+  });
+  it('soma as duas transmissões na interveniência', () => {
+    expect(valorTransacionado(calcular('escritura', { subtipo: 'interveniencia', valorDeclarado1: 200000, valorDeclarado2: 260000 }))).toBe(460000);
   });
 });

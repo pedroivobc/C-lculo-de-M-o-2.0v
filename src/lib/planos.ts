@@ -117,8 +117,8 @@ export function precoEquipe(usuarios: number, assentosBase: number = EQUIPE.asse
 /** Plano interno do administrador: acesso completo a tudo, sem cobrança e sem data para acabar (não está à venda). */
 export const UNLIMITED = { nome: 'Unlimited', resumo: 'Acesso completo a tudo, sem cobrança e sem data para acabar' };
 
-/** Os seis perfis de usuário. `usuario` é o Starter (nome antigo no banco). */
-export type Papel = 'admin' | 'teams' | 'usuario' | 'pro' | 'trial' | 'clemente';
+/** Os perfis de usuário. `usuario` é o Starter (nome antigo no banco). */
+export type Papel = 'admin' | 'teams' | 'usuario' | 'pro' | 'trial' | 'clemente' | 'parceiro';
 export const NOME_PAPEL: Record<Papel, string> = {
   admin: 'Administrador',
   teams: 'Teams',
@@ -126,6 +126,7 @@ export const NOME_PAPEL: Record<Papel, string> = {
   pro: 'Pró',
   trial: 'Trial',
   clemente: 'Clemente Team',
+  parceiro: 'Corretor Parceiro',
 };
 
 /** Starter não usa o agente do WhatsApp; os demais perfis usam. */

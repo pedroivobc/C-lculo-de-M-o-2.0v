@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { config } from './config';
 import { supabaseAdmin } from './supabase';
 import { vinculoDoUsuario, type Organizacao } from './equipe';
+import { clementeDoTime } from './parceiros';
 
 declare module 'express-serve-static-core' {
   interface Request { userId?: string; organizacao?: Organizacao }
@@ -52,6 +53,17 @@ export async function exigirGestor(req: Request, res: Response, next: NextFuncti
   const v = await vinculoDoUsuario(req.userId!).catch(() => null);
   if (!v || v.funcao !== 'gestor') return res.status(403).json({ erro: 'Área restrita ao gestor da equipe.' });
   req.organizacao = v.organizacao;
+  next();
+}
+
+/**
+ * Rotas do Corretor Parceiro: time da Clemente (gestor ou colaborador da Clemente Team) ou administrador
+ * (usar depois de exigirUsuario). Deixa a Clemente Team em req.organizacao.
+ */
+export async function exigirTimeClemente(req: Request, res: Response, next: NextFunction) {
+  const org = await clementeDoTime(req.userId!).catch(() => null);
+  if (!org) return res.status(403).json({ erro: 'Área restrita ao time da Clemente Assessoria.' });
+  req.organizacao = org;
   next();
 }
 

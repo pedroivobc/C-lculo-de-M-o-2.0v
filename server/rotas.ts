@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { calcular, calcularItbi, CALCULADORAS, comCustos, MUNICIPIOS_ITBI, type TipoCalculo } from '../src/lib/calc';
 import { config } from './config';
-import { exigirAcesso, exigirAdmin, exigirAgente, exigirGestor, exigirUsuario } from './auth';
+import { exigirAcesso, exigirAdmin, exigirAgente, exigirGestor, exigirTimeClemente, exigirUsuario } from './auth';
 import { compararTabelas, ehErroPlanilha, gerarPlanilha, lerPlanilha, listarVersoes, parametrosParaJson, publicarTabela, removerVersao, TIPOS, tipoValido, versoesVigentes } from './tabelas';
 import { supabaseAdmin, salvarArquivo, urlAssinada } from './supabase';
 import { normalizarTelefone, telefoneDoJid, variantesTelefone } from './telefone';
@@ -22,6 +22,7 @@ import {
 } from './equipe';
 import { encerrarLiberacao, estenderTeste, fichaDoUsuario, liberarPlano, listarUsuarios, registrar, visaoGeral } from './gestao';
 import { contasDeTeste } from './agente/teste';
+import { controleDeOrcamentos, csvDoControle, exigirVinculoDeParceiro, listarParceiros, orcamentoDeParceiro, type FiltroControle } from './parceiros';
 import { erroInterno } from './erros';
 
 export const rotas = Router();
@@ -414,6 +415,67 @@ rotas.get('/api/equipe/exportar', exigirUsuario, limiteExportar, exigirGestor, h
   const nome = `equipe-${mes}.csv`;
   const caminho = await salvarArquivo(`${req.userId}/exportacoes/${nome}`, gerarCsv(calculos, nomes), 'text/csv');
   res.json({ quantidade: calculos.length, url: await urlAssinada(caminho, 600, nome) });
+}));
+
+// ---------------- Corretor Parceiro (time da Clemente) ----------------
+
+const parceiroSchema = membroSchema.extend({
+  imobiliaria: z.string().trim().min(2, 'Informe a imobiliária do parceiro.').max(120),
+});
+
+const dia = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida.').optional().or(z.literal('').transform(() => undefined));
+const valorFiltro = z.preprocess((v) => (v === '' || v == null ? undefined : v), z.coerce.number().nonnegative().optional());
+const filtroControleSchema = z.object({
+  de: dia, ate: dia,
+  nome: z.string().trim().max(120).optional(),
+  imobiliaria: z.string().trim().max(120).optional(),
+  tipo: z.enum(['escritura', 'financiamento_caixa', 'banco_privado', 'doacao', 'correcao']).optional().or(z.literal('').transform(() => undefined)),
+  origem: z.enum(['site', 'whatsapp']).optional().or(z.literal('').transform(() => undefined)),
+  valorMin: valorFiltro, valorMax: valorFiltro,
+});
+
+rotas.get('/api/parceiros', exigirUsuario, exigirTimeClemente, h(async (req, res) => {
+  res.json(await listarParceiros(req.organizacao!));
+}));
+
+rotas.post('/api/parceiros', exigirUsuario, exigirTimeClemente, h(async (req, res) => {
+  const d = validar<DadosMembro>(parceiroSchema, req.body);
+  const r = await incluirMembro(req.organizacao!, d, 'parceiro');
+  await registrar(req.userId!, 'incluir_parceiro', { tipo: 'parceiro', id: r.id }, { depois: { nome: d.nome, imobiliaria: d.imobiliaria } });
+  res.json(r);
+}));
+
+rotas.put('/api/parceiros/:id', exigirUsuario, exigirTimeClemente, h(async (req, res) => {
+  const id = String(req.params.id);
+  await exigirVinculoDeParceiro(req.organizacao!, id);
+  res.json(await alterarMembro(req.organizacao!, id, validar<DadosMembro>(parceiroSchema, req.body)));
+}));
+
+rotas.delete('/api/parceiros/:id', exigirUsuario, exigirTimeClemente, h(async (req, res) => {
+  const id = String(req.params.id);
+  await exigirVinculoDeParceiro(req.organizacao!, id);
+  const r = await removerMembro(req.organizacao!, id);
+  await registrar(req.userId!, 'remover_parceiro', { tipo: 'parceiro', id }, {});
+  res.json(r);
+}));
+
+rotas.get('/api/parceiros/orcamentos', exigirUsuario, exigirTimeClemente, h(async (req, res) => {
+  res.json(await controleDeOrcamentos(req.organizacao!, validar<FiltroControle>(filtroControleSchema, req.query)));
+}));
+
+/** Orçamento de um parceiro, com a marca da Clemente e o contato do parceiro (como ele recebeu). */
+rotas.get('/api/parceiros/orcamentos/:id/arquivo', exigirUsuario, limiteArquivo, exigirTimeClemente, h(async (req, res) => {
+  const calculo = await orcamentoDeParceiro(req.organizacao!, String(req.params.id));
+  if (!calculo) return res.status(404).json({ erro: 'Orçamento não encontrado' });
+  const { estilo } = await configuracaoDoUsuario(calculo.user_id);
+  res.json(await arquivoDoOrcamento(calculo, estilo));
+}));
+
+rotas.get('/api/parceiros/exportar', exigirUsuario, limiteExportar, exigirTimeClemente, h(async (req, res) => {
+  const { orcamentos } = await controleDeOrcamentos(req.organizacao!, validar<FiltroControle>(filtroControleSchema, req.query));
+  const nome = `parceiros-${new Date().toISOString().slice(0, 10)}.csv`;
+  const caminho = await salvarArquivo(`${req.userId}/exportacoes/${nome}`, csvDoControle(orcamentos), 'text/csv');
+  res.json({ quantidade: orcamentos.length, url: await urlAssinada(caminho, 600, nome) });
 }));
 
 // ---------------- Gestão do negócio (admin) ----------------
