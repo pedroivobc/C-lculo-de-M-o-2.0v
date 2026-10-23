@@ -1,29 +1,30 @@
-import { lazy, Suspense, type ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { ContaProvider, useConta } from '@/hooks/useConta';
 import { EXIGIR_ASSINATURA } from '@/lib/config';
+import { telaSobDemanda, useVersaoNova } from '@/lib/versao';
 import { AppLayout } from '@/components/layout/AppLayout';
 import Landing from '@/pages/Landing';
 import { Assinar, Cadastro, CompletarCpf, Configurar, Entrar, Verificar } from '@/pages/Acesso';
 import { Privacidade, Termos } from '@/pages/Legal';
 
 // Telas do app carregadas sob demanda (a landing fica leve).
-const Inicio = lazy(() => import('@/pages/app/Inicio'));
-const Escrituras = lazy(() => import('@/pages/app/Escrituras'));
-const FinanciamentoCaixa = lazy(() => import('@/pages/app/Financiamento').then((m) => ({ default: m.FinanciamentoCaixa })));
-const BancoPrivado = lazy(() => import('@/pages/app/Financiamento').then((m) => ({ default: m.BancoPrivado })));
-const Correcao = lazy(() => import('@/pages/app/Correcao'));
-const AdminTabelas = lazy(() => import('@/pages/app/AdminTabelas'));
-const AdminGestao = lazy(() => import('@/pages/app/AdminGestao'));
-const AdminUsuarios = lazy(() => import('@/pages/app/AdminUsuarios'));
-const AdminEquipes = lazy(() => import('@/pages/app/AdminEquipes'));
-const Equipe = lazy(() => import('@/pages/app/Equipe'));
-const Parceiros = lazy(() => import('@/pages/app/Parceiros'));
-const Doacao = lazy(() => import('@/pages/app/Doacao'));
-const Historico = lazy(() => import('@/pages/app/Historico'));
-const Agente = lazy(() => import('@/pages/app/Agente'));
-const Conta = lazy(() => import('@/pages/app/Conta'));
+const Inicio = telaSobDemanda(() => import('@/pages/app/Inicio'));
+const Escrituras = telaSobDemanda(() => import('@/pages/app/Escrituras'));
+const FinanciamentoCaixa = telaSobDemanda(() => import('@/pages/app/Financiamento').then((m) => ({ default: m.FinanciamentoCaixa })));
+const BancoPrivado = telaSobDemanda(() => import('@/pages/app/Financiamento').then((m) => ({ default: m.BancoPrivado })));
+const Correcao = telaSobDemanda(() => import('@/pages/app/Correcao'));
+const AdminTabelas = telaSobDemanda(() => import('@/pages/app/AdminTabelas'));
+const AdminGestao = telaSobDemanda(() => import('@/pages/app/AdminGestao'));
+const AdminUsuarios = telaSobDemanda(() => import('@/pages/app/AdminUsuarios'));
+const AdminEquipes = telaSobDemanda(() => import('@/pages/app/AdminEquipes'));
+const Equipe = telaSobDemanda(() => import('@/pages/app/Equipe'));
+const Parceiros = telaSobDemanda(() => import('@/pages/app/Parceiros'));
+const Doacao = telaSobDemanda(() => import('@/pages/app/Doacao'));
+const Historico = telaSobDemanda(() => import('@/pages/app/Historico'));
+const Agente = telaSobDemanda(() => import('@/pages/app/Agente'));
+const Conta = telaSobDemanda(() => import('@/pages/app/Conta'));
 
 function Carregando() {
   return (
@@ -56,9 +57,16 @@ function SoAdmin({ children }: { children: ReactNode }) {
   return perfil && perfil.papel !== 'admin' ? <Navigate to="/app" replace /> : <>{children}</>;
 }
 
+/** Recarrega na troca de tela quando saiu versão nova do site. */
+function VigiaVersao() {
+  useVersaoNova();
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <VigiaVersao />
       <ContaProvider>
         <Suspense fallback={<Carregando />}>
           <Routes>

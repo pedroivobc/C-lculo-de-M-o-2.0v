@@ -3,8 +3,9 @@
  * - Páginas: rede primeiro; sem internet, abre o app guardado (as calculadoras funcionam offline).
  * - /assets/*: arquivos com hash no nome, guardados para sempre.
  * - API (/api) e Supabase: nunca guardados (dados da conta e login sempre da rede).
+ * - Pedidos com cache 'no-store' (checagem de versão nova do site) vão direto para a rede.
  */
-const VERSAO = 'orcai-v1';
+const VERSAO = 'orcai-v2';
 const ESSENCIAIS = ['/', '/manifest.webmanifest', '/marca/simbolo.svg', '/icones/icone-192.png'];
 
 self.addEventListener('install', (e) => {
@@ -22,7 +23,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   const url = new URL(req.url);
-  if (req.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api')) return;
+  if (req.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api') || req.cache === 'no-store') return;
 
   if (req.mode === 'navigate') {
     e.respondWith(
