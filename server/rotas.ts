@@ -22,6 +22,7 @@ import {
 } from './equipe';
 import { encerrarLiberacao, estenderTeste, fichaDoUsuario, liberarPlano, listarUsuarios, registrar, visaoGeral } from './gestao';
 import { contasDeTeste } from './agente/teste';
+import { ErroPlanilhaParceiros, lerPlanilhaParceiros, modeloParceiros } from './parceirosPlanilha';
 import { controleDeOrcamentos, csvDoControle, exigirVinculoDeParceiro, listarParceiros, orcamentoDeParceiro, type FiltroControle } from './parceiros';
 import { erroInterno } from './erros';
 
@@ -443,6 +444,45 @@ rotas.post('/api/parceiros', exigirUsuario, exigirTimeClemente, h(async (req, re
   const r = await incluirMembro(req.organizacao!, d, 'parceiro');
   await registrar(req.userId!, 'incluir_parceiro', { tipo: 'parceiro', id: r.id }, { depois: { nome: d.nome, imobiliaria: d.imobiliaria } });
   res.json(r);
+}));
+
+/** Planilha modelo para cadastrar vários parceiros de uma vez. */
+rotas.get('/api/parceiros/modelo', exigirUsuario, exigirTimeClemente, h(async (_req, res) => {
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="modelo-corretores-parceiros.xlsx"');
+  res.send(await modeloParceiros());
+}));
+
+/**
+ * Cadastra os parceiros da planilha, linha a linha, com as mesmas regras do cadastro um a um.
+ * Quem já está cadastrado (mesmo telefone ou e-mail) volta como "já cadastrado", então reenviar a planilha é seguro.
+ */
+rotas.post('/api/parceiros/importar', exigirUsuario, limiteExportar, exigirTimeClemente, h(async (req, res) => {
+  const { arquivo } = validar<{ arquivo: string }>(z.object({ arquivo: z.string().min(10, 'Escolha a planilha.').max(4_000_000, 'Planilha grande demais.') }), req.body);
+  let linhas;
+  try { linhas = await lerPlanilhaParceiros(Buffer.from(arquivo, 'base64')); } catch (e) {
+    if (e instanceof ErroPlanilhaParceiros) return res.status(400).json({ erro: e.message });
+    throw e;
+  }
+  const resultado: { linha: number; nome: string; situacao: 'incluido' | 'ja_cadastrado' | 'erro'; mensagem?: string }[] = [];
+  for (const l of linhas) {
+    const v = parceiroSchema.safeParse(l);
+    if (!v.success) { resultado.push({ linha: l.linha, nome: l.nome, situacao: 'erro', mensagem: v.error.issues[0]?.message ?? 'Dados inválidos' }); continue; }
+    try {
+      const r = await incluirMembro(req.organizacao!, v.data as DadosMembro, 'parceiro');
+      await registrar(req.userId!, 'incluir_parceiro', { tipo: 'parceiro', id: r.id }, { depois: { nome: v.data.nome, imobiliaria: v.data.imobiliaria, planilha: true } });
+      resultado.push({ linha: l.linha, nome: l.nome, situacao: 'incluido', mensagem: r.aviso });
+    } catch (e) {
+      if (!(e instanceof ErroEquipe)) throw e;
+      resultado.push({ linha: l.linha, nome: l.nome, situacao: e.status === 409 && /já existe/i.test(e.message) ? 'ja_cadastrado' : 'erro', mensagem: e.message });
+    }
+  }
+  res.json({
+    incluidos: resultado.filter((r) => r.situacao === 'incluido').length,
+    jaCadastrados: resultado.filter((r) => r.situacao === 'ja_cadastrado').length,
+    erros: resultado.filter((r) => r.situacao === 'erro').length,
+    linhas: resultado,
+  });
 }));
 
 rotas.put('/api/parceiros/:id', exigirUsuario, exigirTimeClemente, h(async (req, res) => {
