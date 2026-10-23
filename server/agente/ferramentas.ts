@@ -35,7 +35,7 @@ const custos = {
 export const DECLARACOES: FunctionDeclaration[] = [
   {
     name: 'calcular_escritura',
-    description: 'Custos de escritura: ITBI, escritura (lavratura + arquivamento), registro (ato de registro, prenotação, certidão de inteiro teor e averbações), certidões e honorários. Salva no histórico e gera o orçamento.',
+    description: 'Orçamento de escritura: ITBI, escritura (lavratura + arquivamento), registro (ato de registro, prenotação, certidão de inteiro teor e averbações), certidões e honorários. Salva no histórico e gera o orçamento.',
     parametersJsonSchema: {
       type: 'object',
       properties: {
@@ -52,7 +52,7 @@ export const DECLARACOES: FunctionDeclaration[] = [
   },
   {
     name: 'calcular_financiamento_caixa',
-    description: 'Custos de financiamento pela Caixa: taxa Caixa, ITBI (regra do SFH quando couber), prenotação e registro.',
+    description: 'Orçamento de financiamento pela Caixa: taxa Caixa, ITBI (regra do SFH quando couber), prenotação e registro.',
     parametersJsonSchema: {
       type: 'object',
       properties: {
@@ -68,7 +68,7 @@ export const DECLARACOES: FunctionDeclaration[] = [
   },
   {
     name: 'calcular_banco_privado',
-    description: 'Custos de financiamento em banco privado (Itaú, Bradesco, Santander).',
+    description: 'Orçamento de financiamento em banco privado (Itaú, Bradesco, Santander).',
     parametersJsonSchema: {
       type: 'object',
       properties: {
@@ -84,7 +84,7 @@ export const DECLARACOES: FunctionDeclaration[] = [
   },
   {
     name: 'calcular_doacao',
-    description: 'Custos de doação (ITCD de MG, lavratura, registro).',
+    description: 'Orçamento de doação (ITCD de MG, lavratura, registro).',
     parametersJsonSchema: {
       type: 'object',
       properties: {
