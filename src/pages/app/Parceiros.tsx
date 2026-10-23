@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { NOME_TIPO, abrirLink } from '@/hooks/useCalculos';
 import { useConta } from '@/hooks/useConta';
 import { brl, dataHora, numeroCalculo, telefoneBonito } from '@/lib/formato';
-import { Aviso, Botao, Campo, CampoMoeda, Cartao } from '@/components/ui/Campos';
+import { Alternar, Aviso, Botao, Campo, CampoMoeda, Cartao } from '@/components/ui/Campos';
+import { AUTONOMO } from '@/lib/parceiro';
 import { cn } from '@/lib/utils';
 
 interface Parceiro {
@@ -227,11 +228,12 @@ function CadastroParceiros({ lista, aoMudar }: { lista: Lista; aoMudar: () => vo
   const [editando, setEditando] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<{ tom: 'verde' | 'vermelho' | 'azul'; texto: string } | null>(null);
+  const autonomo = form.imobiliaria === AUTONOMO;
 
   // O que ainda impede o cadastro (o botão fica desligado e a lista aparece embaixo dele).
   const faltando = [
     form.nome.trim().length < 2 && 'nome',
-    form.imobiliaria.trim().length < 2 && 'imobiliária',
+    form.imobiliaria.trim().length < 2 && 'imobiliária (ou marque Corretor autônomo)',
     form.telefone.replace(/\D/g, '').length < 10 && 'telefone com DDD',
   ].filter((f): f is string => !!f);
 
@@ -324,8 +326,14 @@ function CadastroParceiros({ lista, aoMudar }: { lista: Lista; aoMudar: () => vo
         <Cartao titulo={editando ? 'Alterar parceiro' : 'Cadastrar parceiro'}>
           <div className="flex flex-col gap-4">
             <Campo rotulo="Nome" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} autoComplete="off" maxLength={120} />
-            <Campo rotulo="Imobiliária" value={form.imobiliaria} onChange={(e) => setForm({ ...form, imobiliaria: e.target.value })} list="cadastro-imobiliarias" autoComplete="off" maxLength={120} />
-            <datalist id="cadastro-imobiliarias">{lista.imobiliarias.map((i) => <option key={i} value={i} />)}</datalist>
+            <Alternar rotulo="Corretor autônomo" dica="Não trabalha em imobiliária. No controle, aparece como Autônomo." ligado={autonomo}
+              onChange={(v) => setForm({ ...form, imobiliaria: v ? AUTONOMO : '' })} />
+            {!autonomo && (
+              <>
+                <Campo rotulo="Imobiliária" value={form.imobiliaria} onChange={(e) => setForm({ ...form, imobiliaria: e.target.value })} list="cadastro-imobiliarias" autoComplete="off" maxLength={120} />
+                <datalist id="cadastro-imobiliarias">{lista.imobiliarias.filter((i) => i !== AUTONOMO).map((i) => <option key={i} value={i} />)}</datalist>
+              </>
+            )}
             <Campo rotulo="Telefone (WhatsApp)" type="tel" value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} placeholder="(32) 99999-0000"
               dica="É por este número que o agente reconhece o parceiro. Ele já pode orçar pelo WhatsApp." />
             <Campo rotulo="E-mail (opcional)" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="nome@imobiliaria.com.br"
@@ -408,7 +416,7 @@ function ImportarPlanilha({ aoMudar }: { aoMudar: () => void }) {
   return (
     <Cartao titulo="Cadastrar vários de uma vez">
       <div className="flex flex-col gap-4">
-        <p className="text-suave">Baixe a planilha modelo, preencha uma linha por parceiro (nome, imobiliária, WhatsApp e, se quiser, e-mail) e envie aqui.</p>
+        <p className="text-suave">Baixe a planilha modelo, preencha uma linha por parceiro (nome, imobiliária, WhatsApp e, se quiser, e-mail) e envie aqui. Para corretor autônomo, escreva Autônomo na coluna da imobiliária.</p>
         <div className="flex flex-wrap gap-2">
           <Botao variante="secundario" onClick={baixarModelo} disabled={!!ocupado}>
             <FileSpreadsheet className="size-5" aria-hidden="true" />{ocupado === 'modelo' ? 'Baixando…' : 'Baixar planilha modelo'}

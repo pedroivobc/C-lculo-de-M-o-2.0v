@@ -37,7 +37,7 @@ export async function modeloParceiros(): Promise<Buffer> {
     ['Como preencher', ''],
     ['', 'Uma linha por corretor parceiro, na aba "Parceiros". Não mude os títulos das colunas.'],
     ['Nome', 'Nome do corretor, como vai aparecer no orçamento. Obrigatório.'],
-    ['Imobiliária', 'Imobiliária em que ele trabalha. Obrigatório. Escreva sempre do mesmo jeito para o filtro do painel juntar certo.'],
+    ['Imobiliária', 'Imobiliária em que ele trabalha. Obrigatório. Escreva sempre do mesmo jeito para o filtro do painel juntar certo. Corretor autônomo, sem imobiliária: escreva Autônomo.'],
     ['WhatsApp (com DDD)', 'Obrigatório. É por este número que o agente reconhece o parceiro. Ex.: (32) 99999-0000.'],
     ['E-mail (opcional)', 'Com e-mail, ele também recebe um convite para usar o site.'],
     ['', ''],
