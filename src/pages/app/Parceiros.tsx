@@ -228,6 +228,13 @@ function CadastroParceiros({ lista, aoMudar }: { lista: Lista; aoMudar: () => vo
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<{ tom: 'verde' | 'vermelho' | 'azul'; texto: string } | null>(null);
 
+  // O que ainda impede o cadastro (o botão fica desligado e a lista aparece embaixo dele).
+  const faltando = [
+    form.nome.trim().length < 2 && 'nome',
+    form.imobiliaria.trim().length < 2 && 'imobiliária',
+    form.telefone.replace(/\D/g, '').length < 10 && 'telefone com DDD',
+  ].filter((f): f is string => !!f);
+
   async function salvar() {
     setOcupado(true); setAviso(null);
     try {
@@ -325,11 +332,14 @@ function CadastroParceiros({ lista, aoMudar }: { lista: Lista; aoMudar: () => vo
               dica="Com e-mail, mandamos um convite para ele usar também o site." />
             {aviso && <Aviso tom={aviso.tom}>{aviso.texto}</Aviso>}
             <div className="flex flex-wrap gap-2">
-              <Botao onClick={salvar} disabled={ocupado || form.nome.trim().length < 2 || form.imobiliaria.trim().length < 2 || form.telefone.replace(/\D/g, '').length < 10}>
+              <Botao onClick={salvar} disabled={ocupado || faltando.length > 0}>
                 {!editando && <UserPlus className="size-5" aria-hidden="true" />}{ocupado ? 'Salvando…' : editando ? 'Salvar alterações' : 'Cadastrar parceiro'}
               </Botao>
               {editando && <Botao variante="secundario" onClick={() => { setEditando(null); setForm(VAZIO); setAviso(null); }}>Cancelar</Botao>}
             </div>
+            {faltando.length > 0 && (form.nome || form.imobiliaria || form.telefone) && (
+              <p className="text-sm font-semibold text-amarelo-texto">Para cadastrar, falta preencher: {faltando.join(', ')}.</p>
+            )}
           </div>
         </Cartao>
         <ImportarPlanilha aoMudar={aoMudar} />

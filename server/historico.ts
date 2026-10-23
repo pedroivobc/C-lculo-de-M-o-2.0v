@@ -63,7 +63,8 @@ export async function listarCalculos(userId: string, filtro: { de?: string; ate?
  * Gera de novo a cada pedido: assim o arquivo sempre sai com a logo, a cor e o plano atuais.
  */
 export async function arquivoDoOrcamento(calculo: CalculoSalvo, estilo: Estilo, formato: Formato = estilo.formato) {
-  const base = `orcamento-${String(calculo.seq).padStart(4, '0')}`;
+  // Parceiro: o nome do arquivo também não leva o número (ele fica só no site).
+  const base = estilo.semNumero ? `orcamento-${calculo.id.slice(0, 8)}` : `orcamento-${String(calculo.seq).padStart(4, '0')}`;
   const meta = { numero: numeroCalculo(calculo.seq), data: new Date(calculo.created_at), endereco: calculo.descricao ?? undefined };
   const [conteudo, nomeArquivo, mimetype] = formato === 'jpeg'
     ? [await gerarJpegOrcamento(calculo.resultado, meta, estilo), `${base}.jpg`, 'image/jpeg']

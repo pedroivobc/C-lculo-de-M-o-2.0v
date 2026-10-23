@@ -31,18 +31,22 @@ export async function gerarPdfOrcamento(r: Resultado, meta: MetaOrcamento, estil
   }
   doc.setFont('helvetica', 'bold').setFontSize(7.5).setTextColor(...rgb(SUAVE));
   doc.text('ORÇAMENTO', R, y + 3.5, { align: 'right' });
-  doc.setFontSize(14).setTextColor(...rgb(TINTA));
-  doc.text(`Nº ${meta.numero.replace('#', '')}`, R, y + 10, { align: 'right' });
+  if (!estilo.semNumero) {
+    doc.setFontSize(14).setTextColor(...rgb(TINTA));
+    doc.text(`Nº ${meta.numero.replace('#', '')}`, R, y + 10, { align: 'right' });
+  }
   doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(...rgb(SUAVE));
-  doc.text(meta.data.toLocaleDateString('pt-BR'), R, y + 15, { align: 'right' });
+  doc.text(meta.data.toLocaleDateString('pt-BR'), R, y + (estilo.semNumero ? 9 : 15), { align: 'right' });
   y += Math.max(alturaLogo, 16);
   if (estilo.personalizado || estilo.logoPng) {
     y += estilo.logoPng ? 9 : 7;
-    doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...rgb(TINTA));
-    doc.text(estilo.cabecalho, L, y);
+    if (estilo.cabecalho) {
+      doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...rgb(TINTA));
+      doc.text(estilo.cabecalho, L, y);
+    }
     const contato = linhaDeContato(estilo);
     if (contato) {
-      y += 5;
+      if (estilo.cabecalho) y += 5;
       doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(...rgb(TEXTO));
       doc.text(contato, L, y);
     }

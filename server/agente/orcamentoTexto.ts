@@ -7,12 +7,12 @@ import { linhaDeContato, linhaDoEndereco, tituloDoDocumento, type MetaOrcamento 
  * Orçamento em mensagem de WhatsApp, pronto para o corretor encaminhar ao cliente.
  * Vai sozinho numa mensagem (sem menu junto), para o encaminhamento sair limpo.
  */
-export function orcamentoEmTexto(r: Resultado, meta: MetaOrcamento, estilo: Pick<Estilo, 'cabecalho' | 'personalizado' | 'contato'>, comDetalhes = false): string {
+export function orcamentoEmTexto(r: Resultado, meta: MetaOrcamento, estilo: Pick<Estilo, 'cabecalho' | 'personalizado' | 'contato' | 'semNumero'>, comDetalhes = false): string {
   const l: string[] = [];
   if (estilo.personalizado && estilo.cabecalho) l.push(`*${estilo.cabecalho}*`);
   const contato = estilo.personalizado ? linhaDeContato(estilo) : '';
   if (contato) l.push(contato.replace(/  ·  /g, ' · '), '');
-  l.push(`*ORÇAMENTO ${meta.numero.replace('#', 'Nº ')}* · ${meta.data.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`);
+  l.push(`*ORÇAMENTO${estilo.semNumero ? '' : ` ${meta.numero.replace('#', 'Nº ')}`}* · ${meta.data.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`);
   l.push(tituloDoDocumento(r));
   if (meta.endereco) l.push(`📍 ${linhaDoEndereco(r, meta.endereco)}`);
   else if (r.municipioNome && r.municipio !== 'n/a') l.push(`📍 Imóvel em ${r.municipioNome} (MG)`);
