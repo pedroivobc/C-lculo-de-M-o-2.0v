@@ -23,6 +23,7 @@ import {
 import { encerrarLiberacao, estenderTeste, fichaDoUsuario, liberarPlano, listarUsuarios, registrar, visaoGeral } from './gestao';
 import { contasDeTeste } from './agente/teste';
 import { ErroPlanilhaParceiros, lerPlanilhaParceiros, modeloParceiros } from './parceirosPlanilha';
+import { AUTONOMO, ehAutonomo } from '../src/lib/parceiro';
 import { controleDeOrcamentos, csvDoControle, exigirVinculoDeParceiro, listarParceiros, orcamentoDeParceiro, type FiltroControle } from './parceiros';
 import { erroInterno } from './erros';
 
@@ -421,7 +422,9 @@ rotas.get('/api/equipe/exportar', exigirUsuario, limiteExportar, exigirGestor, h
 // ---------------- Corretor Parceiro (time da Clemente) ----------------
 
 const parceiroSchema = membroSchema.extend({
-  imobiliaria: z.string().trim().min(2, 'Informe a imobiliária do parceiro.').max(120),
+  // Corretor autônomo (sem imobiliária) fica gravado como "Autônomo", e assim também aparece nos filtros e na planilha.
+  imobiliaria: z.string().trim().min(2, 'Informe a imobiliária do parceiro ou marque "Corretor autônomo".').max(120)
+    .transform((i) => (ehAutonomo(i) ? AUTONOMO : i)),
 });
 
 const dia = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida.').optional().or(z.literal('').transform(() => undefined));

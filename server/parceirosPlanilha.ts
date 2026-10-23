@@ -10,7 +10,7 @@ export const MAX_LINHAS_PLANILHA = 500;
 
 const COLUNAS = [
   { chave: 'nome', titulo: 'Nome', largura: 32 },
-  { chave: 'imobiliaria', titulo: 'Imobiliária', largura: 30 },
+  { chave: 'imobiliaria', titulo: 'Imobiliária (ou Autônomo)', largura: 30 },
   { chave: 'telefone', titulo: 'WhatsApp (com DDD)', largura: 22 },
   { chave: 'email', titulo: 'E-mail (opcional)', largura: 34 },
 ] as const;
@@ -37,15 +37,20 @@ export async function modeloParceiros(): Promise<Buffer> {
     ['Como preencher', ''],
     ['', 'Uma linha por corretor parceiro, na aba "Parceiros". Não mude os títulos das colunas.'],
     ['Nome', 'Nome do corretor, como vai aparecer no orçamento. Obrigatório.'],
-    ['Imobiliária', 'Imobiliária em que ele trabalha. Obrigatório. Escreva sempre do mesmo jeito para o filtro do painel juntar certo.'],
+    ['Imobiliária (ou Autônomo)', 'Imobiliária em que ele trabalha. Obrigatório. Escreva sempre do mesmo jeito para o filtro do painel juntar certo. Corretor autônomo, sem imobiliária: escreva Autônomo.'],
     ['WhatsApp (com DDD)', 'Obrigatório. É por este número que o agente reconhece o parceiro. Ex.: (32) 99999-0000.'],
     ['E-mail (opcional)', 'Com e-mail, ele também recebe um convite para usar o site.'],
     ['', ''],
     ['Exemplo', ''],
     ['Nome', 'Maria Souza'],
-    ['Imobiliária', 'Imobiliária Centro'],
+    ['Imobiliária (ou Autônomo)', 'Imobiliária Centro'],
     ['WhatsApp (com DDD)', '(32) 99999-0000'],
     ['E-mail (opcional)', 'maria@imobiliariacentro.com.br'],
+    ['', ''],
+    ['Exemplo de autônomo', ''],
+    ['Nome', 'João Lima'],
+    ['Imobiliária (ou Autônomo)', 'Autônomo'],
+    ['WhatsApp (com DDD)', '(32) 98888-0000'],
     ['', ''],
     ['Ao enviar', `Até ${MAX_LINHAS_PLANILHA} parceiros por planilha. Quem já está cadastrado (mesmo telefone ou e-mail) é ignorado, então dá para enviar a mesma planilha de novo depois de corrigir alguma linha.`],
   ];
@@ -53,7 +58,7 @@ export async function modeloParceiros(): Promise<Buffer> {
     const r = inst.getRow(i + 1);
     r.getCell(1).value = a; r.getCell(2).value = b;
     r.getCell(2).alignment = { wrapText: true };
-    if (a === 'Como preencher' || a === 'Exemplo' || a === 'Ao enviar') r.getCell(1).font = { bold: true, size: 13 };
+    if (a === 'Como preencher' || a.startsWith('Exemplo') || a === 'Ao enviar') r.getCell(1).font = { bold: true, size: 13 };
     else r.getCell(1).font = { bold: true };
   });
   return Buffer.from(await wb.xlsx.writeBuffer());
@@ -96,7 +101,7 @@ export async function lerPlanilhaParceiros(arquivo: Buffer): Promise<LinhaPlanil
   ws.getRow(1).eachCell((c, col) => { const k = colunaDe(textoDaCelula(c)); if (k) mapa.set(col, k); });
   const faltando = (['nome', 'imobiliaria', 'telefone'] as const).filter((k) => ![...mapa.values()].includes(k));
   if (faltando.length) {
-    const nomes = { nome: 'Nome', imobiliaria: 'Imobiliária', telefone: 'WhatsApp (com DDD)' };
+    const nomes = { nome: 'Nome', imobiliaria: 'Imobiliária (ou Autônomo)', telefone: 'WhatsApp (com DDD)' };
     throw new ErroPlanilhaParceiros(`Faltam as colunas: ${faltando.map((k) => `"${nomes[k]}"`).join(', ')}. Use a planilha modelo.`);
   }
 
