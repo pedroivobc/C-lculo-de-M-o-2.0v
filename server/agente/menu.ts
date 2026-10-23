@@ -1,4 +1,4 @@
-import { brl, custosDoCalculo, type Custos, type CustosPadrao, type TipoCalculo } from '../../src/lib/calc';
+import { brl, custosDoCalculo, MUNICIPIOS, type Custos, type CustosPadrao, type TipoCalculo } from '../../src/lib/calc';
 import { anoBaseIncc } from '../../src/lib/calc/correcao';
 
 /**
@@ -274,12 +274,16 @@ function mensagemMenu(titulo: string, rotulos: Rotulo[], comVoltar: boolean, pre
 /** Correção contratual (INCC) só aparece para quem atua em Juiz de Fora. */
 export const MUNICIPIO_CORRECAO = 'mg-juiz-de-fora';
 
-/** O menu como esta pessoa vê: no inicial, a correção contratual só para Juiz de Fora. */
+/**
+ * O menu como esta pessoa vê: no inicial, a correção contratual só para Juiz de Fora e a doação
+ * só para MG (nas cidades do piloto o ITCD ainda não entrou).
+ */
 export function menuDe(id: string, ctx?: ContextoMenu): Menu {
   const m = MENUS[id] ?? MENUS.inicio; // sessão salva com um menu que não existe mais
   if (!MENUS[id]) return menuDe('inicio', ctx);
-  if (id !== 'inicio' || ctx?.municipio === MUNICIPIO_CORRECAO) return m;
-  return { ...m, opcoes: m.opcoes.filter((o) => o.vai !== 'fluxo:correcao') };
+  if (id !== 'inicio') return m;
+  const piloto = !!MUNICIPIOS[ctx?.municipio ?? '']?.piloto;
+  return { ...m, opcoes: m.opcoes.filter((o) => (o.vai !== 'fluxo:correcao' || ctx?.municipio === MUNICIPIO_CORRECAO) && (o.vai !== 'doacao' || !piloto)) };
 }
 
 const telaMenu = (id: string, prefixo = '', ctx?: ContextoMenu) => {

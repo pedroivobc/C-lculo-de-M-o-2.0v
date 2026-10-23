@@ -1,5 +1,5 @@
 import type { FunctionDeclaration } from '@google/genai';
-import { brl, calcular, comCustos, type Resultado, type TipoCalculo } from '../../src/lib/calc';
+import { brl, calcular, comCustos, MUNICIPIOS, MUNICIPIO_OUTRA, type Resultado, type TipoCalculo } from '../../src/lib/calc';
 import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, numeroCalculo, salvarCalculo } from '../historico';
 import { comLocalidade, correcaoLiberada, type Configuracao } from '../estilo';
 import { gerarCsv } from '../exportar';
@@ -27,7 +27,11 @@ const custos = {
   certidoes: { ...num, description: 'Certidões em reais. Omitir para usar o padrão do assinante.' },
   honorarios: { ...num, description: 'Honorários em reais. Omitir para usar o padrão do assinante.' },
   descricao: { type: 'string', description: 'Endereço do imóvel para aparecer no orçamento, só se o usuário pedir. Nunca nome, CPF, telefone ou e-mail de pessoas.' },
-  municipio: { type: 'string', enum: ['mg-juiz-de-fora', 'mg-belo-horizonte', 'mg-outra'], description: 'Omitir para usar a cidade do assinante. "mg-outra" = cidade de MG sem regra cadastrada (exige cidade e itbiPercentual).' },
+  municipio: {
+    type: 'string', enum: [...Object.keys(MUNICIPIOS), MUNICIPIO_OUTRA],
+    description: 'Omitir para usar a cidade do assinante. "mg-outra" = cidade de MG sem regra cadastrada (exige cidade e itbiPercentual). '
+      + `Cidades em teste piloto fora de MG: ${Object.values(MUNICIPIOS).filter((m) => m.piloto).map((m) => `${m.id} (${m.nome}/${m.uf})`).join(', ')}.`,
+  },
   cidade: { type: 'string', description: 'Nome da cidade quando municipio = "mg-outra".' },
   itbiPercentual: { type: 'number', description: 'Alíquota do ITBI em % (ex.: 2.5). Só quando o usuário informar.' },
 };
@@ -84,7 +88,7 @@ export const DECLARACOES: FunctionDeclaration[] = [
   },
   {
     name: 'calcular_doacao',
-    description: 'Custos de doação (ITCD de MG, lavratura, registro).',
+    description: 'Custos de doação (ITCD de MG, lavratura, registro). Só para imóveis em MG: nas cidades do piloto fora de MG ainda não está disponível.',
     parametersJsonSchema: {
       type: 'object',
       properties: {

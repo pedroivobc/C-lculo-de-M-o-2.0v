@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { camposLocalidade, itbiSfh, obterMunicipio, percentual, type Municipio } from './municipios';
-import { FOLHAS_CONTRATO, linhaRegistro } from './registro';
+import { FOLHAS_CONTRATO } from './registro';
+import { linhaRegistroDe } from './escritura';
 import { Linha, Resultado, somar } from './tipos';
 
 const valor = z.coerce.number().nonnegative();
@@ -22,7 +23,9 @@ export const TETO_SFH = 2250000;
 /** Linha do ITBI no financiamento. `pedeSfh` = modalidade do SFH; só vale se o imóvel couber no teto. */
 function linhaItbi(m: Municipio, base: number, fin: number, pedeSfh: boolean): Linha {
   const sfh = pedeSfh && base <= TETO_SFH;
-  const regra = sfh && m.itbi.sfh ? `Regra do SFH (${percentual(m.itbi.aliquota)} sobre a parte não financiada)` : percentual(m.itbi.aliquota);
+  const propria = sfh && !m.itbiDoUsuario ? m.itbi.financiamento?.(base, fin) : undefined;
+  const regra = propria ? `Regra do financiamento: ${propria.regra}`
+    : sfh && m.itbi.sfh ? `Regra do SFH (${percentual(m.itbi.aliquota)} sobre a parte não financiada)` : percentual(m.itbi.aliquota);
   const foraDoTeto = pedeSfh && !sfh ? ' · imóvel acima do teto do SFH (R$ 2,25 mi)' : '';
   return {
     rotulo: sfh ? 'ITBI (SFH)' : 'ITBI',
@@ -41,7 +44,9 @@ function registroFinanciamento(m: Municipio, atos: { compra?: number; alienacao?
   const lista: { rotulo: string; base: number }[] = [];
   if (atos.compra !== undefined) lista.push({ rotulo: 'Ato de registro · compra e venda', base: atos.compra });
   if (atos.alienacao !== undefined) lista.push({ rotulo: 'Ato de registro · alienação fiduciária', base: atos.alienacao });
-  return linhaRegistro(lista, { iss: m.issCartorio, folhas, reducao: reducao ? 0.5 : 0, notaReducao: reducao });
+  // Sem escritura (contrato com força de escritura pública), taxas sobre a transmissão, como o Funrejus do PR, vão no registro.
+  const transmissoes = atos.compra !== undefined ? [atos.compra] : [];
+  return linhaRegistroDe(m, lista, { folhas, reducao: reducao ? 0.5 : 0, notaReducao: reducao, transmissoes });
 }
 
 /** Nota da redução de 50% no registro, ou undefined quando não há: MCMV sempre; SBPE só no 1º imóvel; fora do SFH, nunca. */
@@ -89,7 +94,7 @@ export function calcularCaixa(dados: EntradaCaixa): Resultado {
     { rotulo: 'Certidões', valor: e.certidoes, origem: 'usuario' },
     { rotulo: 'Honorários', valor: honorarios, origem: 'usuario' },
   ];
-  return { tipo: 'financiamento_caixa', subtipo: e.modalidade, municipio: m.id, municipioNome: m.nome, bases: [base, fin], linhas, total: somar(linhas) };
+  return { tipo: 'financiamento_caixa', subtipo: e.modalidade, municipio: m.id, municipioNome: m.nome, uf: m.uf, piloto: m.piloto, bases: [base, fin], linhas, total: somar(linhas) };
 }
 
 export const TARIFA_BANCO = { itau: 1950, bradesco: 3200, santander: 3200 } as const;
@@ -116,5 +121,5 @@ export function calcularBancoPrivado(dados: EntradaBancoPrivado): Resultado {
     { rotulo: 'Certidões', valor: e.certidoes, origem: 'usuario' },
     { rotulo: 'Honorários', valor: e.honorarios, origem: 'usuario' },
   ];
-  return { tipo: 'banco_privado', subtipo: `${e.banco}_${e.modalidade}`, municipio: m.id, municipioNome: m.nome, bases: [base, fin], linhas, total: somar(linhas) };
+  return { tipo: 'banco_privado', subtipo: `${e.banco}_${e.modalidade}`, municipio: m.id, municipioNome: m.nome, uf: m.uf, piloto: m.piloto, bases: [base, fin], linhas, total: somar(linhas) };
 }

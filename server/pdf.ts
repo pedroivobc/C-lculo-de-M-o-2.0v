@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { brl, type Resultado } from '../src/lib/calc';
+import { avisoDasTabelas, brl, type Resultado } from '../src/lib/calc';
 import { config } from './config';
 import { COR_MARCA, hexParaRgb, type Estilo } from './estilo';
 import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContato, linhasDeContexto, linhaDoEndereco, logoOrcaiPng, SUAVE, TEXTO, TINTA, tituloDoDocumento, type MetaOrcamento } from './documento';
@@ -109,7 +109,7 @@ export async function gerarPdfOrcamento(r: Resultado, meta: MetaOrcamento, estil
 
   // Rodapé.
   doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(...rgb(SUAVE));
-  doc.text('Valores estimados com as tabelas vigentes de MG. Confirme com o cartório e a prefeitura antes do ato.', L, 284);
+  doc.text(`${avisoDasTabelas(r)} Confirme com o cartório e a prefeitura antes do ato.`, L, 284, { maxWidth: estilo.personalizado ? R - L - 42 : R - L });
   if (estilo.personalizado) {
     const w = (5 * LARGURA_LOCKUP) / 64;
     doc.addImage(new Uint8Array(await logoOrcaiPng()), 'PNG', R - w, 280.6, w, 5);

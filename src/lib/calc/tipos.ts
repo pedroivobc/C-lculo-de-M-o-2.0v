@@ -30,6 +30,10 @@ export interface Resultado {
   municipio: string;
   /** Nome para exibir (inclui a cidade informada pelo assinante em 'mg-outra'). */
   municipioNome?: string;
+  /** Estado do imóvel (define as tabelas de cartório). */
+  uf?: string;
+  /** Cidade em teste piloto. */
+  piloto?: boolean;
   /** Base(s) de cálculo usadas, na ordem dos atos. */
   bases: number[];
   linhas: Linha[];

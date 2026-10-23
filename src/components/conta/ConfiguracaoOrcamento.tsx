@@ -3,15 +3,17 @@ import { FileImage, FileText, ImagePlus, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { api } from '@/lib/api';
 import { useConta } from '@/hooks/useConta';
-import { CUSTOS_SISTEMA, lerCustosPadrao, MUNICIPIOS, MUNICIPIO_OUTRA, MUNICIPIO_PADRAO, ROTULO_GRUPO, type CustosPadrao, type GrupoCustos } from '@/lib/calc';
+import { CUSTOS_SISTEMA, lerCustosPadrao, MUNICIPIOS, MUNICIPIO_OUTRA, MUNICIPIO_PADRAO, ROTULO_GRUPO, UFS_ATENDIDAS as ATENDIDAS, type CustosPadrao, type GrupoCustos } from '@/lib/calc';
 import { MARCA } from '@/lib/config';
 import { brl, telefoneBonito } from '@/lib/formato';
 import { Aviso, Botao, Campo, CampoMoeda } from '@/components/ui/Campos';
 import { cn } from '@/lib/utils';
 
 const UFS = ['AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO'];
-/** Estados com a tabela de emolumentos de cartório já cadastrada. */
-const UFS_ATENDIDAS = new Set(['MG']);
+/** Estados com a tabela de emolumentos de cartório já cadastrada (MG inteiro; nos outros, só as cidades do piloto). */
+const UFS_ATENDIDAS = new Set<string>(ATENDIDAS);
+const cidadesDe = (uf: string) => Object.values(MUNICIPIOS).filter((m) => m.uf === uf);
+const NOMES_ATENDIDOS = `Minas Gerais e, em teste piloto, ${Object.values(MUNICIPIOS).filter((m) => m.piloto).map((m) => m.nome).join(', ')}`;
 const CORES = ['#2342D6', '#0F766E', '#15803D', '#B45309', '#B91C1C', '#7E22CE', '#0E7490', '#101828'];
 const COR_MARCA = '#2342D6';
 const LOGO_TIPOS = ['image/png', 'image/jpeg', 'image/webp'];
@@ -67,7 +69,9 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
   const pctValido = aliquota.trim() !== '' && Number.isFinite(pct) && pct >= 0 && pct <= 10;
   const ufAtendida = UFS_ATENDIDAS.has(uf);
   const telefoneDigitos = telefone.replace(/\D/g, '');
-  const podeSalvar = ufAtendida && pctValido && (!outra || cidade.trim().length >= 2);
+  const cidadeDoEstado = outra ? uf === 'MG' : MUNICIPIOS[municipio]?.uf === uf;
+  const piloto = !outra && !!MUNICIPIOS[municipio]?.piloto;
+  const podeSalvar = ufAtendida && cidadeDoEstado && pctValido && (!outra || cidade.trim().length >= 2);
 
   function escolherLogo(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -130,22 +134,34 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
         <legend className="rotulo-secao mb-3">Onde você atua</legend>
         <label className="flex flex-col gap-1.5 font-semibold">
           Estado
-          <select value={uf} onChange={(e) => { setUf(e.target.value); setAviso(null); }}
+          <select value={uf} onChange={(e) => {
+            const novo = e.target.value;
+            setUf(novo); setAviso(null);
+            // Fora de MG só há as cidades do piloto: já deixa a primeira escolhida, com a alíquota da prefeitura.
+            const atual = MUNICIPIOS[municipio];
+            if (novo !== 'MG' && atual?.uf !== novo) {
+              const primeira = cidadesDe(novo)[0];
+              if (primeira) { setMunicipio(primeira.id); setAliquota(String(primeira.itbi.aliquota * 100).replace('.', ',')); }
+            } else if (novo === 'MG' && municipio !== MUNICIPIO_OUTRA && atual?.uf !== 'MG') {
+              setMunicipio(MUNICIPIO_PADRAO); setAliquota(String((MUNICIPIOS[MUNICIPIO_PADRAO]?.itbi.aliquota ?? 0) * 100).replace('.', ','));
+            }
+          }}
             className="h-12 rounded-[10px] border border-borda bg-white px-3 font-semibold outline-none focus:border-acao focus:ring-2 focus:ring-acao/20">
-            {UFS.map((u) => <option key={u} value={u}>{u}{UFS_ATENDIDAS.has(u) ? '' : ' · em breve'}</option>)}
+            {UFS.map((u) => <option key={u} value={u}>{u}{u === 'MG' || !UFS_ATENDIDAS.has(u) ? '' : ' · piloto'}{UFS_ATENDIDAS.has(u) ? '' : ' · em breve'}</option>)}
           </select>
         </label>
         {!ufAtendida ? (
           <Aviso tom="azul">
             <span className="flex flex-col items-start gap-2">
-              Ainda não temos a tabela de cartório de {uf}. Hoje o {MARCA} atende Minas Gerais.
+              Ainda não temos a tabela de cartório de {uf}. Hoje o {MARCA} atende {NOMES_ATENDIDOS}.
               <button type="button" onClick={avisarEstado} className="min-h-11 font-bold text-acao underline">Quero ser avisado quando {uf} abrir</button>
             </span>
           </Aviso>
         ) : (
           <>
             <div role="radiogroup" aria-label="Cidade onde você atua" className="grid gap-2 sm:grid-cols-2">
-              {[...Object.values(MUNICIPIOS).map((m) => ({ id: m.id, nome: m.nome, nota: 'Regra da prefeitura cadastrada' })), { id: MUNICIPIO_OUTRA, nome: 'Outra cidade de MG', nota: 'Você informa a alíquota do ITBI' }].map((m) => (
+              {[...cidadesDe(uf).map((m) => ({ id: m.id, nome: m.nome, nota: m.piloto ? 'Teste piloto · regra da prefeitura cadastrada' : 'Regra da prefeitura cadastrada' })),
+                ...(uf === 'MG' ? [{ id: MUNICIPIO_OUTRA, nome: 'Outra cidade de MG', nota: 'Você informa a alíquota do ITBI' }] : [])].map((m) => (
                 <button key={m.id} type="button" role="radio" aria-checked={municipio === m.id}
                   onClick={() => { setMunicipio(m.id); const a = MUNICIPIOS[m.id]?.itbi.aliquota; if (a !== undefined) setAliquota(String(a * 100).replace('.', ',')); }}
                   className={cn('flex flex-col rounded-xl border-2 bg-white p-3 text-left', municipio === m.id ? 'border-acao' : 'border-linha')}>
@@ -165,6 +181,12 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
               Nos seus orçamentos: ITBI de <strong className="text-tinta">{pctValido ? `${String(pct).replace('.', ',')}%` : '—'}</strong>
               {' '}({outra ? (cidade.trim() || 'sua cidade') : MUNICIPIOS[municipio]?.nome}) e emolumentos de cartório pela <strong className="text-tinta">tabela de {uf} de {new Date().getFullYear()}</strong>.
             </p>
+            {piloto && (
+              <Aviso tom="azul">
+                {MUNICIPIOS[municipio]?.nome} está em teste piloto: escritura e financiamento já saem com as tabelas de {uf}; doação ainda não.
+                Os valores de cartório trazem o ato principal (sem prenotação, certidões e selos). Confira com o cartório antes do ato.
+              </Aviso>
+            )}
           </>
         )}
       </fieldset>
