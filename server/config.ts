@@ -13,6 +13,9 @@ export const config = {
   supabaseServiceKey: env('SUPABASE_SERVICE_ROLE_KEY'),
   geminiKey: env('GEMINI_API_KEY'),
   geminiModel: env('GEMINI_MODEL', 'gemini-3-flash-preview'),
+  /** Voz das respostas a áudios. Vazio em GEMINI_TTS_MODEL desliga a resposta falada. */
+  geminiTtsModel: env('GEMINI_TTS_MODEL', 'gemini-2.5-flash-preview-tts'),
+  geminiVoz: env('GEMINI_VOZ', 'Kore'),
   /** Chave que o n8n manda no header x-agent-key. */
   agentKey: env('AGENT_API_KEY'),
   /** Segredo para o hash dos códigos de verificação do WhatsApp. */
@@ -32,6 +35,14 @@ export const config = {
    * Ligar (sim) depois de testar no número do agente: na conexão por QR code, alguns aparelhos não mostram botões.
    */
   whatsappBotoes: /^(sim|true|1)$/i.test(env('WHATSAPP_BOTOES')),
+  /**
+   * Trava de assinatura também na API (cálculo, arquivo do orçamento, exportação), igual à do site.
+   * Segue o mesmo EXIGIR_ASSINATURA do .env que liga a trava do front (VITE_EXIGIR_ASSINATURA).
+   */
+  exigirAssinatura: /^(sim|true|1)$/i.test(env('EXIGIR_ASSINATURA', env('VITE_EXIGIR_ASSINATURA'))),
+  producao: env('NODE_ENV') === 'production',
+  /** Válvula de escape: CSP_DESLIGADA=sim tira a Content-Security-Policy se alguma tela quebrar depois do deploy. */
+  cspDesligada: /^(sim|true|1)$/i.test(env('CSP_DESLIGADA')),
   /** Chatwoot: quando o corretor pede um atendente, a conversa é aberta e marcada lá. Opcional. */
   chatwoot: {
     url: env('CHATWOOT_URL').replace(/\/$/, ''),

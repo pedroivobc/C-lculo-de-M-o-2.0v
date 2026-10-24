@@ -3,8 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { calcular, calcularItbi, CALCULADORAS, comCustos, MUNICIPIOS_ITBI, type TipoCalculo } from '../src/lib/calc';
 import { config } from './config';
-import { ehAudio, LIMITE_AUDIO_BYTES, transcreverAudio } from './agente/audio';
-import { exigirAdmin, exigirAgente, exigirGestor, exigirUsuario } from './auth';
+import { exigirAcesso, exigirAdmin, exigirAgente, exigirGestor, exigirTimeClemente, exigirUsuario } from './auth';
 import { compararTabelas, ehErroPlanilha, gerarPlanilha, lerPlanilha, listarVersoes, parametrosParaJson, publicarTabela, removerVersao, TIPOS, tipoValido, versoesVigentes } from './tabelas';
 import { supabaseAdmin, salvarArquivo, urlAssinada } from './supabase';
 import { normalizarTelefone, telefoneDoJid, variantesTelefone } from './telefone';
@@ -22,17 +21,29 @@ import {
   orcamentosDaEquipe, relatorioDaEquipe, removerMembro, resumoEquipe, type DadosMembro, type NovaOrganizacao,
 } from './equipe';
 import { encerrarLiberacao, estenderTeste, fichaDoUsuario, liberarPlano, listarUsuarios, registrar, visaoGeral } from './gestao';
+import { contasDeTeste } from './agente/teste';
+import { ErroPlanilhaParceiros, lerPlanilhaParceiros, modeloParceiros } from './parceirosPlanilha';
+import { AUTONOMO, ehAutonomo } from '../src/lib/parceiro';
+import { controleDeOrcamentos, csvDoControle, exigirVinculoDeParceiro, listarParceiros, orcamentoDeParceiro, type FiltroControle } from './parceiros';
+import { erroInterno } from './erros';
 
 export const rotas = Router();
 
-/** Envolve handlers async: erro de validação vira 400 com a mensagem, o resto vira 500. */
+/** Envolve handlers async: erro de validação vira 400 com a mensagem, o resto vira 500 (genérico em produção). */
 const h = (fn: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response) =>
   fn(req, res).catch((e) => {
     if (e instanceof z.ZodError) return res.status(400).json({ erro: 'Dados inválidos', detalhes: e.issues });
     if (e instanceof ErroEquipe) return res.status(e.status).json({ erro: e.message });
-    console.error(e);
-    res.status(500).json({ erro: e instanceof Error ? e.message : 'Erro interno' });
+    erroInterno(req, res, e);
   });
+
+/** Limite de pedidos com resposta em JSON (o site mostra o `erro`). Sem `chave`, conta por IP. */
+const limite = (windowMs: number, max: number, chave?: (req: Request) => string | undefined) => rateLimit({
+  windowMs, limit: max, standardHeaders: true, legacyHeaders: false,
+  message: { erro: 'Muitos pedidos em pouco tempo. Espere um pouco e tente de novo.' },
+  ...(chave ? { keyGenerator: (req: Request) => chave(req) ?? `ip:${req.ip}` } : {}),
+});
+const porUsuario = (req: Request) => req.userId && `u:${req.userId}`;
 
 rotas.get('/api/saude', (_req, res) => res.json({ ok: true, marca: config.marca }));
 
@@ -44,50 +55,44 @@ const mensagemSchema = z.object({
   texto: z.string().optional(),
   messageId: z.string().optional(),
   nome: z.string().optional(),
-  /**
-   * Anexo em base64. Só nota de voz (audio/*) é usada: vira texto pela transcrição e o áudio é descartado.
-   * Imagens e documentos não são lidos nem guardados.
-   */
+  /** Aceitos por compatibilidade com o fluxo do n8n. O conteúdo de anexos não é baixado, lido nem guardado. */
   midia: z.object({ base64: z.string(), mimetype: z.string() }).optional(),
   temMidia: z.boolean().optional(),
+  /** Mensagem de voz: base64 (se a Evolution mandar no webhook) ou { key, message } para baixar. Transcrita e descartada. */
+  audio: z.object({
+    base64: z.string().nullish(),
+    mimetype: z.string().nullish(),
+    segundos: z.number().nullish(),
+    mensagem: z.record(z.unknown()).nullish(),
+  }).nullish(),
 });
 
-rotas.post('/api/agente/mensagem', exigirAgente, h(async (req, res) => {
+// Mesmo com a chave certa: teto geral (a chave vazada não vira canhão) e por número (IA, áudio e arquivos custam).
+const limiteAgente = limite(60_000, 600);
+const telefoneDaMensagem = (req: Request) => {
+  const b = req.body ?? {};
+  const t = typeof b.remoteJid === 'string' ? b.remoteJid : typeof b.telefone === 'string' ? b.telefone : '';
+  return t ? `tel:${t.replace(/\D/g, '').slice(0, 20)}` : undefined;
+};
+const limitePorNumero = limite(60_000, 20, telefoneDaMensagem);
+const limiteIdentificar = limite(60_000, 60);
+
+rotas.post('/api/agente/mensagem', limiteAgente, exigirAgente, limitePorNumero, h(async (req, res) => {
   const m = mensagemSchema.parse(req.body);
   const telefone = m.remoteJid ? telefoneDoJid(m.remoteJid) : normalizarTelefone(m.telefone ?? '');
   if (!telefone) return res.json({ status: 'ignorada', respostas: [] }); // grupo, broadcast ou número inválido
-  let texto = m.texto;
-  let temAnexo = Boolean(m.midia || m.temMidia);
-  let ouvido: string | null = null;
-  // Nota de voz: transcreve e segue como se a pessoa tivesse escrito.
-  if (m.midia && ehAudio(m.midia.mimetype)) {
-    const aviso = await (async () => {
-      // Sem a chave do Gemini, ou áudio sem conteúdo (Webhook Base64 desligado na Evolution).
-      if (!config.geminiKey || !m.midia!.base64) return 'Ainda não consigo ouvir áudios por aqui 🎧 Pode escrever, por favor?';
-      if (m.midia!.base64.length * 0.75 > LIMITE_AUDIO_BYTES) return 'Esse áudio ficou longo demais para mim 😅 Pode mandar um mais curto ou escrever?';
-      try { ouvido = await transcreverAudio(m.midia!.base64, m.midia!.mimetype); }
-      catch (e) { console.error('Transcrição do áudio:', e); return 'Não consegui ouvir esse áudio 😕 Pode tentar de novo ou escrever?'; }
-      return ouvido ? null : 'Não ouvi nada nesse áudio 🤔 Pode mandar de novo ou escrever?';
-    })();
-    if (aviso) {
-      const resposta = { tipo: 'texto' as const, texto: aviso };
-      return res.json({ status: 'audio_nao_entendido', respostas: [{ ...resposta, envio: envioDe(resposta, config.whatsappBotoes) }] });
-    }
-    texto = ouvido!;
-    temAnexo = false;
-  }
-  const r = await processarMensagem({ telefone, texto, messageId: m.messageId, nome: m.nome, temAnexo });
-  // Mostra o que foi entendido do áudio antes da resposta, para a pessoa conferir.
-  const respostas = ouvido ? [{ tipo: 'texto' as const, texto: `🎤 _Entendi:_ "${ouvido}"` }, ...r.respostas] : r.respostas;
+  const temAnexo = Boolean(m.midia || m.temMidia);
+  const r = await processarMensagem({ telefone, texto: m.texto, messageId: m.messageId, nome: m.nome, temAnexo, audio: m.audio ?? undefined });
   // Cada resposta leva também o envio pronto para a Evolution (texto, botões, lista ou arquivo).
-  res.json({ ...r, respostas: respostas.map((x) => ({ ...x, envio: envioDe(x, config.whatsappBotoes) })) });
+  res.json({ ...r, respostas: r.respostas.map((x) => ({ ...x, envio: envioDe(x, config.whatsappBotoes) })) });
 }));
 
-rotas.get('/api/agente/identificar', exigirAgente, h(async (req, res) => {
+/** Só o necessário para o n8n decidir o caminho: sem id, nome ou papel (se a chave vazar, não vira lista de clientes). */
+rotas.get('/api/agente/identificar', limiteIdentificar, exigirAgente, h(async (req, res) => {
   const telefone = normalizarTelefone(String(req.query.whatsapp ?? ''));
   if (!telefone) return res.status(400).json({ erro: 'Telefone inválido' });
   const a = await identificar(telefone);
-  res.json(a ? { status: a.ativo ? 'ativo' : 'inativo', motivo: a.motivo, papel: a.papel, nome: a.nome, userId: a.userId } : { status: 'sem_cadastro' });
+  res.json({ status: a ? (a.ativo ? 'ativo' : 'inativo') : 'sem_cadastro' });
 }));
 
 // ---------------- Verificação do WhatsApp ----------------
@@ -98,8 +103,10 @@ const limiteCodigo = rateLimit({ windowMs: 15 * 60_000, limit: 5, standardHeader
 rotas.post('/api/whatsapp/codigo', limiteCodigo, exigirUsuario, h(async (req, res) => {
   const telefone = normalizarTelefone(z.object({ whatsapp: z.string() }).parse(req.body).whatsapp);
   if (!telefone) return res.status(400).json({ erro: 'Informe o WhatsApp com DDD.' });
+  // Conta de teste do WhatsApp com este número não bloqueia: ela passa para esta conta na confirmação.
   const { data: emUso } = await supabaseAdmin().from('profiles').select('id')
-    .in('whatsapp_e164', variantesTelefone(telefone)).neq('id', req.userId!).limit(1).maybeSingle();
+    .in('whatsapp_e164', variantesTelefone(telefone))
+    .not('id', 'in', `(${[req.userId!, ...await contasDeTeste(telefone)].join(',')})`).limit(1).maybeSingle();
   if (emUso) return res.status(409).json({ erro: 'Este WhatsApp já está ligado a outra conta.' });
   const codigo = await criarCodigo(req.userId!, telefone);
   res.json({ whatsapp: telefone, codigo, mensagem: mensagemDeConfirmacao(codigo) });
@@ -192,7 +199,8 @@ rotas.post('/api/conta/cpf', limiteCodigo, exigirUsuario, h(async (req, res) => 
   const { data: outro } = await db.from('profiles').select('id').eq('cpf', cpf).neq('id', req.userId!).maybeSingle();
   if (outro) return res.status(409).json({ erro: 'Este CPF já tem uma conta. Entre com ela ou fale com o suporte.' });
   const { error } = await db.from('profiles').update({ cpf }).eq('id', req.userId!);
-  if (error) return res.status(error.code === '23505' ? 409 : 500).json({ erro: error.code === '23505' ? 'Este CPF já tem uma conta.' : error.message });
+  if (error?.code === '23505') return res.status(409).json({ erro: 'Este CPF já tem uma conta.' });
+  if (error) throw new Error(`Falha ao gravar o CPF: ${error.message}`);
   res.json({ ok: true });
 }));
 
@@ -294,7 +302,12 @@ rotas.get('/api/indicacao/validar', limiteCupom, h(async (req, res) => {
 
 // ---------------- Cálculos pelo site ----------------
 
-rotas.post('/api/calculos/:tipo', exigirUsuario, h(async (req, res) => {
+// Por usuário: cálculo grava no banco; arquivo gera PDF/JPEG; exportação gera CSV no storage.
+const limiteCalculo = limite(60_000, 30, porUsuario);
+const limiteArquivo = limite(60_000, 20, porUsuario);
+const limiteExportar = limite(15 * 60_000, 10, porUsuario);
+
+rotas.post('/api/calculos/:tipo', exigirUsuario, limiteCalculo, exigirAcesso, h(async (req, res) => {
   const tipo = req.params.tipo as TipoCalculo;
   if (!CALCULADORAS[tipo]) return res.status(404).json({ erro: 'Tipo de cálculo inexistente' });
   const { descricao, salvar = true, ...informado } = req.body ?? {};
@@ -319,7 +332,7 @@ rotas.get('/api/calculos', exigirUsuario, h(async (req, res) => {
 }));
 
 /** Link temporário do orçamento. Formato: ?formato=pdf|jpeg; sem ele, o escolhido na conta. `/pdf` força PDF. */
-rotas.get(['/api/calculos/:seq/arquivo', '/api/calculos/:seq/pdf'], exigirUsuario, h(async (req, res) => {
+rotas.get(['/api/calculos/:seq/arquivo', '/api/calculos/:seq/pdf'], exigirUsuario, limiteArquivo, exigirAcesso, h(async (req, res) => {
   const salvo = await buscarPorSeq(req.userId!, Number(req.params.seq));
   if (!salvo) return res.status(404).json({ erro: 'Cálculo não encontrado' });
   const { estilo } = await configuracaoDoUsuario(req.userId!);
@@ -328,7 +341,7 @@ rotas.get(['/api/calculos/:seq/arquivo', '/api/calculos/:seq/pdf'], exigirUsuari
   res.json(await arquivoDoOrcamento(salvo, estilo, formato));
 }));
 
-rotas.get('/api/exportar', exigirUsuario, h(async (req, res) => {
+rotas.get('/api/exportar', exigirUsuario, limiteExportar, exigirAcesso, h(async (req, res) => {
   const mes = String(req.query.mes ?? new Date().toISOString().slice(0, 7));
   const calculos = await listarCalculos(req.userId!, intervaloDoMes(mes));
   const nome = `calculos-${mes}.csv`;
@@ -386,7 +399,7 @@ rotas.get('/api/equipe/orcamentos', exigirUsuario, exigirGestor, h(async (req, r
 }));
 
 /** Orçamento de alguém da equipe, com a marca da equipe e o contato de quem orçou. */
-rotas.get('/api/equipe/orcamentos/:id/arquivo', exigirUsuario, exigirGestor, h(async (req, res) => {
+rotas.get('/api/equipe/orcamentos/:id/arquivo', exigirUsuario, limiteArquivo, exigirGestor, h(async (req, res) => {
   const { data } = await supabaseAdmin().from('calculations').select('*').eq('id', String(req.params.id)).eq('organizacao_id', req.organizacao!.id).maybeSingle();
   if (!data) return res.status(404).json({ erro: 'Orçamento não encontrado' });
   const { estilo } = await configuracaoDoUsuario(data.user_id);
@@ -398,12 +411,114 @@ rotas.get('/api/equipe/relatorio', exigirUsuario, exigirGestor, h(async (req, re
   res.json(await relatorioDaEquipe(req.organizacao!, mes, { de, ate }));
 }));
 
-rotas.get('/api/equipe/exportar', exigirUsuario, exigirGestor, h(async (req, res) => {
+rotas.get('/api/equipe/exportar', exigirUsuario, limiteExportar, exigirGestor, h(async (req, res) => {
   const { mes, de, ate } = mesDaConsulta(req);
   const { calculos, nomes } = await orcamentosDaEquipe(req.organizacao!.id, { de, ate });
   const nome = `equipe-${mes}.csv`;
   const caminho = await salvarArquivo(`${req.userId}/exportacoes/${nome}`, gerarCsv(calculos, nomes), 'text/csv');
   res.json({ quantidade: calculos.length, url: await urlAssinada(caminho, 600, nome) });
+}));
+
+// ---------------- Corretor Parceiro (time da Clemente) ----------------
+
+const parceiroSchema = membroSchema.extend({
+  // Corretor autônomo (sem imobiliária) fica gravado como "Autônomo", e assim também aparece nos filtros e na planilha.
+  imobiliaria: z.string().trim().min(2, 'Informe a imobiliária do parceiro ou marque "Corretor autônomo".').max(120)
+    .transform((i) => (ehAutonomo(i) ? AUTONOMO : i)),
+});
+
+const dia = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida.').optional().or(z.literal('').transform(() => undefined));
+const valorFiltro = z.preprocess((v) => (v === '' || v == null ? undefined : v), z.coerce.number().nonnegative().optional());
+const filtroControleSchema = z.object({
+  de: dia, ate: dia,
+  nome: z.string().trim().max(120).optional(),
+  imobiliaria: z.string().trim().max(120).optional(),
+  tipo: z.enum(['escritura', 'financiamento_caixa', 'banco_privado', 'doacao', 'correcao']).optional().or(z.literal('').transform(() => undefined)),
+  origem: z.enum(['site', 'whatsapp']).optional().or(z.literal('').transform(() => undefined)),
+  valorMin: valorFiltro, valorMax: valorFiltro,
+});
+
+rotas.get('/api/parceiros', exigirUsuario, exigirTimeClemente, h(async (req, res) => {
+  res.json(await listarParceiros(req.organizacao!));
+}));
+
+rotas.post('/api/parceiros', exigirUsuario, exigirTimeClemente, h(async (req, res) => {
+  const d = validar<DadosMembro>(parceiroSchema, req.body);
+  const r = await incluirMembro(req.organizacao!, d, 'parceiro');
+  await registrar(req.userId!, 'incluir_parceiro', { tipo: 'parceiro', id: r.id }, { depois: { nome: d.nome, imobiliaria: d.imobiliaria } });
+  res.json(r);
+}));
+
+/** Planilha modelo para cadastrar vários parceiros de uma vez. */
+rotas.get('/api/parceiros/modelo', exigirUsuario, exigirTimeClemente, h(async (_req, res) => {
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="modelo-corretores-parceiros.xlsx"');
+  res.send(await modeloParceiros());
+}));
+
+/**
+ * Cadastra os parceiros da planilha, linha a linha, com as mesmas regras do cadastro um a um.
+ * Quem já está cadastrado (mesmo telefone ou e-mail) volta como "já cadastrado", então reenviar a planilha é seguro.
+ */
+rotas.post('/api/parceiros/importar', exigirUsuario, limiteExportar, exigirTimeClemente, h(async (req, res) => {
+  const { arquivo } = validar<{ arquivo: string }>(z.object({ arquivo: z.string().min(10, 'Escolha a planilha.').max(4_000_000, 'Planilha grande demais.') }), req.body);
+  let linhas;
+  try { linhas = await lerPlanilhaParceiros(Buffer.from(arquivo, 'base64')); } catch (e) {
+    if (e instanceof ErroPlanilhaParceiros) return res.status(400).json({ erro: e.message });
+    throw e;
+  }
+  const resultado: { linha: number; nome: string; situacao: 'incluido' | 'ja_cadastrado' | 'erro'; mensagem?: string }[] = [];
+  for (const l of linhas) {
+    const v = parceiroSchema.safeParse(l);
+    if (!v.success) { resultado.push({ linha: l.linha, nome: l.nome, situacao: 'erro', mensagem: v.error.issues[0]?.message ?? 'Dados inválidos' }); continue; }
+    try {
+      const r = await incluirMembro(req.organizacao!, v.data as DadosMembro, 'parceiro');
+      await registrar(req.userId!, 'incluir_parceiro', { tipo: 'parceiro', id: r.id }, { depois: { nome: v.data.nome, imobiliaria: v.data.imobiliaria, planilha: true } });
+      resultado.push({ linha: l.linha, nome: l.nome, situacao: 'incluido', mensagem: r.aviso });
+    } catch (e) {
+      if (!(e instanceof ErroEquipe)) throw e;
+      resultado.push({ linha: l.linha, nome: l.nome, situacao: e.status === 409 && /já existe/i.test(e.message) ? 'ja_cadastrado' : 'erro', mensagem: e.message });
+    }
+  }
+  res.json({
+    incluidos: resultado.filter((r) => r.situacao === 'incluido').length,
+    jaCadastrados: resultado.filter((r) => r.situacao === 'ja_cadastrado').length,
+    erros: resultado.filter((r) => r.situacao === 'erro').length,
+    linhas: resultado,
+  });
+}));
+
+rotas.put('/api/parceiros/:id', exigirUsuario, exigirTimeClemente, h(async (req, res) => {
+  const id = String(req.params.id);
+  await exigirVinculoDeParceiro(req.organizacao!, id);
+  res.json(await alterarMembro(req.organizacao!, id, validar<DadosMembro>(parceiroSchema, req.body)));
+}));
+
+rotas.delete('/api/parceiros/:id', exigirUsuario, exigirTimeClemente, h(async (req, res) => {
+  const id = String(req.params.id);
+  await exigirVinculoDeParceiro(req.organizacao!, id);
+  const r = await removerMembro(req.organizacao!, id);
+  await registrar(req.userId!, 'remover_parceiro', { tipo: 'parceiro', id }, {});
+  res.json(r);
+}));
+
+rotas.get('/api/parceiros/orcamentos', exigirUsuario, exigirTimeClemente, h(async (req, res) => {
+  res.json(await controleDeOrcamentos(req.organizacao!, validar<FiltroControle>(filtroControleSchema, req.query)));
+}));
+
+/** Orçamento de um parceiro, com a marca da Clemente e o contato do parceiro (como ele recebeu). */
+rotas.get('/api/parceiros/orcamentos/:id/arquivo', exigirUsuario, limiteArquivo, exigirTimeClemente, h(async (req, res) => {
+  const calculo = await orcamentoDeParceiro(req.organizacao!, String(req.params.id));
+  if (!calculo) return res.status(404).json({ erro: 'Orçamento não encontrado' });
+  const { estilo } = await configuracaoDoUsuario(calculo.user_id);
+  res.json(await arquivoDoOrcamento(calculo, estilo));
+}));
+
+rotas.get('/api/parceiros/exportar', exigirUsuario, limiteExportar, exigirTimeClemente, h(async (req, res) => {
+  const { orcamentos } = await controleDeOrcamentos(req.organizacao!, validar<FiltroControle>(filtroControleSchema, req.query));
+  const nome = `parceiros-${new Date().toISOString().slice(0, 10)}.csv`;
+  const caminho = await salvarArquivo(`${req.userId}/exportacoes/${nome}`, csvDoControle(orcamentos), 'text/csv');
+  res.json({ quantidade: orcamentos.length, url: await urlAssinada(caminho, 600, nome) });
 }));
 
 // ---------------- Gestão do negócio (admin) ----------------
@@ -494,7 +609,7 @@ rotas.post('/api/admin/usuarios/:id/teste', exigirUsuario, exigirAdmin, h(async 
 
 // ---------------- Pedido de cidade (landing, sem login) ----------------
 
-const limitePedido = rateLimit({ windowMs: 60 * 60_000, limit: 10 });
+const limitePedido = limite(60 * 60_000, 10);
 rotas.post('/api/cidades/pedido', limitePedido, h(async (req, res) => {
   const { cidade, uf, whatsapp } = z.object({
     cidade: z.string().min(2).max(80), uf: z.string().regex(/^[A-Za-z]{2}$/).default('MG'), whatsapp: z.string().optional(),

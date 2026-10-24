@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { brl, type Resultado } from '../src/lib/calc';
+import { avisoDasTabelas, brl, type Resultado } from '../src/lib/calc';
 import { config } from './config';
 import { COR_MARCA, hexParaRgb, type Estilo } from './estilo';
 import { coresDoTotal, LARGURA_LOCKUP, LINHA, linhaDeContato, linhasDeContexto, linhaDoEndereco, logoOrcaiPng, SUAVE, TEXTO, TINTA, tituloDoDocumento, type MetaOrcamento } from './documento';
@@ -31,18 +31,22 @@ export async function gerarPdfOrcamento(r: Resultado, meta: MetaOrcamento, estil
   }
   doc.setFont('helvetica', 'bold').setFontSize(7.5).setTextColor(...rgb(SUAVE));
   doc.text('ORÇAMENTO', R, y + 3.5, { align: 'right' });
-  doc.setFontSize(14).setTextColor(...rgb(TINTA));
-  doc.text(`Nº ${meta.numero.replace('#', '')}`, R, y + 10, { align: 'right' });
+  if (!estilo.semNumero) {
+    doc.setFontSize(14).setTextColor(...rgb(TINTA));
+    doc.text(`Nº ${meta.numero.replace('#', '')}`, R, y + 10, { align: 'right' });
+  }
   doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(...rgb(SUAVE));
-  doc.text(meta.data.toLocaleDateString('pt-BR'), R, y + 15, { align: 'right' });
+  doc.text(meta.data.toLocaleDateString('pt-BR'), R, y + (estilo.semNumero ? 9 : 15), { align: 'right' });
   y += Math.max(alturaLogo, 16);
   if (estilo.personalizado || estilo.logoPng) {
     y += estilo.logoPng ? 9 : 7;
-    doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...rgb(TINTA));
-    doc.text(estilo.cabecalho, L, y);
+    if (estilo.cabecalho) {
+      doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...rgb(TINTA));
+      doc.text(estilo.cabecalho, L, y);
+    }
     const contato = linhaDeContato(estilo);
     if (contato) {
-      y += 5;
+      if (estilo.cabecalho) y += 5;
       doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(...rgb(TEXTO));
       doc.text(contato, L, y);
     }
@@ -105,7 +109,7 @@ export async function gerarPdfOrcamento(r: Resultado, meta: MetaOrcamento, estil
 
   // Rodapé.
   doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(...rgb(SUAVE));
-  doc.text('Valores estimados com as tabelas vigentes de MG. Confirme com o cartório e a prefeitura antes do ato.', L, 284);
+  doc.text(`${avisoDasTabelas(r)} Confirme com o cartório e a prefeitura antes do ato.`, L, 284, { maxWidth: estilo.personalizado ? R - L - 42 : R - L });
   if (estilo.personalizado) {
     const w = (5 * LARGURA_LOCKUP) / 64;
     doc.addImage(new Uint8Array(await logoOrcaiPng()), 'PNG', R - w, 280.6, w, 5);

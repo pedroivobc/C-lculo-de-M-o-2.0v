@@ -1,5 +1,5 @@
 import type { FunctionDeclaration } from '@google/genai';
-import { brl, calcular, comCustos, type Resultado, type TipoCalculo } from '../../src/lib/calc';
+import { brl, calcular, comCustos, MUNICIPIOS, MUNICIPIO_OUTRA, type Resultado, type TipoCalculo } from '../../src/lib/calc';
 import { arquivoDoOrcamento, buscarPorSeq, intervaloDoMes, listarCalculos, numeroCalculo, salvarCalculo } from '../historico';
 import { comLocalidade, correcaoLiberada, type Configuracao } from '../estilo';
 import { gerarCsv } from '../exportar';
@@ -9,7 +9,9 @@ import { salvarArquivo, supabaseAdmin, urlAssinada } from '../supabase';
 export type Resposta =
   /** `opcoes` acompanha os menus: vira botões ou lista com WHATSAPP_BOTOES ligado (./whatsapp.ts); `corpo` é o texto sem a lista numerada. */
   | { tipo: 'texto'; texto: string; corpo?: string; opcoes?: { id: string; titulo: string; descricao?: string }[] }
-  | { tipo: 'documento'; url: string; nomeArquivo: string; mimetype: string; legenda?: string };
+  | { tipo: 'documento'; url: string; nomeArquivo: string; mimetype: string; legenda?: string }
+  /** Mensagem de voz (WAV em base64); `texto` é o que foi falado, para o histórico. */
+  | { tipo: 'audio'; base64: string; texto: string };
 // Imagens (JPEG) também vão como 'documento' na resposta; o n8n escolhe mediatype 'image' pelo mimetype.
 
 export interface Contexto {
@@ -25,7 +27,11 @@ const custos = {
   certidoes: { ...num, description: 'Certidões em reais. Omitir para usar o padrão do assinante.' },
   honorarios: { ...num, description: 'Honorários em reais. Omitir para usar o padrão do assinante.' },
   descricao: { type: 'string', description: 'Endereço do imóvel para aparecer no orçamento, só se o usuário pedir. Nunca nome, CPF, telefone ou e-mail de pessoas.' },
-  municipio: { type: 'string', enum: ['mg-juiz-de-fora', 'mg-belo-horizonte', 'mg-outra'], description: 'Omitir para usar a cidade do assinante. "mg-outra" = cidade de MG sem regra cadastrada (exige cidade e itbiPercentual).' },
+  municipio: {
+    type: 'string', enum: [...Object.keys(MUNICIPIOS), MUNICIPIO_OUTRA],
+    description: 'Omitir para usar a cidade do assinante. "mg-outra" = cidade de MG sem regra cadastrada (exige cidade e itbiPercentual). '
+      + `Cidades em teste piloto fora de MG: ${Object.values(MUNICIPIOS).filter((m) => m.piloto).map((m) => `${m.id} (${m.nome}/${m.uf})`).join(', ')}.`,
+  },
   cidade: { type: 'string', description: 'Nome da cidade quando municipio = "mg-outra".' },
   itbiPercentual: { type: 'number', description: 'Alíquota do ITBI em % (ex.: 2.5). Só quando o usuário informar.' },
 };
@@ -82,7 +88,7 @@ export const DECLARACOES: FunctionDeclaration[] = [
   },
   {
     name: 'calcular_doacao',
-    description: 'Custos de doação (ITCD de MG, lavratura, registro).',
+    description: 'Custos de doação (ITCD de MG, lavratura, registro). Só para imóveis em MG: nas cidades do piloto fora de MG ainda não está disponível.',
     parametersJsonSchema: {
       type: 'object',
       properties: {
@@ -139,7 +145,7 @@ const resumo = (r: Resultado, seq: number) => ({
 /** Anexa o orçamento no formato escolhido pelo assinante (PDF ou imagem JPEG). */
 async function anexar(ctx: Contexto, salvo: Parameters<typeof arquivoDoOrcamento>[0], formato?: 'pdf' | 'jpeg') {
   const arquivo = await arquivoDoOrcamento(salvo, ctx.configuracao.estilo, formato);
-  ctx.anexos.push({ tipo: 'documento', ...arquivo, legenda: `Orçamento ${numeroCalculo(salvo.seq)}` });
+  ctx.anexos.push({ tipo: 'documento', ...arquivo, legenda: ctx.configuracao.estilo.semNumero ? 'Orçamento' : `Orçamento ${numeroCalculo(salvo.seq)}` });
 }
 
 /** Executa uma ferramenta e devolve o resultado que volta para o modelo. Arquivos vão para ctx.anexos. */

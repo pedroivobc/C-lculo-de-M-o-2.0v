@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { NavLink, Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { BarChart3, Building2, Briefcase, FileSpreadsheet, Home, History, LayoutDashboard, LogOut, MessageCircle, UserRound, Users } from 'lucide-react';
+import { BarChart3, Building2, Briefcase, FileSpreadsheet, Handshake, Home, History, LayoutDashboard, LogOut, MessageCircle, UserRound, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Lockup } from '@/components/marca/Logo';
 import { useConta } from '@/hooks/useConta';
@@ -29,11 +29,12 @@ export function useCalculadoras() {
   return CALCULADORAS.filter((c) => !c.soJuizDeFora || perfil?.municipio_padrao === MUNICIPIO_CORRECAO);
 }
 
-type Item = { para: string; rotulo: string; soGestor?: boolean };
+type Item = { para: string; rotulo: string; soGestor?: boolean; soClemente?: boolean };
 
 const CONTA: Item[] = [
   { para: '/app/historico', rotulo: 'Histórico' },
   { para: '/app/equipe', rotulo: 'Minha equipe', soGestor: true },
+  { para: '/app/parceiros', rotulo: 'Corretores parceiros', soClemente: true },
   { para: '/app/agente', rotulo: 'Agente WhatsApp' },
   { para: '/app/conta', rotulo: 'Conta e assinatura' },
 ];
@@ -50,6 +51,7 @@ const ABAS = [
   { para: '/app', rotulo: 'Início', icone: Home, fim: true },
   { para: '/app/historico', rotulo: 'Histórico', icone: History },
   { para: '/app/equipe', rotulo: 'Equipe', icone: Users, soGestor: true },
+  { para: '/app/parceiros', rotulo: 'Parceiros', icone: Handshake, soClemente: true },
   { para: '/app/agente', rotulo: 'Agente', icone: MessageCircle },
   { para: '/app/conta', rotulo: 'Conta', icone: UserRound },
 ];
@@ -93,21 +95,23 @@ const itemMenu = ({ isActive }: { isActive: boolean }) =>
 /** Cidade do assinante (definida no cadastro); troca em Conta. */
 function useCidade() {
   const { perfil } = useConta();
-  const nome = perfil?.municipio_padrao === MUNICIPIO_OUTRA ? perfil.cidade_nome ?? 'Sua cidade' : MUNICIPIOS[perfil?.municipio_padrao ?? MUNICIPIO_PADRAO]?.nome ?? 'Juiz de Fora';
+  const m = MUNICIPIOS[perfil?.municipio_padrao ?? MUNICIPIO_PADRAO];
+  const nome = perfil?.municipio_padrao === MUNICIPIO_OUTRA ? perfil.cidade_nome ?? 'Sua cidade' : m?.nome ?? 'Juiz de Fora';
+  const uf = `${m?.uf ?? 'MG'}${m?.piloto ? ' · piloto' : ''}`;
   const pct = perfil?.itbi_percentual != null ? Number(perfil.itbi_percentual)
     : (MUNICIPIOS[perfil?.municipio_padrao ?? MUNICIPIO_PADRAO]?.itbi.aliquota ?? 0) * 100;
-  return { nome, itbi: `${String(pct).replace('.', ',')}%` };
+  return { nome, uf, itbi: `${String(pct).replace('.', ',')}%` };
 }
 
 function SeletorMunicipio({ className }: { className?: string }) {
-  const { nome, itbi } = useCidade();
+  const { nome, uf, itbi } = useCidade();
   return (
     <div className={cn('flex flex-col gap-1.5 text-xs font-bold text-suave', className)}>
       Município
       <Link to="/app/conta" className="flex min-h-11 items-center gap-2 rounded-[10px] border border-borda bg-white px-3 no-underline hover:border-tinta" aria-label={`Município: ${nome}, ITBI ${itbi}. Alterar em Conta`}>
         <span aria-hidden="true" className="h-0 w-0 shrink-0 border-x-[6px] border-b-[10px] border-x-transparent border-b-minas" />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-sm font-bold text-tinta">{nome} · MG</span>
+          <span className="truncate text-sm font-bold text-tinta">{nome} · {uf}</span>
           <span className="text-[11px] font-semibold text-suave">ITBI {itbi}</span>
         </span>
         <span className="text-xs font-bold text-acao">Alterar</span>
@@ -135,10 +139,13 @@ export function AppLayout() {
   const modoGestao = admin && pathname.startsWith('/app/admin');
   // O administrador trabalha como gestor de equipe; sem equipe ainda, "Minha equipe" mostra como criar a dele.
   const gestor = equipe?.funcao === 'gestor' || (admin && !equipe);
-  const conta = CONTA.filter((c) => !c.soGestor || gestor);
+  // Time da Clemente (gestor e colaboradores da Clemente Team) e o administrador cuidam dos corretores parceiros.
+  const timeClemente = admin || (equipe?.tipo === 'clemente' && equipe.funcao !== 'parceiro');
+  const permitido = (i: { soGestor?: boolean; soClemente?: boolean }) => (!i.soGestor || gestor) && (!i.soClemente || timeClemente);
+  const conta = CONTA.filter(permitido);
   const abas = modoGestao
     ? GESTAO.map((g) => ({ para: g.para, rotulo: g.curto, icone: g.icone, fim: false }))
-    : ABAS.filter((a) => !a.soGestor || gestor);
+    : ABAS.filter(permitido);
   const sair = useSair();
 
   return (
@@ -172,7 +179,7 @@ export function AppLayout() {
         ) : equipe ? (
           <div className="mt-auto flex flex-col gap-1.5 rounded-2xl border border-dashed border-borda p-3.5">
             <span className="font-bold">{equipe.nome}</span>
-            <span className="text-sm text-suave">{carregando ? '…' : ativa ? (equipe.tipo === 'clemente' ? 'Clemente Team' : 'Plano Teams ativo') : 'Plano da equipe inativo'}</span>
+            <span className="text-sm text-suave">{carregando ? '…' : equipe.funcao === 'parceiro' ? 'Corretor Parceiro · sem custo' : ativa ? (equipe.tipo === 'clemente' ? 'Clemente Team' : 'Plano Teams ativo') : 'Plano da equipe inativo'}</span>
             {gestor && <Link to="/app/equipe" className="font-bold text-acao">Gerenciar equipe</Link>}
           </div>
         ) : (

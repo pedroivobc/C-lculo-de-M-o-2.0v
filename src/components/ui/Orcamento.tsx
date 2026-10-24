@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { Linha, Resultado } from '@/lib/calc';
 import { brl } from '@/lib/formato';
-import { MUNICIPIOS, textoDasBases } from '@/lib/calc';
+import { cidadeDoResultado, textoDasBases } from '@/lib/calc';
 import { cn } from '@/lib/utils';
 
 /**
@@ -17,14 +17,14 @@ export function Orcamento({ titulo, resultado, rotuloTotal = 'Total estimado', c
 }) {
   const [detalhar, setDetalhar] = useState(false);
   const temDetalhes = !!resultado?.linhas.some((l) => l.detalhes?.length);
-  const nomeCidade = resultado?.municipioNome ?? (resultado?.municipio ? MUNICIPIOS[resultado.municipio]?.nome : undefined);
+  const nomeCidade = resultado?.municipio && resultado.municipio !== 'n/a' ? cidadeDoResultado(resultado) : undefined;
   return (
     <div className="relative">
       <div className={cn('rounded-t-md border border-b-0 border-linha bg-white shadow-[0_12px_32px_rgba(16,24,40,.10)]', compacto ? 'px-4 pt-4 pb-3' : 'px-6 pt-6 pb-4')}>
         <div className={cn('mb-1 flex flex-col gap-0.5 border-b-[1.5px] border-dashed border-borda pb-3')}>
           <h2 className={cn('font-extrabold', compacto ? 'text-base' : 'text-lg')}>Orçamento · {titulo}</h2>
           <span className="numero text-[13px] text-suave">
-            {resultado?.bases.length ? `Base de cálculo: ${textoDasBases(resultado, brl)}${nomeCidade ? ` · ${nomeCidade} (MG)` : ''}` : 'Preencha os valores ao lado'}
+            {resultado?.bases.length ? `Base de cálculo: ${textoDasBases(resultado, brl)}${nomeCidade ? ` · ${nomeCidade}` : ''}` : 'Preencha os valores ao lado'}
           </span>
         </div>
         {temDetalhes && (

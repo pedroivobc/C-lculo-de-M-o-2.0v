@@ -135,7 +135,12 @@ async function cupomMesGratis(): Promise<string> {
 export async function clienteDoUsuario(userId: string): Promise<string> {
   const db = supabaseAdmin();
   const { data: existente } = await db.from('clientes_gateway').select('customer_id').eq('user_id', userId).eq('gateway', GATEWAY).maybeSingle();
-  if (existente) return existente.customer_id;
+  if (existente) {
+    // Cliente criado com a outra chave (teste x produção) não existe nesta conta: cria de novo.
+    const ok = await stripe().customers.retrieve(existente.customer_id).then((c) => !c.deleted, () => false);
+    if (ok) return existente.customer_id;
+    await db.from('clientes_gateway').delete().eq('user_id', userId).eq('gateway', GATEWAY);
+  }
   const { data: p } = await db.from('profiles').select('full_name, email, cpf').eq('id', userId).single();
   const novo = await stripe().customers.create({
     name: p?.full_name ?? undefined,
@@ -523,11 +528,11 @@ export async function entregarRecompensas(indicador: string) {
 /** Depois de ativar: entrega meses grátis pendentes (do próprio e de quem o indicou) e dá boas-vindas. */
 async function aposAtivar(userId: string, primeiraVez: boolean) {
   const db = supabaseAdmin();
-  const { data: p } = await db.from('profiles').select('indicado_por, whatsapp_e164, whatsapp_verified_at, full_name').eq('id', userId).single();
+  const { data: p } = await db.from('profiles').select('indicado_por, whatsapp_e164, whatsapp_verified_at, full_name, nome').eq('id', userId).single();
   await entregarRecompensas(userId).catch((e) => console.error('Indicação:', e));
   if (p?.indicado_por) await entregarRecompensas(p.indicado_por).catch((e) => console.error('Indicação:', e));
   if (primeiraVez && p?.whatsapp_e164 && p.whatsapp_verified_at) {
-    const nome = (p.full_name ?? '').trim().split(/\s+/)[0];
+    const nome = p.nome?.trim() || (p.full_name ?? '').trim().split(/\s+/)[0];
     await enviarTexto(p.whatsapp_e164, `${nome ? `${nome}, sua` : 'Sua'} assinatura do ${config.marca} está ativa. É só mandar aqui o cálculo que você precisa.`)
       .catch((e) => console.error('Boas-vindas no WhatsApp:', e));
   }

@@ -18,7 +18,7 @@ export default function Inicio() {
   const { dados, erro } = useCalculos(mesAtual());
   const pelosite = dados?.filter((c) => c.origem === 'site').length ?? 0;
   const pelozap = dados?.filter((c) => c.origem === 'whatsapp').length ?? 0;
-  const primeiroNome = perfil?.full_name?.split(' ')[0];
+  const primeiroNome = perfil?.nome || perfil?.full_name?.split(' ')[0];
 
   return (
     <div className="flex flex-col gap-6">

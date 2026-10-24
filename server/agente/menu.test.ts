@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { calcular } from '../../src/lib/calc';
-import { FLUXOS, MENUS, lerOpcao, lerValor, passo, type ContextoMenu, type Estado, type Passo } from './menu';
+import { FLUXOS, MENUS, lerOpcao, lerValor, menuDe, passo, type ContextoMenu, type Estado, type Passo } from './menu';
 
-const ctx: ContextoMenu = { nome: 'Pedro Ivo', formatoPadrao: 'jpeg', municipio: 'mg-juiz-de-fora' };
+const ctx: ContextoMenu = { nome: 'Pedro', formatoPadrao: 'jpeg', municipio: 'mg-juiz-de-fora' };
 
 /** Manda várias mensagens seguidas e devolve o último passo. */
 function conversa(...mensagens: string[]): Passo {
@@ -113,6 +113,11 @@ describe('menu do WhatsApp', () => {
     expect(conversa('escritura de 350 mil em JF').acao).toEqual({ tipo: 'livre' });
   });
 
+  it('depois do pedido por extenso, a resposta à pergunta da IA continua com ela até "menu"', () => {
+    expect(conversa('escritura de 150 mil em JF', 'Compra e venda simples.').acao).toEqual({ tipo: 'livre' });
+    expect(conversa('escritura de 150 mil em JF', 'menu').estado).toMatchObject({ tela: 'menu', id: 'inicio' });
+  });
+
   it('pergunta antes se quer o endereço do imóvel e leva o texto para o orçamento', () => {
     const base = ['oi', '1', '1', '1', '350000'];
     expect(conversa(...base, '1').mensagens[0].texto).toContain('Digite o endereço');
@@ -205,5 +210,13 @@ describe('atendimento por uma pessoa', () => {
   it('também aparece no menu depois do orçamento', () => {
     const depois = passo({ tela: 'menu', id: 'depois', ultimo: 12 }, '4', ctx);
     expect(depois.acao).toEqual({ tipo: 'atendente' });
+  });
+});
+
+describe('cidades do piloto', () => {
+  it('o menu inicial esconde a doação (ITCD só de MG)', () => {
+    const vai = (municipio: string) => menuDe('inicio', { formatoPadrao: 'texto', municipio }).opcoes.map((o) => o.vai);
+    expect(vai('sp-sao-paulo')).not.toContain('doacao');
+    expect(vai('mg-belo-horizonte')).toContain('doacao');
   });
 });

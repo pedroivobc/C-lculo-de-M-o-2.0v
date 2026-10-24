@@ -6,7 +6,7 @@ import { calcularCorrecao, entradaCorrecao } from './correcao';
 import type { Resultado, TipoCalculo } from './tipos';
 
 export * from './tipos';
-export { MUNICIPIOS, MUNICIPIO_PADRAO, MUNICIPIO_OUTRA, obterMunicipio, percentual } from './municipios';
+export { MUNICIPIOS, MUNICIPIO_PADRAO, MUNICIPIO_OUTRA, UFS_ATENDIDAS, obterMunicipio, percentual, ufDoResultado, pilotoDoResultado, cidadeDoResultado, avisoDasTabelas } from './municipios';
 export { ROTULO_SUBTIPO_ESCRITURA } from './escritura';
 export * from './custos';
 export { atoDeRegistro, FOLHAS_CONTRATO, linhaRegistro, valorDoAto } from './registro';

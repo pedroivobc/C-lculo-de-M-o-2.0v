@@ -23,3 +23,7 @@ export const enviarTexto = (e164: string, texto: string) =>
 
 export const enviarDocumento = (e164: string, url: string, nomeArquivo: string, mimetype: string, legenda?: string) =>
   chamar('/message/sendMedia', { number: numero(e164), mediatype: 'document', mimetype, media: url, fileName: nomeArquivo, caption: legenda });
+
+/** Baixa a mídia de uma mensagem recebida (ex.: áudio). `mensagem` é o { key, message } que veio no webhook. */
+export const baixarMidia = (mensagem: unknown) =>
+  chamar('/chat/getBase64FromMediaMessage', { message: mensagem, convertToMp4: false }) as Promise<{ base64?: string; mimetype?: string }>;

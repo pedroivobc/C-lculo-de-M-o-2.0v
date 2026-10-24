@@ -12,12 +12,14 @@ export type Envio =
   | { rota: 'sendText'; corpo: { text: string } }
   | { rota: 'sendButtons'; corpo: { title: string; description: string; footer: string; buttons: { type: 'reply'; displayText: string; id: string }[] } }
   | { rota: 'sendList'; corpo: { title: string; description: string; buttonText: string; footerText: string; sections: { title: string; rows: { title: string; description: string; rowId: string }[] }[] } }
-  | { rota: 'sendMedia'; corpo: { mediatype: 'image' | 'document'; mimetype: string; media: string; fileName: string; caption: string } };
+  | { rota: 'sendMedia'; corpo: { mediatype: 'image' | 'document'; mimetype: string; media: string; fileName: string; caption: string } }
+  | { rota: 'sendWhatsAppAudio'; corpo: { audio: string; encoding: boolean } };
 
 const TITULO = 'Orça.ai';
 const cabe = (t: string, n: number) => (t.length <= n ? t : `${t.slice(0, n - 1)}…`);
 
 export function envioDe(r: Resposta, botoes: boolean): Envio {
+  if (r.tipo === 'audio') return { rota: 'sendWhatsAppAudio', corpo: { audio: r.base64, encoding: true } };
   if (r.tipo === 'documento') {
     return { rota: 'sendMedia', corpo: { mediatype: r.mimetype.startsWith('image/') ? 'image' : 'document', mimetype: r.mimetype, media: r.url, fileName: r.nomeArquivo, caption: r.legenda ?? '' } };
   }

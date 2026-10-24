@@ -13,6 +13,10 @@ import { arquivoDoOrcamento, buscarPorSeq, numeroCalculo, salvarCalculo, type Ca
 import { comLocalidade, configuracaoDoUsuario, type Configuracao } from '../estilo';
 import { usaWhatsapp, type Papel } from '../../src/lib/planos';
 import { pedirAtendente } from '../chatwoot';
+import { AUDIO_MAX_SEGUNDOS, transcreverAudio, type AudioRecebido } from './audio';
+import { falar } from './voz';
+import { ativarParceiroPeloWhatsapp } from '../parceiros';
+import { criarContaDeTeste, LIMITE_TESTE, lerNome, origemDaMensagem, usadosNoTeste } from './teste';
 
 export interface MensagemRecebida {
   telefone: string;              // E.164
@@ -21,9 +25,11 @@ export interface MensagemRecebida {
   nome?: string;                 // pushName do WhatsApp
   /** A mensagem trouxe foto ou arquivo. Só o fato é registrado: o anexo não é lido nem guardado. */
   temAnexo?: boolean;
+  /** Mensagem de voz: é transcrita (só para assinantes com o agente) e segue como se fosse escrita. */
+  audio?: AudioRecebido;
 }
 
-export type MotivoAcesso = 'ok' | 'trial' | 'sem_cartao' | 'trial_expirado' | 'assinatura_inativa' | 'organizacao_inativa' | 'sem_perfil';
+export type MotivoAcesso = 'ok' | 'trial' | 'sem_cartao' | 'trial_expirado' | 'assinatura_inativa' | 'organizacao_inativa' | 'sem_perfil' | 'teste_esgotado';
 
 export interface Assinante {
   userId: string;
@@ -33,20 +39,30 @@ export interface Assinante {
   /** Regra única do banco (situacao_acesso): cartão validado + trial no prazo ou assinatura ativa; admin sempre. */
   ativo: boolean;
   motivo: MotivoAcesso;
+  /** Conta de teste do WhatsApp (sem cadastro no site): orçamentos já usados de LIMITE_TESTE. */
+  teste?: { usados: number };
 }
 
 export async function identificar(telefone: string): Promise<Assinante | null> {
   const db = supabaseAdmin();
   const { data: perfil } = await db.from('profiles')
-    .select('id, full_name')
+    .select('id, full_name, nome')
     .in('whatsapp_e164', variantesTelefone(telefone))
     .not('whatsapp_verified_at', 'is', null)
     .limit(1).maybeSingle();
   if (!perfil) return null;
   const { data: situacao, error } = await db.rpc('situacao_acesso', { uid: perfil.id }).maybeSingle<{ papel: Assinante['papel']; liberado: boolean; motivo: MotivoAcesso }>();
   if (error) throw new Error(`Falha ao consultar o acesso: ${error.message}`);
+  const nome = perfil.nome?.trim() || perfil.full_name?.trim().split(/\s+/)[0] || null;
+  const configuracao = await configuracaoDoUsuario(perfil.id);
+  // Teste grátis do WhatsApp: liberado até LIMITE_TESTE orçamentos, sem cartão.
+  const usados = await usadosNoTeste(perfil.id);
+  if (usados !== null) {
+    const ativo = usados < LIMITE_TESTE;
+    return { userId: perfil.id, nome, configuracao, papel: 'trial', ativo, motivo: ativo ? 'ok' : 'teste_esgotado', teste: { usados } };
+  }
   return {
-    userId: perfil.id, nome: perfil.full_name, configuracao: await configuracaoDoUsuario(perfil.id),
+    userId: perfil.id, nome, configuracao,
     papel: situacao?.papel ?? 'trial', ativo: !!situacao?.liberado, motivo: situacao?.motivo ?? 'sem_perfil',
   };
 }
@@ -59,6 +75,7 @@ const MENSAGEM_BLOQUEIO: Record<MotivoAcesso, (url: string) => string> = {
   assinatura_inativa: (u) => `Sua assinatura do ${config.marca} não está ativa. Renove em ${u}/assinar e eu volto a calcular na hora.`,
   organizacao_inativa: () => `O plano da sua equipe no ${config.marca} não está ativo. Fale com o gestor da sua imobiliária.`,
   sem_perfil: (u) => `Não encontrei sua conta. Entre em ${u}/entrar.`,
+  teste_esgotado: (u) => `Você já usou os ${LIMITE_TESTE} orçamentos grátis 🙌\n\nPara continuar orçando aqui e no site, assine o ${config.marca}: ${u}/cadastro\n\nCadastre este mesmo WhatsApp que os orçamentos do teste vão junto para a sua conta.`,
 };
 
 function instrucoes(a: Assinante) {
@@ -66,11 +83,14 @@ function instrucoes(a: Assinante) {
   const outra = l.municipio === MUNICIPIO_OUTRA;
   const cidade = outra ? `${l.cidade ?? 'cidade de MG'} (ITBI de ${l.itbiPercentual}% informado pelo assinante)`
     : `${MUNICIPIOS[l.municipio]?.nome ?? l.municipio}${l.itbiPercentual !== undefined ? ` (ITBI de ${l.itbiPercentual}% informado pelo assinante)` : ''}`;
-  const atendidos = Object.values(MUNICIPIOS).map((m) => `${m.nome} (${m.uf})`).join(', ');
+  const atendidos = Object.values(MUNICIPIOS).filter((m) => !m.piloto).map((m) => `${m.nome} (${m.uf})`).join(', ');
+  const piloto = Object.values(MUNICIPIOS).filter((m) => m.piloto).map((m) => `${m.nome} (${m.uf}, municipio "${m.id}")`).join(', ');
   const formato = a.configuracao.estilo.formato === 'jpeg' ? 'imagem (JPEG)' : 'PDF';
   return `Você é o agente do ${config.marca} no WhatsApp. Ajuda corretores, despachantes e assessorias a orçar custos de documentação de imóveis.
 Hoje é ${new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}. Assinante: ${a.nome ?? 'sem nome'}. Município padrão: ${cidade}.
-Municípios com regra da prefeitura cadastrada: ${atendidos}. Os emolumentos de cartório seguem a tabela de MG.
+Municípios com regra da prefeitura cadastrada: ${atendidos}. Em MG, os emolumentos de cartório seguem a tabela de MG.
+Cidades em TESTE PILOTO, com a tabela de cartório do próprio estado: ${piloto}. Nelas valem escritura de compra e venda e financiamento; doação ainda não (o ITCD do estado não entrou).
+Ao responder sobre uma cidade do piloto, diga uma vez que ela está em teste piloto e que o cartório entra pelo ato principal (sem prenotação, certidões e selos).
 Os cálculos usam a cidade do assinante automaticamente; não pergunte a cidade se ele não falar de outra.
 
 Regras:
@@ -78,9 +98,9 @@ Regras:
 - Se faltar um dado obrigatório (ex.: valor do imóvel, valor financiado, modalidade), pergunte só o que falta, em uma frase.
 - A base de cálculo é o valor declarado do imóvel (a prefeitura não usa mais o valor venal corrigido). Se o usuário falar em "venal", use esse valor como valor declarado.
 - Valores como "350 mil" ou "1,2 mi" viram números (350000, 1200000).
-- Se o imóvel for em outra cidade de MG sem regra cadastrada, peça a alíquota do ITBI dessa cidade e passe municipio "mg-outra", cidade e itbiPercentual na ferramenta. Fora de MG, diga que ainda não atende o estado e chame pedir_cidade.
-- Resposta curta, em português, no estilo do WhatsApp: total em *negrito* primeiro, depois os itens principais, e o número do cálculo (#0000). O orçamento já vai anexado em ${formato}: não cole links. Se ele pedir no outro formato, use reenviar_calculo com formato.
-- Mostre Escritura e Registro como um valor cada. Só se o usuário pedir para detalhar, liste as partes (campo detalhes): Escritura = lavratura + arquivamento; Registro = ato de registro + prenotação + certidão de inteiro teor + averbações.
+- Se o imóvel for em outra cidade de MG sem regra cadastrada, peça a alíquota do ITBI dessa cidade e passe municipio "mg-outra", cidade e itbiPercentual na ferramenta. Se for numa cidade do piloto, passe o municipio dela. Fora de MG e das cidades do piloto, diga que ainda não atende a cidade e chame pedir_cidade.
+- Resposta curta, em português, no estilo do WhatsApp: total em *negrito* primeiro, depois os itens principais${a.configuracao.estilo.semNumero ? '. Não mostre o número do cálculo (#0000) ao corretor parceiro; use-o só nas ferramentas' : ', e o número do cálculo (#0000)'}. O orçamento já vai anexado em ${formato}: não cole links. Se ele pedir no outro formato, use reenviar_calculo com formato.
+- Mostre Escritura e Registro como um valor cada. Só se o usuário pedir para detalhar, liste as partes (campo detalhes): Escritura = lavratura + arquivamento; Registro = ato de registro + prenotação + certidão de inteiro teor + averbações (nas cidades do piloto, só os atos com valor e, em Curitiba, o Funrejus).
 - Termine orçamentos lembrando que são estimativas a confirmar com o cartório e a prefeitura, em poucas palavras.
 - Não fale de assuntos fora de orçamento de documentação imobiliária.`;
 }
@@ -140,11 +160,24 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
     return { status: `verificacao_${confirmacao.status}`, respostas: [{ tipo: 'texto', texto: RESPOSTA_CONFIRMACAO[confirmacao.status](config.appUrl) }] };
   }
 
-  const assinante = await identificar(msg.telefone);
+  let assinante = await identificar(msg.telefone);
+  // Corretor parceiro cadastrado pelo time da Clemente só com o telefone: a conta nasce agora e ele é atendido normalmente.
+  if (!assinante && await ativarParceiroPeloWhatsapp(msg.telefone).catch((e) => { console.error('Parceiro: ativação pelo WhatsApp', e); return false; })) {
+    assinante = await identificar(msg.telefone);
+  }
   if (!assinante) {
-    await registrar(msg.telefone, null, 'entrada', msg.temAnexo ? 'midia' : 'texto', msg.texto ?? '', msg.messageId);
-    return { status: 'sem_cadastro', respostas: [{ tipo: 'texto', texto:
-      `Olá! Eu sou o agente do *${config.marca}*: faço orçamento de escritura, ITBI e financiamento em segundos.\n\nEste número ainda não está cadastrado. Assine em ${config.appUrl}/cadastro e confirme este WhatsApp para começar.` }] };
+    // Número sem cadastro: começa o teste grátis (conta de teste com este WhatsApp) e pergunta o nome.
+    const tipo = msg.audio ? 'audio' : msg.temAnexo ? 'midia' : 'texto';
+    const teste = await criarContaDeTeste(msg.telefone, msg.nome, origemDaMensagem(msg.texto))
+      .catch((e) => { console.error('Teste grátis:', e); return null; });
+    await registrar(msg.telefone, teste, 'entrada', tipo, msg.texto ?? '', msg.messageId);
+    if (!teste) {
+      return { status: 'sem_cadastro', respostas: [{ tipo: 'texto', texto:
+        `Olá! Eu sou o agente do *${config.marca}*: faço orçamento de escritura, ITBI e financiamento em segundos.\n\nAssine em ${config.appUrl}/cadastro e confirme este WhatsApp para começar.` }] };
+    }
+    await salvarSessao(msg.telefone, teste, { tela: 'nome' });
+    return responder(msg.telefone, teste, 'teste_inicio', [{ tipo: 'texto', texto:
+      `Olá! 👋 Eu sou o agente do *${config.marca}*: faço orçamento de escritura, ITBI, registro e financiamento em segundos.\n\nVocê pode fazer *${LIMITE_TESTE} orçamentos grátis* aqui, sem cadastro. Pra começar, qual é o seu nome?` }]);
   }
   if (!assinante.ativo) {
     await registrar(msg.telefone, assinante.userId, 'entrada', 'texto', msg.texto ?? '', msg.messageId);
@@ -158,25 +191,68 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
       `O atendimento pelo WhatsApp é do plano Pró. No Starter, os orçamentos são feitos em ${config.appUrl}/app. Para usar o agente, mude de plano em ${config.appUrl}/assinar?nivel=pro` }] };
   }
 
-  const textoUsuario = msg.texto?.trim() ?? '';
-  await registrar(msg.telefone, assinante.userId, 'entrada', msg.temAnexo ? 'midia' : 'texto', textoUsuario, msg.messageId);
+  let textoUsuario = msg.texto?.trim() ?? '';
+  // Áudio: transcreve e segue como se o corretor tivesse escrito. Mostra o que entendeu antes da resposta.
+  let ouvido: Resposta | null = null;
+  if (msg.audio && !textoUsuario) {
+    const longo = (msg.audio.segundos ?? 0) > AUDIO_MAX_SEGUNDOS;
+    const transcricao = longo ? null : await transcreverAudio(msg.audio).catch((e) => { console.error('Falha ao transcrever o áudio', e); return null; });
+    if (!transcricao) {
+      await registrar(msg.telefone, assinante.userId, 'entrada', 'audio', '', msg.messageId);
+      return responder(msg.telefone, assinante.userId, 'audio_nao_entendido', [{ tipo: 'texto', texto: longo
+        ? `Esse áudio passou de ${AUDIO_MAX_SEGUNDOS / 60} minutos 😅 Mande um mais curto ou escreva o pedido.`
+        : 'Não consegui entender o áudio 😕 Pode mandar de novo, falando perto do celular, ou escrever?' }]);
+    }
+    textoUsuario = transcricao;
+    ouvido = { tipo: 'texto', texto: `🎙️ Entendi: _${transcricao}_` };
+  }
+  await registrar(msg.telefone, assinante.userId, 'entrada', msg.audio ? 'audio' : msg.temAnexo ? 'midia' : 'texto', textoUsuario, msg.messageId);
+  // Com um atendente na conversa o robô não responde, então também não ecoa o áudio.
+  const comOuvido = <T extends { respostas: Resposta[] }>(r: T): T => (ouvido && r.respostas.length ? { ...r, respostas: [ouvido, ...r.respostas] } : r);
+  const sessao = await lerSessao(msg.telefone);
+  // Teste grátis: depois de cada orçamento, avisa quantos ainda restam (o último já leva o link para assinar).
+  const comAvisoDoTeste = async <T extends { respostas: Resposta[] }>(r: T): Promise<T> => {
+    if (!assinante.teste) return r;
+    const agora = await usadosNoTeste(assinante.userId) ?? 0;
+    if (agora <= assinante.teste.usados) return r;
+    const resta = LIMITE_TESTE - agora;
+    const texto = resta > 0 ? `🎁 Você ainda tem *${resta}* orçamento${resta > 1 ? 's' : ''} grátis.`
+      : `🎁 Esse foi seu último orçamento grátis. Para continuar, assine o ${config.marca}: ${config.appUrl}/cadastro\n\nCadastre este mesmo WhatsApp que os orçamentos do teste vão junto para a sua conta.`;
+    return { ...r, respostas: [...r.respostas, { tipo: 'texto', texto }] };
+  };
+
+  // Teste grátis: a primeira resposta é o nome.
+  if (sessao?.tela === 'nome') {
+    const n = lerNome(textoUsuario);
+    if (!n) return comOuvido(await responder(msg.telefone, assinante.userId, 'teste_nome', [{ tipo: 'texto', texto: 'Não peguei seu nome 😅 Me diga só como você se chama, por exemplo: *Pedro*.' }]));
+    await db.from('profiles').update({ nome: n.nome, sobrenome: n.sobrenome, full_name: [n.nome, n.sobrenome].filter(Boolean).join(' ') }).eq('id', assinante.userId);
+    const inicio: Estado = { tela: 'menu', id: 'inicio' };
+    await salvarSessao(msg.telefone, assinante.userId, inicio);
+    const ctxNome: ContextoMenu = { nome: n.nome, formatoPadrao: assinante.configuracao.estilo.formato, custosPadrao: assinante.configuracao.custos, municipio: assinante.configuracao.localidade.municipio };
+    return comOuvido(await responder(msg.telefone, assinante.userId, 'ok', [{ tipo: 'texto', texto: telaAtual(inicio, ctxNome,
+      `Prazer, ${n.nome}! 🤝 Escolha uma opção ou me mande o pedido escrito ou em áudio, por exemplo: _escritura de 350 mil em Juiz de Fora_.\n\n`).texto }]));
+  }
 
   // "indicar" ou "cupom": manda o cupom de indicação do assinante, pronto para encaminhar.
   if (/^(indicar|indicacao|indicação|cupom|meu cupom)$/i.test(textoUsuario)) {
     const codigo = await codigoDoUsuario(assinante.userId);
-    return responder(msg.telefone, assinante.userId, 'ok', [
+    return comOuvido(await responder(msg.telefone, assinante.userId, 'ok', [
       { tipo: 'texto', texto: `Seu cupom de indicação: *${codigo}*\nQuem se cadastrar com ele ganha ${DIAS_TESTE_INDICACAO} dias grátis (em vez de ${DIAS_TESTE}). Encaminhe a mensagem abaixo 👇` },
       { tipo: 'texto', texto: `Uso o *${config.marca}* para fazer orçamento de escritura, ITBI e financiamento em segundos, direto no WhatsApp. Cadastre-se com o meu cupom *${codigo}* e ganhe ${DIAS_TESTE_INDICACAO} dias grátis:\n${linkDeIndicacao(codigo)}` },
-    ]);
+    ]));
   }
 
   // Conversa por menus numerados (./menu.ts). Texto livre no menu inicial vai para o agente com IA.
   const ctxMenu: ContextoMenu = { nome: assinante.nome, formatoPadrao: assinante.configuracao.estilo.formato, temAnexo: msg.temAnexo, custosPadrao: assinante.configuracao.custos, municipio: assinante.configuracao.localidade.municipio };
-  const p = passo(await lerSessao(msg.telefone), textoUsuario, ctxMenu);
+  const p = passo(sessao, textoUsuario, ctxMenu);
   if (p.acao?.tipo === 'livre') {
+    if (!config.geminiKey) {
+      const menu: Estado = { tela: 'menu', id: 'inicio', ultimo: p.estado.ultimo };
+      await salvarSessao(msg.telefone, assinante.userId, menu);
+      return comOuvido(await responder(msg.telefone, assinante.userId, 'ok', [{ tipo: 'texto', texto: telaAtual(menu, ctxMenu, 'Para orçar, escolha uma opção 👇\n\n').texto }]));
+    }
     await salvarSessao(msg.telefone, assinante.userId, p.estado);
-    if (config.geminiKey) return responderComIa(msg.telefone, assinante, textoUsuario);
-    return responder(msg.telefone, assinante.userId, 'ok', [{ tipo: 'texto', texto: telaAtual(p.estado, ctxMenu, 'Para orçar, escolha uma opção 👇\n\n').texto }]);
+    return comAvisoDoTeste(comOuvido(await responderComIa(msg.telefone, assinante, textoUsuario, Boolean(ouvido))));
   }
 
   const respostas: Resposta[] = [];
@@ -208,12 +284,12 @@ export async function processarMensagem(msg: MensagemRecebida): Promise<{ status
   }
   respostas.push(...mensagens.map((m): Resposta => ({ tipo: 'texto', texto: m.texto, corpo: m.corpo, opcoes: m.opcoes })));
   await salvarSessao(msg.telefone, assinante.userId, estado);
-  return responder(msg.telefone, assinante.userId, 'ok', respostas);
+  return comAvisoDoTeste(comOuvido(await responder(msg.telefone, assinante.userId, 'ok', respostas)));
 }
 
 /** Registra as mensagens de saída (texto) e devolve a resposta para o n8n. */
 async function responder(telefone: string, userId: string, status: string, respostas: Resposta[]) {
-  const texto = respostas.map((r) => (r.tipo === 'texto' ? r.texto : `[${r.nomeArquivo}]`)).join('\n\n');
+  const texto = respostas.map((r) => (r.tipo === 'texto' ? r.texto : r.tipo === 'audio' ? `🎙️ ${r.texto}` : `[${r.nomeArquivo}]`)).join('\n\n');
   if (texto) await registrar(telefone, userId, 'saida', 'texto', texto); // com atendente, o robô não responde
   return { status, respostas };
 }
@@ -223,7 +299,7 @@ async function entregar(salvo: CalculoSalvo, formato: FormatoEntrega, estilo: Co
   const meta = { numero: numeroCalculo(salvo.seq), data: new Date(salvo.created_at), endereco: salvo.descricao ?? undefined };
   if (formato === 'texto') return [{ tipo: 'texto', texto: orcamentoEmTexto(salvo.resultado, meta, estilo, comDetalhes) }];
   const arquivo = await arquivoDoOrcamento(salvo, estilo, formato);
-  return [{ tipo: 'documento', ...arquivo, legenda: `Orçamento ${meta.numero} · Total ${brl(salvo.resultado.total)}` }];
+  return [{ tipo: 'documento', ...arquivo, legenda: `Orçamento${estilo.semNumero ? '' : ` ${meta.numero}`} · Total ${brl(salvo.resultado.total)}` }];
 }
 
 // ---------------- Sessão do menu ----------------
@@ -251,7 +327,8 @@ async function salvarSessao(telefone: string, userId: string, estado: Estado) {
 // ---------------- Texto livre com IA ----------------
 
 /** Pedido escrito por extenso ("escritura de 350 mil em JF"): o modelo chama as mesmas calculadoras. */
-async function responderComIa(telefone: string, assinante: Assinante, textoUsuario: string) {
+/** `porVoz`: o corretor mandou áudio, então a resposta curta também vai falada (menus, valores e arquivos seguem escritos). */
+async function responderComIa(telefone: string, assinante: Assinante, textoUsuario: string, porVoz = false) {
   const anexos: Resposta[] = [];
   const ctx: Contexto = { userId: assinante.userId, telefone, configuracao: assinante.configuracao, anexos };
   const ai = new GoogleGenAI({ apiKey: config.geminiKey });
@@ -280,6 +357,10 @@ async function responderComIa(telefone: string, assinante: Assinante, textoUsuar
   }
 
   if (!resposta) resposta = 'Não consegui entender esse pedido.';
+  const voz = porVoz ? await falar(resposta).catch((e) => { console.error('Falha ao gerar a resposta falada', e); return null; }) : null;
+  if (voz) {
+    return responder(telefone, assinante.userId, 'ok', [{ tipo: 'audio', base64: voz, texto: resposta }, ...anexos, { tipo: 'texto', texto: 'Digite *menu* para ver as opções.' }]);
+  }
   resposta += '\n\nDigite *menu* para ver as opções.';
   return responder(telefone, assinante.userId, 'ok', [{ tipo: 'texto', texto: resposta }, ...anexos]);
 }

@@ -25,3 +25,13 @@ export function basesRotuladas(r: Pick<Resultado, 'tipo' | 'subtipo' | 'bases'>)
 export function textoDasBases(r: Pick<Resultado, 'tipo' | 'subtipo' | 'bases'>, fmt: (n: number) => string): string {
   return basesRotuladas(r).map((b) => (b.rotulo ? `${b.rotulo}: ${fmt(b.valor)}` : fmt(b.valor))).join(' · ');
 }
+
+/**
+ * Valor transacionado do negócio: o valor do imóvel (1ª base; no financiamento, a compra e venda).
+ * Na interveniência são duas transmissões do mesmo imóvel, então soma as duas. Na correção, o valor do contrato.
+ */
+export function valorTransacionado(r: Pick<Resultado, 'subtipo' | 'bases'>): number {
+  const bases = r.bases ?? [];
+  if (r.subtipo === 'interveniencia') return bases.reduce((s, b) => s + b, 0);
+  return bases[0] ?? 0;
+}

@@ -2,11 +2,28 @@ import { useState } from 'react';
 import { PaginaCalculadora, Grade } from '@/components/calc/PaginaCalculadora';
 import { CampoMoeda, CampoNumero, Opcoes } from '@/components/ui/Campos';
 import { BotaoCustos, useCustos } from '@/hooks/useCustos';
+import { Link } from 'react-router-dom';
+import { MUNICIPIOS } from '@/lib/calc';
+import { useConta } from '@/hooks/useConta';
+import { Cartao } from '@/components/ui/Campos';
 
 type Subtipo = 'doacao_simples' | 'doacao_usufruto' | 'renuncia_usufruto';
 const ROTULOS: Record<Subtipo, string> = { doacao_simples: 'Doação simples', doacao_usufruto: 'Doação com usufruto', renuncia_usufruto: 'Renúncia de usufruto' };
 
 export default function Doacao() {
+  const { perfil } = useConta();
+  const m = MUNICIPIOS[perfil?.municipio_padrao ?? ''];
+  if (m?.piloto) {
+    return (
+      <Cartao titulo="Doação">
+        <p className="text-suave">No teste piloto de <strong className="text-tinta">{m.nome} ({m.uf})</strong>, a doação ainda não está disponível: o ITCD de {m.uf} entra na próxima etapa. Escritura e financiamento já funcionam. O seu município pode ser trocado em <Link to="/app/conta" className="font-bold text-acao">Conta</Link>.</p>
+      </Cartao>
+    );
+  }
+  return <CalculadoraDoacao />;
+}
+
+function CalculadoraDoacao() {
   const [subtipo, setSubtipo] = useState<Subtipo>('doacao_simples');
   const [atribuido, setAtribuido] = useState(0);
   const [fazenda, setFazenda] = useState(0);

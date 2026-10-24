@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { ROTULO_SUBTIPO_ESCRITURA, textoDasBases, type Resultado } from '../src/lib/calc';
+import { cidadeDoResultado, ROTULO_SUBTIPO_ESCRITURA, textoDasBases, type Resultado } from '../src/lib/calc';
 import { hexParaRgb, type Estilo } from './estilo';
 
 /**
@@ -37,7 +37,7 @@ export function tituloDoDocumento(r: Resultado) {
 /** Linhas abaixo do título: a cidade e a base de cálculo, cada uma na sua linha (a base com o nome de cada parte). */
 export function linhasDeContexto(r: Resultado, brl: (n: number) => string, semCidade = false) {
   const linhas: string[] = [];
-  if (!semCidade && r.municipioNome && r.municipio !== 'n/a') linhas.push(`Imóvel em ${r.municipioNome} (MG)`);
+  if (!semCidade && r.municipioNome && r.municipio !== 'n/a') linhas.push(`Imóvel em ${cidadeDoResultado(r)}`);
   const bases = textoDasBases(r, brl);
   if (bases) linhas.push(`Base de cálculo: ${bases}`);
   return linhas;
@@ -51,7 +51,7 @@ export function linhaDeContato(estilo: Pick<Estilo, 'contato'>): string {
 
 /** "Imóvel: Rua Halfeld, 100 · Juiz de Fora (MG)", quando o assinante colocou o endereço. */
 export function linhaDoEndereco(r: Resultado, endereco: string) {
-  const cidade = r.municipioNome && r.municipio !== 'n/a' ? ` · ${r.municipioNome} (MG)` : '';
+  const cidade = r.municipioNome && r.municipio !== 'n/a' ? ` · ${cidadeDoResultado(r)}` : '';
   return `Imóvel: ${endereco}${cidade}`;
 }
 

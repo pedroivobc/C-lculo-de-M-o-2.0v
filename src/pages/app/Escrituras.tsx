@@ -1,13 +1,18 @@
 import { useState } from 'react';
 import { PaginaCalculadora, Grade } from '@/components/calc/PaginaCalculadora';
 import { CampoMoeda, CampoNumero, Opcoes } from '@/components/ui/Campos';
-import { ROTULO_SUBTIPO_ESCRITURA } from '@/lib/calc';
+import { MUNICIPIOS, ROTULO_SUBTIPO_ESCRITURA } from '@/lib/calc';
 import { BotaoCustos, useCustos } from '@/hooks/useCustos';
+import { useConta } from '@/hooks/useConta';
 
 type Subtipo = keyof typeof ROTULO_SUBTIPO_ESCRITURA;
 const R = (c: number) => c / 100;
 
 export default function Escrituras() {
+  const { perfil } = useConta();
+  // Doação depende do ITCD, que só está cadastrado para MG: nas cidades do piloto, só compra e venda.
+  const piloto = !!MUNICIPIOS[perfil?.municipio_padrao ?? '']?.piloto;
+  const subtipos = (Object.keys(ROTULO_SUBTIPO_ESCRITURA) as Subtipo[]).filter((s) => !piloto || !/doacao|usufruto/.test(s));
   const [subtipo, setSubtipo] = useState<Subtipo>('compra_venda_simples');
   const [v, setV] = useState<Record<string, number>>({});
   const c = useCustos('escritura');
@@ -30,7 +35,7 @@ export default function Escrituras() {
       descricao="A base de cálculo é o valor declarado do imóvel."
       tituloOrcamento={ROTULO_SUBTIPO_ESCRITURA[subtipo].toLowerCase()}
       opcoes={<Opcoes rotulo="Tipo de escritura" valor={subtipo} onChange={setSubtipo}
-        opcoes={(Object.keys(ROTULO_SUBTIPO_ESCRITURA) as Subtipo[]).map((s) => ({ valor: s, rotulo: ROTULO_SUBTIPO_ESCRITURA[s] }))} />}
+        opcoes={subtipos.map((s) => ({ valor: s, rotulo: ROTULO_SUBTIPO_ESCRITURA[s] }))} />}
     >
       {subtipo === 'compra_venda_simples' && (
         <Grade>
