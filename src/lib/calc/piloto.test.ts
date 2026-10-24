@@ -10,12 +10,12 @@ const caixa = (municipio: string) => calcular('financiamento_caixa', {
 
 describe('capitais em teste piloto', () => {
   it.each([
-    ['sp-sao-paulo', 15000, 5427.43, 3326.8],
-    ['rj-rio-de-janeiro', 15000, 4079.07, 4033.24],
-    ['df-brasilia', 10000, 2490.81, 1383.78],
-    ['pr-curitiba', 13500, 2501.19, 1301.92],
-    ['rs-porto-alegre', 15000, 2604.69, 2591.14],
-    ['sc-balneario-camboriu', 15000, 3119.59, 3054.55],
+    ['sp-sao-paulo', 15000, 5427.43, 3403.38],
+    ['rj-rio-de-janeiro', 15000, 4132.41, 4269.91],
+    ['df-brasilia', 10000, 2490.81, 1428.06],
+    ['pr-curitiba', 13500, 2501.19, 1304.94],
+    ['rs-porto-alegre', 15000, 2604.69, 2627.42],
+    ['sc-balneario-camboriu', 15000, 3058.64, 2994.76],
   ])('escritura de compra e venda em %s', (municipio, itbi, notas, registro) => {
     const r = escritura(municipio);
     expect(linha(r, 'ITBI')).toBe(itbi);
@@ -42,8 +42,26 @@ describe('capitais em teste piloto', () => {
 
   it('Curitiba: Funrejus de 0,2% entra no registro quando não há escritura', () => {
     const r = caixa('pr-curitiba');
-    expect(linha(r, 'Registro')).toBe(2301.92);
+    expect(linha(r, 'Registro')).toBe(2304.5);
     expect(r.linhas.find((l) => l.rotulo === 'Registro')?.detalhes?.some((d) => /Funrejus/.test(d.rotulo))).toBe(true);
+  });
+
+  it('Balneário Camboriú: escritura bate com a tabela 2026 do 1º Tabelionato', () => {
+    const esc = (v: number) => linha(calcular('escritura', { subtipo: 'compra_venda_simples', valorDeclarado: v, municipio: 'sc-balneario-camboriu' }), 'Escritura');
+    expect(esc(10000)).toBe(214.07);
+    expect(esc(250000)).toBe(2745.56);
+    expect(esc(500000)).toBe(3058.64);
+    expect(esc(5000000)).toBe(7093.91); // teto da tabela
+  });
+
+  it('atos acessórios de cada tabela entram no registro e na escritura', () => {
+    const detalhes = (r: ReturnType<typeof calcular>, rotulo: string) => r.linhas.find((l) => l.rotulo === rotulo)?.detalhes?.map((d) => d.rotulo) ?? [];
+    expect(detalhes(escritura('rj-rio-de-janeiro'), 'Registro')).toEqual(expect.arrayContaining(['Prenotação', 'Certidão da matrícula (com ônus reais)']));
+    expect(detalhes(escritura('rj-rio-de-janeiro'), 'Escritura')).toContain('Distribuição da escritura');
+    expect(detalhes(escritura('sp-sao-paulo'), 'Registro')).toContain('Certidão da matrícula');
+    expect(detalhes(escritura('sp-sao-paulo'), 'Registro')).not.toContain('Prenotação'); // descontada do registro em SP
+    expect(detalhes(caixa('pr-curitiba'), 'Registro')).toEqual(expect.arrayContaining(['Prenotação', 'Arquivamento do contrato']));
+    expect(detalhes(escritura('sc-balneario-camboriu'), 'Registro')).toEqual(['Ato de registro · compra e venda']); // certidão incluída
   });
 
   it('Rio de Janeiro: sem redução de ITBI no financiamento', () => {

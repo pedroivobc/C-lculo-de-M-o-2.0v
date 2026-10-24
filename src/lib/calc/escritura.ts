@@ -3,7 +3,7 @@ import { obterMunicipio, camposLocalidade, percentual, type Municipio } from './
 import { MG, aliquotaItcd } from './uf';
 import { arquivamento, lavratura, precoFolha } from './notas';
 import { linhaRegistro } from './registro';
-import { atoCartorio, taxaTransmissao, type UfPiloto } from './cartorios';
+import { atoCartorio, atosAcessorios, INCLUIDOS, taxaTransmissao, type UfPiloto } from './cartorios';
 import { Detalhe, Linha, Resultado, somar } from './tipos';
 
 const valor = z.coerce.number().nonnegative();
@@ -54,7 +54,9 @@ export function linhaEscritura(lavraturas: { rotulo: string; base: number }[], f
 }
 
 const somaDetalhes = (d: Detalhe[]) => Math.round(d.reduce((s, x) => s + x.valor, 0) * 100) / 100;
-const NAO_INCLUI = 'Não inclui prenotação, certidões e selos do cartório';
+/** Nota da linha nas cidades do piloto: o que a tabela já inclui e o lembrete de conferir com o cartório. */
+const notaPiloto = (uf: UfPiloto, cartorio: 'notas' | 'registro') =>
+  [INCLUIDOS[uf][cartorio], 'confira o valor final com o cartório'].filter(Boolean).join(' · ');
 
 /**
  * Linha "Escritura" pela tabela do estado da cidade. Em MG, lavratura + arquivamento (./notas.ts);
@@ -71,7 +73,8 @@ export function linhaEscrituraDe(m: Municipio, lavraturas: { rotulo: string; bas
     const t = taxaTransmissao(uf, b);
     if (t) detalhes.push({ rotulo: 'Funrejus', valor: t.valor, nota: `${t.nota} · base ${brl(b)}` });
   }
-  return { rotulo: 'Escritura', valor: somaDetalhes(detalhes), origem: 'uf', nota: `Lavratura · tabela de ${m.uf} · ${NAO_INCLUI}`, detalhes };
+  detalhes.push(...atosAcessorios(uf, 'notas', m.issCartorio));
+  return { rotulo: 'Escritura', valor: somaDetalhes(detalhes), origem: 'uf', nota: `Lavratura · tabela de ${m.uf} · ${notaPiloto(uf, 'notas')}`, detalhes };
 }
 
 /**
@@ -95,7 +98,9 @@ export function linhaRegistroDe(
     const t = taxaTransmissao(uf, b);
     if (t) detalhes.push({ rotulo: 'Funrejus', valor: t.valor, nota: `${t.nota} · base ${brl(b)}` });
   }
-  return { rotulo: opcoes.rotulo ?? 'Registro', valor: somaDetalhes(detalhes), origem: 'uf', nota: `Registro de Imóveis · tabela de ${m.uf} · ${NAO_INCLUI}`, detalhes };
+  const sufixo = (nota: string) => (reducao && opcoes.notaReducao ? nota.replace(/redução de .*$/, opcoes.notaReducao) : nota);
+  detalhes.push(...atosAcessorios(uf, 'registro', m.issCartorio, reducao, opcoes.folhas).map((a) => ({ ...a, nota: sufixo(a.nota) })));
+  return { rotulo: opcoes.rotulo ?? 'Registro', valor: somaDetalhes(detalhes), origem: 'uf', nota: `Registro de Imóveis · tabela de ${m.uf} · ${notaPiloto(uf, 'registro')}`, detalhes };
 }
 
 /** Escrituras de compra e venda e de doação: ITBI/ITCD, escritura (lavratura + arquivamento) e registro. */

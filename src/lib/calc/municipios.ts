@@ -139,8 +139,8 @@ export const MUNICIPIOS: Record<string, Municipio> = {
         return { valor: centavos(faixa * 0.01 + (base - faixa) * 0.03), regra: '1% sobre o financiado e 3% no restante' };
       },
     },
-    // ISS de cartório não confirmado na lei municipal: usamos 5%, o teto da LC 116/2003.
-    issCartorio: 0.05,
+    // ISS de 2,5% sobre os emolumentos, como na tabela 2026 do 1º Tabelionato de Balneário Camboriú.
+    issCartorio: 0.025,
   },
 };
 
