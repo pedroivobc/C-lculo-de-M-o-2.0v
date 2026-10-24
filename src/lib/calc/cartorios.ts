@@ -2,9 +2,9 @@
  * Emolumentos de cartório dos estados do piloto (fora de MG): lavratura da escritura e ato de registro com valor declarado.
  * MG continua em ./notas.ts e ./registro.ts, com o detalhamento conferido em recibo.
  *
- * Aqui entra só o ato principal de cada cartório, pela faixa do valor, com os fundos e taxas que o estado soma
- * e o ISS do município. Prenotação, certidões de matrícula, selos e arquivamento não entram (valores pequenos que
- * variam por cartório). Fontes e datas de conferência em docs/piloto-capitais/README.md.
+ * Aqui entra o ato principal de cada cartório, pela faixa do valor, com os fundos e taxas que o estado soma
+ * e o ISS do município, e os atos acessórios que a tabela cobra à parte (prenotação, certidão da matrícula,
+ * arquivamento, distribuição): ver `atosAcessorios`. Fontes e datas de conferência em docs/piloto-capitais/README.md.
  */
 
 export type UfPiloto = 'SP' | 'RJ' | 'DF' | 'PR' | 'RS' | 'SC';
@@ -104,16 +104,18 @@ const RS_REGISTRO = (<[number, number][]>[
 
 // ---------------- SC ----------------
 // LC estadual 755/2019 (alterada pela LC 846/2023), valores de 2026 corrigidos pelo INPC (Circular CGJ 643/2025).
-// Registro: Tabela III item 2.2, conferido na tabela 2026 publicada por cartório de SC. Notas: Tabela I item 2, com o
-// mesmo fator de correção do registro (1,37859 sobre os valores de 2020). FRJ de 22,73% sobre os emolumentos.
+// Registro: Tabela III item 2.2, conferido na tabela 2026 publicada por cartório de SC. Notas: Tabela I item 2, pela tabela
+// 2026 do 1º Tabelionato de Balneário Camboriú (Anexo I). FRJ de 22,73% sobre os emolumentos, truncado nos centavos (como na tabela do tabelionato).
 const SC_LIMITES = [13786.59, 20679.87, 28951.83, 35845.12, 44117.08, 53767.69, 62039.64, 71690.25, 79962.21, 90991.48,
   100642.09, 111671.36, 122700.64, 133729.9, 146137.83, 158545.76, 170953.69, 184740.27, 198526.88, 212313.47, 226100.05];
 const SC_REGISTRO = [162.65, 184.73, 263.31, 343.27, 428.76, 516.98, 607.98, 703.11, 802.37, 904.39, 1010.55, 1122.22,
   1222.85, 1324.88, 1429.66, 1535.82, 1643.35, 1752.26, 1863.93, 1976.99, 2091.41].map((emol, i) => ({ ate: SC_LIMITES[i], emol }));
-const SC_NOTAS_2020 = [124, 143, 203, 265, 331, 399, 470, 543, 619, 698, 781, 866, 955, 1047, 1142, 1213, 1284, 1353, 1421, 1488, 1554];
-const SC_NOTAS = SC_NOTAS_2020.map((v, i) => ({ ate: SC_LIMITES[i], emol: centavos(v * 1.37859) }));
+const SC_NOTAS = [170.95, 197.13, 279.86, 365.33, 456.32, 550.08, 647.96, 748.59, 853.38, 962.3, 1076.74, 1193.9, 1316.61,
+  1443.44, 1574.42, 1672.3, 1770.19, 1865.32, 1959.07, 2051.42, 2142.42].map((emol, i) => ({ ate: SC_LIMITES[i], emol }));
 /** Acima da última faixa: mais R$ 50,00 a cada R$ 50 mil (ou fração), até 71 acréscimos (item 2.2.92). */
 const SC_EXCEDENTE = { passo: 50000, valor: 50, max: 71 };
+/** Teto da escritura na tabela 2026 (acima de R$ 3.726.100,06). */
+const SC_TETO_NOTAS = 5664.71;
 const SC_FRJ = 0.2273;
 
 function emolSc(tabela: { ate: number; emol: number }[], base: number) {
@@ -176,8 +178,9 @@ export function atoCartorio(uf: UfPiloto, cartorio: Cartorio, base: number, iss:
       return { valor: centavos(emol + RS_PROCESSAMENTO + centavos(emol * iss)), nota: `Tabela do TJRS 2026 · ISS ${pct(iss)}${red}` };
     }
     case 'SC': {
-      const emol = centavos(emolSc(cartorio === 'notas' ? SC_NOTAS : SC_REGISTRO, base) * (1 - reducao));
-      return { valor: centavos(emol + centavos(emol * SC_FRJ) + centavos(emol * iss)), nota: `LC 755/2019 (2026) + FRJ 22,73% · ISS ${pct(iss)}${red}` };
+      const tabela = emolSc(cartorio === 'notas' ? SC_NOTAS : SC_REGISTRO, base);
+      const emol = centavos((cartorio === 'notas' ? Math.min(tabela, SC_TETO_NOTAS) : tabela) * (1 - reducao));
+      return { valor: centavos(emol + truncar(emol * SC_FRJ) + centavos(emol * iss)), nota: `LC 755/2019 (2026) + FRJ 22,73% · ISS ${pct(iss)}${red}` };
     }
   }
 }
@@ -186,4 +189,79 @@ export function atoCartorio(uf: UfPiloto, cartorio: Cartorio, base: number, iss:
 export function taxaTransmissao(uf: UfPiloto, base: number): AtoCartorio | null {
   if (uf !== 'PR') return null;
   return { valor: centavos(Math.min(base * FUNREJUS.aliquota, FUNREJUS.teto)), nota: 'Funrejus: 0,2% do valor (Lei estadual 12.216/1998)' };
+}
+
+// ---------------- Atos acessórios ----------------
+// Cobrados à parte do ato principal, conforme a tabela de cada estado (fontes em docs/piloto-capitais/README.md).
+// Onde a tabela inclui o ato no preço principal, ele não aparece aqui (veja `INCLUIDOS`).
+
+export interface AtoAcessorio extends AtoCartorio { rotulo: string }
+
+/** O que cada tabela já inclui no ato principal (ou não cobra), para a nota do orçamento. */
+export const INCLUIDOS: Record<UfPiloto, Record<Cartorio, string>> = {
+  SP: { notas: 'traslado incluído na escritura', registro: 'prenotação descontada do registro (nota 4.1 da Tabela II)' },
+  RJ: { notas: 'traslado incluído na escritura', registro: '' },
+  DF: { notas: 'dois traslados incluídos na escritura', registro: 'sem prenotação na tabela do DF' },
+  PR: { notas: 'traslado incluído na escritura', registro: 'buscas, matrícula e certidão incluídas no registro' },
+  RS: { notas: '', registro: 'arquivamento incluído no registro' },
+  SC: { notas: 'traslado e arquivamento incluídos na escritura', registro: 'certidão incluída no registro (art. 25 da LC 755/2019)' },
+};
+
+/**
+ * Atos acessórios de um título no cartório de `uf`. No registro: prenotação, certidão da matrícula e, com `folhas`
+ * (contrato particular de financiamento), o arquivamento. Nas notas: a distribuição da escritura (RJ).
+ * `reducao` vale também aqui (1ª aquisição pelo SFH: atos relacionados ao título).
+ */
+export function atosAcessorios(uf: UfPiloto, cartorio: Cartorio, iss: number, reducao = 0, folhas = 0): AtoAcessorio[] {
+  const red = reducao ? ` · redução de ${pct(reducao)}` : '';
+  const atos: AtoAcessorio[] = [];
+  switch (uf) {
+    case 'SP': {
+      if (cartorio === 'registro') {
+        // Certidão (Tabela II item 11): total sem ISS; ISS sobre oficial + Ministério Público, por dentro.
+        const issSp = centavos(48.08 * iss / (1 - iss));
+        atos.push({ rotulo: 'Certidão da matrícula', valor: centavos((75.6 + issSp) * (1 - reducao)), nota: `Tabela da ARISP 2026, item 11 · ISS ${pct(iss)}${red}` });
+      }
+      break;
+    }
+    case 'RJ': {
+      const ato = (rotulo: string, emol: number, adicional: number, item: string) =>
+        atos.push({ rotulo, valor: valorRj(emol, adicional, iss, reducao), nota: `TJRJ 2026, ${item} + fundos + selo · ISS ${pct(iss)}${red}` });
+      if (cartorio === 'notas') ato('Distribuição da escritura', 35.02, 0.7, 'Tabela 04 item 1');
+      else {
+        ato('Prenotação', 36.89, 0.73, 'Tabela 05.4 item 3');
+        ato('Certidão da matrícula (com ônus reais)', 124.08, 2.48, 'Tabela 05.4 item 6');
+      }
+      break;
+    }
+    case 'DF': {
+      if (cartorio === 'registro') {
+        const sub = centavos(42.17 * (1 - reducao));
+        atos.push({ rotulo: 'Certidão da matrícula', valor: centavos(sub + centavos(sub * iss)), nota: `TJDFT 2026, Tabela III item 10a · ISS ${pct(iss)}${red}` });
+      }
+      break;
+    }
+    case 'PR': {
+      const ato = (rotulo: string, vrc: number, item: string) => {
+        const emol = centavos(centavos(vrc * VRC) * (1 - reducao));
+        atos.push({ rotulo, valor: centavos(emol + centavos(emol * PR_FUNDEP) + centavos(emol * iss)), nota: `${vrc} VRC (${item}) + FUNDEP 5% · ISS ${pct(iss)}${red}` });
+      };
+      if (cartorio === 'registro') {
+        ato('Prenotação', 10, 'Tabela XIII item XIV');
+        if (folhas) ato('Arquivamento do contrato', 7, 'Tabela XIII item I');
+      }
+      break;
+    }
+    case 'RS': {
+      if (cartorio === 'registro') {
+        // Busca (item 14) + certidão da 1ª página (item 15) + processamento eletrônico (item 8).
+        const emol = centavos((14 + 13.6) * (1 - reducao));
+        atos.push({ rotulo: 'Certidão da matrícula', valor: centavos(emol + RS_PROCESSAMENTO + centavos(emol * iss)), nota: `TJRS 2026, itens 14 e 15 + processamento · ISS ${pct(iss)}${red}` });
+      }
+      break;
+    }
+    case 'SC':
+      break;
+  }
+  return atos;
 }

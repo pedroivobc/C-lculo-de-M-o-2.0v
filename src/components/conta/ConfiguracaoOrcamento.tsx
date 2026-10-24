@@ -184,7 +184,7 @@ export function ConfiguracaoOrcamento({ textoSalvar = 'Salvar', aoSalvar }: { te
             {piloto && (
               <Aviso tom="azul">
                 {MUNICIPIOS[municipio]?.nome} está em teste piloto: escritura e financiamento já saem com as tabelas de {uf}; doação ainda não.
-                Os valores de cartório trazem o ato principal (sem prenotação, certidões e selos). Confira com o cartório antes do ato.
+                Os valores de cartório seguem a tabela oficial de 2026 de cada estado, com prenotação, certidão da matrícula e arquivamento quando a tabela cobra à parte. Confira com o cartório antes do ato.
               </Aviso>
             )}
           </>

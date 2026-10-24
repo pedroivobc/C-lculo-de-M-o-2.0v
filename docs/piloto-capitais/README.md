@@ -5,8 +5,31 @@ São Paulo, Rio de Janeiro, Brasília, Curitiba, Porto Alegre e Balneário Cambo
 desses estados ainda não está cadastrado.
 
 O que o cálculo cobre em cada cartório: o ato principal pela faixa do valor (tabelas não progressivas), os fundos e
-taxas que o estado soma e o ISS do município. Prenotação, certidões de matrícula, selos e arquivamento ficam de fora
-(o orçamento avisa). Na 1ª aquisição pelo SFH entra a redução de 50% dos emolumentos do art. 290 da Lei 6.015/1973.
+taxas que o estado soma, o ISS do município e os atos acessórios que a tabela cobra à parte (prenotação, certidão da
+matrícula, arquivamento do contrato, distribuição). Onde a tabela já inclui o ato no preço principal, o orçamento diz
+isso na nota da linha. Na 1ª aquisição pelo SFH entra a redução de 50% do art. 290 da Lei 6.015/1973, também nos
+atos acessórios.
+
+## Atos acessórios (out/2026)
+
+| Cidade | Escritura | Registro |
+|---|---|---|
+| São Paulo | traslado incluído | certidão da matrícula (item 11, R$ 75,60 + ISS); prenotação é descontada do registro (nota 4.1 da Tabela II da Lei 11.331/2002) |
+| Rio de Janeiro | distribuição (Tabela 04 item 1, R$ 35,02 + 2%) + fundos + selo | prenotação (Tabela 05.4 item 3, R$ 36,89 + 2%) e certidão com ônus reais (item 6, R$ 124,08 + 2%), cada uma com fundos, selo e ISS |
+| Brasília | dois traslados incluídos, sem cobrança por arquivamento (notas da Tabela I) | certidão (Tabela III item 10a, R$ 42,17 + ISS); a tabela do DF não tem prenotação |
+| Curitiba | traslado incluído | prenotação (10 VRC, item XIV); arquivamento do contrato de financiamento (7 VRC, item I); certidão já incluída no registro (item XIII) |
+| Porto Alegre | **não mapeado** (tabela de notas do TJRS fora do ar) | certidão: busca R$ 14,00 + 1ª página R$ 13,60 + processamento R$ 7,30; arquivamento incluído no registro (item 1) |
+| Balneário Camboriú | traslado incluído e sem cobrança por arquivamento (arts. 34, 38 e 40 da LC 755/2019) | certidão incluída no registro (art. 25 da LC 755/2019); sem item de prenotação |
+
+Selos: no RJ o selo (R$ 3,27) entra em cada ato. Nos outros estados o selo é pago pelo cartório ou já está no total
+da tabela.
+
+Fontes novas:
+- RJ: Portaria CGJ 516/2026 (tabelas 2026), cópia publicada pelo 11º RI do Rio de Janeiro:
+  https://www.11rirj.com.br/?pG=X190YWJlbGFz
+- SP: Lei 11.331/2002, nota 4 da Tabela II: https://www.al.sp.gov.br/repositorio/legislacao/lei/2002/compilacao-lei-11331-26.12.2002.html
+- SC: tabela 2026 do 1º Tabelionato de Notas de Balneário Camboriú: https://www.1tabelionatobc.com.br/assets/pdf/TABELA-DE-EMOLUMENTOS.pdf
+- SC: LC 755/2019: https://www.legisweb.com.br/legislacao/?id=388439
 
 Código: `src/lib/calc/cartorios.ts` (emolumentos) e `src/lib/calc/municipios.ts` (ITBI e ISS).
 
@@ -71,16 +94,16 @@ Código: `src/lib/calc/cartorios.ts` (emolumentos) e `src/lib/calc/municipios.ts
   - https://leggicomunali.it/a/sc/b/balneario-camboriu/lei-ordinaria/2025/500/4994/lei-ordinaria-n-4994-2025-institui-e-integra-o-imposto-sobre-a-transmissao-de-bens-imoveis-itbi-ao-sistema-tributario-municipal-de-balneario-camboriu-sc-e-da-outras-providencias
   - https://www.gazetadopovo.com.br/santa-catarina/balneario-camboriu-corta-itbi-para-atrair-holdings/
 - **Notas e registro**: LC estadual 755/2019 (alterada pela LC 846/2023), valores 2026 pelo INPC (Circular CGJ 643/2025).
-  Registro: Tabela III item 2.2, conferido em tabela 2026 publicada por cartório de SC. **Notas: valores de 2020 × 1,37859**
-  (mesmo fator do registro), a conferir com a tabela oficial. FRJ de 22,73%.
+  Registro: Tabela III item 2.2, conferido em tabela 2026 publicada por cartório de SC. Notas: Anexo I da tabela 2026 do
+  1º Tabelionato de Balneário Camboriú (bate ao centavo, inclusive o teto acima de R$ 3.726.100,06). FRJ de 22,73%.
   - https://www.tjsc.jus.br/web/corregedoria-geral-da-justica/normas-e-orientacoes/emolumentos
   - https://www.tjsc.jus.br/documents/d/corregedoria-geral-da-justica/circularcgj643-2025-pdf
-- **ISS**: **estimado em 5%** (teto da LC 116/2003). Não confirmado na lei municipal.
+- **ISS**: 2,5% sobre os emolumentos, como na tabela 2026 do 1º Tabelionato de Balneário Camboriú.
 
 ## A conferir antes de sair do piloto
 
-1. ISS de cartório em Porto Alegre e Balneário Camboriú.
+1. ISS de cartório em Porto Alegre.
 2. Texto da Lei 4.994/2025 de Balneário Camboriú.
-3. Tabela de notas de SC 2026 (hoje derivada por fator).
+3. Atos acessórios da escritura em Porto Alegre (tabela de notas do TJRS).
 4. Teto do Funrejus (PR).
 5. Um recibo real de escritura e de registro em cada cidade.
